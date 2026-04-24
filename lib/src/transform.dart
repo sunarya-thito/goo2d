@@ -1,0 +1,211 @@
+import 'dart:math' as math;
+
+import 'package:flutter/painting.dart';
+import 'package:goo2d/goo2d.dart';
+import 'package:vector_math/vector_math_64.dart';
+
+class ObjectTransform extends Component with LifecycleListener {
+  // ---------------------------------------------------------------------------
+  // Local-space properties
+  // ---------------------------------------------------------------------------
+
+  Offset _localPosition = Offset.zero;
+
+  /// Rotation angle in radians (counter-clockwise).
+  double _localAngle = 0.0;
+
+  Offset _localScale = const Offset(1, 1);
+
+  Offset get localPosition => _localPosition;
+
+  set localPosition(Offset value) {
+    if (_localPosition == value) return;
+    _localPosition = value;
+    _markDirty();
+  }
+
+  double get localAngle => _localAngle;
+
+  set localAngle(double value) {
+    if (_localAngle == value) return;
+    _localAngle = value;
+    _markDirty();
+  }
+
+  Offset get localScale => _localScale;
+
+  set localScale(Offset value) {
+    if (_localScale == value) return;
+    _localScale = value;
+    _markDirty();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Parent / child linkage for dirty propagation
+  // ---------------------------------------------------------------------------
+
+  ObjectTransform? _parentTransform;
+  final List<ObjectTransform> _childTransforms = [];
+
+  @override
+  void onMounted() {
+    _parentTransform = tryGetComponentInParent<ObjectTransform>();
+    _parentTransform?._childTransforms.add(this);
+  }
+
+  @override
+  void onUnmounted() {
+    _parentTransform?._childTransforms.remove(this);
+    _parentTransform = null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dirty-flag cached matrices
+  // ---------------------------------------------------------------------------
+
+  Matrix4? _cachedLocal;
+  Matrix4? _cachedWorld;
+  Matrix4? _cachedWorldInverse;
+
+  /// Incremented on every transform change. Dependents (e.g. [Collider]) use
+  /// this to cheaply detect when their cached derived data is stale.
+  int version = 0;
+
+  void _markDirty() {
+    if (_cachedLocal == null && _cachedWorld == null) return; // already dirty
+    _cachedLocal = null;
+    _cachedWorld = null;
+    _cachedWorldInverse = null;
+    version++;
+    for (final child in _childTransforms) {
+      child._markDirty();
+    }
+  }
+
+  /// The matrix representing this transform relative to its parent.
+  Matrix4 get localMatrix {
+    if (_cachedLocal != null) return _cachedLocal!;
+    final m = Matrix4.identity();
+    m.translateByVector3(Vector3(_localPosition.dx, _localPosition.dy, 0.0));
+    if (_localAngle != 0.0) {
+      m.rotateZ(_localAngle);
+    }
+    if (_localScale.dx != 1.0 || _localScale.dy != 1.0) {
+      m.scaleByVector3(Vector3(_localScale.dx, _localScale.dy, 1.0));
+    }
+    _cachedLocal = m;
+    return m;
+  }
+
+  /// The matrix representing this transform in world space.
+  Matrix4 get worldMatrix {
+    if (_cachedWorld != null) return _cachedWorld!;
+    if (_parentTransform != null) {
+      _cachedWorld = _parentTransform!.worldMatrix * localMatrix;
+    } else {
+      _cachedWorld = localMatrix.clone();
+    }
+    return _cachedWorld!;
+  }
+
+  Matrix4 get _worldInverse {
+    if (_cachedWorldInverse != null) return _cachedWorldInverse!;
+    _cachedWorldInverse = Matrix4.inverted(worldMatrix);
+    return _cachedWorldInverse!;
+  }
+
+  // ---------------------------------------------------------------------------
+  // World-space position
+  // ---------------------------------------------------------------------------
+
+  /// World-space position.
+  Offset get position {
+    final t = worldMatrix.getTranslation();
+    return Offset(t.x, t.y);
+  }
+
+  set position(Offset value) {
+    if (_parentTransform != null) {
+      final inv = _parentTransform!._worldInverse;
+      final local = inv.transform3(Vector3(value.dx, value.dy, 0));
+      _localPosition = Offset(local.x, local.y);
+    } else {
+      _localPosition = value;
+    }
+    _markDirty();
+  }
+
+  // ---------------------------------------------------------------------------
+  // World-space angle
+  // ---------------------------------------------------------------------------
+
+  /// World-space rotation angle in radians.
+  double get angle {
+    if (_parentTransform != null) {
+      return _parentTransform!.angle + _localAngle;
+    }
+    return _localAngle;
+  }
+
+  set angle(double value) {
+    if (_parentTransform != null) {
+      _localAngle = value - _parentTransform!.angle;
+    } else {
+      _localAngle = value;
+    }
+    _markDirty();
+  }
+
+  // ---------------------------------------------------------------------------
+  // World-space scale
+  // ---------------------------------------------------------------------------
+
+  /// World-space scale.
+  Offset get scale {
+    final wm = worldMatrix;
+    final sx = wm.getColumn(0).xyz.length;
+    final sy = wm.getColumn(1).xyz.length;
+    return Offset(sx, sy);
+  }
+
+  set scale(Offset value) {
+    if (_parentTransform != null) {
+      final ps = _parentTransform!.scale;
+      _localScale = Offset(value.dx / ps.dx, value.dy / ps.dy);
+    } else {
+      _localScale = value;
+    }
+    _markDirty();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Coordinate space conversion
+  // ---------------------------------------------------------------------------
+
+  /// Transforms a position from local space to world space.
+  Offset localToWorld(Offset local) {
+    final world = worldMatrix.transform3(Vector3(local.dx, local.dy, 0));
+    return Offset(world.x, world.y);
+  }
+
+  /// Transforms a position from world space to local space.
+  Offset worldToLocal(Offset world) {
+    final local = _worldInverse.transform3(Vector3(world.dx, world.dy, 0));
+    return Offset(local.x, local.y);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Convenience
+  // ---------------------------------------------------------------------------
+
+  void translate(Offset delta) {
+    localPosition = _localPosition + delta;
+  }
+
+  void rotate(double deltaRadians) {
+    localAngle = _localAngle + deltaRadians;
+  }
+
+  /// Convert degrees to radians (convenience for setting angles).
+  static double degrees(double deg) => deg * math.pi / 180.0;
+}
