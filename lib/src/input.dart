@@ -179,8 +179,8 @@ class Vector2CompositeBinding extends InputBinding {
   @override
   Object? read() {
     double x = 0, y = 0;
-    if (up.isPressed) y -= 1;
-    if (down.isPressed) y += 1;
+    if (up.isPressed) y += 1;
+    if (down.isPressed) y -= 1;
     if (left.isPressed) x -= 1;
     if (right.isPressed) x += 1;
     return Vector2(x, y);

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:goo2d/src/component.dart';
+import 'package:goo2d/src/coroutine.dart';
 import 'package:meta/meta.dart';
 
 class GameTag extends GlobalObjectKey {
@@ -55,6 +56,14 @@ abstract class GameObject implements BuildContext {
   T? tryGetComponent<T extends Component>();
   Iterable<T> getComponents<T extends Component>();
 
+  Future<void> startCoroutine(CoroutineFunction coroutine);
+  Future<void> startCoroutineWithOption<T>(
+    CoroutineFunctionWithOptions<T> coroutine, {
+    required T option,
+  });
+  void stopCoroutine(Future<void> coroutine);
+  void stopAllCoroutines([Function? coroutine]);
+
   @internal
   List<GameObject> get internalChildrenObjects;
 
@@ -65,6 +74,7 @@ abstract class GameObject implements BuildContext {
 mixin GameObjectMixin implements GameObject {
   final List<Component> _components = [];
   final List<GameObject> _childrenObjects = [];
+  final List<CoroutineFuture> _runningCoroutines = [];
   GameObject? _parentObject;
 
   @override
@@ -161,7 +171,11 @@ mixin GameObjectMixin implements GameObject {
 
   @override
   T getComponent<T extends Component>() {
-    return _components.whereType<T>().first;
+    final component = tryGetComponent<T>();
+    if (component == null) {
+      throw StateError('GameObject "$this" does not have a component of type $T');
+    }
+    return component;
   }
 
   @override
@@ -227,6 +241,37 @@ mixin GameObjectMixin implements GameObject {
     }
     return root;
   }
+
+  @override
+  Future<void> startCoroutine(CoroutineFunction coroutine) {
+    CoroutineFuture result = CoroutineFuture(coroutine);
+    setupCoroutine(result, coroutine(), _runningCoroutines);
+    return result;
+  }
+
+  @override
+  Future<void> startCoroutineWithOption<T>(
+    CoroutineFunctionWithOptions<T> coroutine, {
+    required T option,
+  }) {
+    CoroutineFuture result = CoroutineFuture(coroutine);
+    setupCoroutine(result, coroutine(option), _runningCoroutines);
+    return result;
+  }
+
+  @override
+  void stopCoroutine(Future<void> coroutine) {
+    _runningCoroutines.remove(coroutine);
+  }
+
+  @override
+  void stopAllCoroutines([Function? coroutine]) {
+    if (coroutine != null) {
+      _runningCoroutines.removeWhere((e) => e.coroutine == coroutine);
+    } else {
+      _runningCoroutines.clear();
+    }
+  }
 }
 
 class GameWidget extends MultiChildRenderObjectWidget {
@@ -275,13 +320,12 @@ class GameElement extends MultiChildRenderObjectElement
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    super.mount(parent, newSlot);
     final components = (widget as GameWidget).components();
     for (var component in components) {
       addComponent(component);
     }
-    super.mount(parent, newSlot);
     _attachToParent();
-    const MountedEvent().dispatchTo(this);
   }
 
   @override
@@ -298,11 +342,6 @@ class GameElement extends MultiChildRenderObjectElement
 
   @override
   void unmount() {
-    for (var component in components) {
-      if (component is LifecycleListener) {
-        component.onUnmounted();
-      }
-    }
     super.unmount();
     const UnmountedEvent().dispatchTo(this);
   }
@@ -456,7 +495,7 @@ class GameRenderObject extends RenderBox
 
   @override
   bool hitTestSelf(Offset position) {
-    for (var component in object.getComponents<Collider>()) {
+    for (var component in object.getComponents<CollisionTrigger>()) {
       if (component.contains(position)) {
         return true;
       }

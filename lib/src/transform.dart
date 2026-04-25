@@ -67,7 +67,7 @@ class ObjectTransform extends Component with LifecycleListener {
   Matrix4? _cachedWorld;
   Matrix4? _cachedWorldInverse;
 
-  /// Incremented on every transform change. Dependents (e.g. [Collider]) use
+  /// Incremented on every transform change. Dependents (e.g. [CollisionTrigger]) use
   /// this to cheaply detect when their cached derived data is stale.
   int version = 0;
 

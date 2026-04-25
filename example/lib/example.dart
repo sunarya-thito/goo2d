@@ -30,7 +30,7 @@ class MyGameObjectState extends GameState<MyGameObject> with PointerReceiver {
     addComponent(
       ObjectTransform()..position = const Offset(50, 50),
       MyTestComponent(),
-      BoxCollider()..rect = const Rect.fromLTWH(0, 0, 50, 50),
+      BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 50, 50),
       RectangleRenderer(),
     );
   }
@@ -53,7 +53,7 @@ class MyGameObjectState extends GameState<MyGameObject> with PointerReceiver {
       yield GameWidget(
         components: () => [
           ObjectTransform()..position = const Offset(100, 100),
-          BoxCollider()..rect = const Rect.fromLTWH(0, 0, 50, 50),
+          BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 50, 50),
           RectangleRenderer()..color = Colors.green,
         ],
       );

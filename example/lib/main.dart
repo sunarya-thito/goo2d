@@ -1,8 +1,12 @@
+import 'package:example/test_asset.dart';
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector2;
 
 void main() {
+  GameAsset.loadAll(MyAssets.values).listen((event) {
+    print('${event.assetLoaded} / ${event.assetCount}');
+  });
   runApp(
     MaterialApp(
       home: Scaffold(
@@ -26,35 +30,77 @@ class _ExampleAppState extends State<ExampleApp> {
   @override
   Widget build(BuildContext context) {
     return GameScene(
-      child: GameWidget(
-        key: parentTag,
-        components: () => [
-          ObjectTransform()..localPosition = Offset(100, 100),
-          BoxCollider()..rect = Rect.fromLTWH(0, 0, 100, 100),
-          RectangleRenderer()..color = Colors.red,
-        ],
+      child: Stack(
         children: [
+          // The Game World
           GameWidget(
-            key: childTag,
+            key: parentTag,
             components: () => [
-              ObjectTransform()..localPosition = Offset(50, 50),
-              BoxCollider()..rect = Rect.fromLTWH(0, 0, 100, 100),
-              RectangleRenderer()..color = Colors.green,
-              CustomPointerHandler(),
-              PlayerController(),
+              ObjectTransform()..localPosition = Offset(0, 0),
+            ],
+            children: [
+              // Main Camera
+              GameWidget(
+                key: GameTag('MainCamera'),
+                components: () => [
+                  ObjectTransform(),
+                  Camera()
+                    ..orthographicSize = 5.0
+                    ..backgroundColor = Colors.black,
+                  CameraFollow()..targetTag = childTag,
+                ],
+              ),
+              // A red box in the world
+              GameWidget(
+                components: () => [
+                  ObjectTransform()..localPosition = Offset(2, 2),
+                  BoxCollisionTrigger()..rect = Rect.fromLTWH(-0.5, -0.5, 1, 1),
+                  RectangleRenderer()..color = Colors.red,
+                ],
+              ),
+              // The Player (green box)
+              GameWidget(
+                key: childTag,
+                components: () => [
+                  ObjectTransform()..localPosition = Offset(0, 0),
+                  BoxCollisionTrigger()..rect = Rect.fromLTWH(-0.5, -0.5, 1, 1),
+                  RectangleRenderer()..color = Colors.green,
+                  CustomPointerHandler(),
+                  PlayerController(),
+                ],
+              ),
             ],
           ),
-          Align(
-            alignment: Alignment.topLeft,
-            child: Container(
-              color: Colors.blue,
-              width: 50,
-              height: 50,
+          // UI Layer (outside GameScene or separate Camera)
+          Positioned(
+            top: 20,
+            left: 20,
+            child: Text(
+              'Move with WASD\nCamera follows player',
+              style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class CameraFollow extends Behavior with Tickable {
+  late GameTag targetTag;
+  double smoothness = 5.0;
+
+  @override
+  void onUpdate(double dt) {
+    final target = targetTag.gameObject?.getComponent<ObjectTransform>();
+    if (target == null) return;
+
+    final transform = gameObject.getComponent<ObjectTransform>();
+    final targetPos = target.localPosition;
+
+    // Smoothly interpolate camera position to target position
+    final diff = targetPos - transform.localPosition;
+    transform.localPosition += diff * smoothness * dt;
   }
 }
 
@@ -84,7 +130,7 @@ class PlayerController extends Behavior with Tickable, LifecycleListener {
     jumpAction.started += (context) {
       print('${context.action.name} started!');
     };
-    
+
     jumpAction.canceled += (context) {
       print('${context.action.name} canceled!');
     };
@@ -94,8 +140,8 @@ class PlayerController extends Behavior with Tickable, LifecycleListener {
   void onUpdate(double dt) {
     final transform = gameObject.getComponent<ObjectTransform>();
     final move = moveAction.readValue<Vector2>();
-    
-    transform.localPosition += Offset(move.x, move.y) * 200 * dt;
+
+    transform.localPosition += Offset(move.x, move.y) * 5 * dt;
   }
 }
 
@@ -104,8 +150,10 @@ class RectangleRenderer extends Behavior with Renderable {
 
   @override
   void render(Canvas canvas) {
+    final collider = gameObject.tryGetComponent<CollisionTrigger>();
+    if (collider == null) return;
     final paint = Paint()..color = color;
-    canvas.drawRect(gameObject.getComponent<Collider>().bounds, paint);
+    canvas.drawRect(collider.bounds, paint);
   }
 }
 
@@ -115,7 +163,7 @@ class CustomPointerHandler extends Behavior with PointerReceiver {
 
   @override
   void onPointerUp(PointerUpEvent event) {
-    parentTag.gameObject!.getComponent<RectangleRenderer>().color =
+    gameObject.getComponent<RectangleRenderer>().color =
         _cycleColors[_colorIndex];
     _colorIndex = (_colorIndex + 1) % _cycleColors.length;
   }

@@ -1,39 +1,88 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Goo2D
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+> **⚠️ Under Heavy Development**
+>
+> Goo2D is currently in an early, active phase of heavy development. The APIs are subject to change rapidly. At this moment, we **may not accept external contributions**, as the core architecture is still being finalized.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+Goo2D is an unopinionated 2D Entity-Component-System (ECS) engine built natively for Flutter. It bridges the gap between traditional game loops and Flutter's RenderObject pipeline, providing a clean, object-oriented architecture for building interactive experiences. 
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+Goo2D provides the low-level architectural primitives (GameObjects, Components, Coroutines, and Swept Collision) that allow you to build whatever mechanics you need, with seamless interoperability with Flutter's widget tree.
 
-## Features
+## Key Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- **Strict Entity-Component Architecture**: Everything is a `GameObject` or a `Component`. No magic, just clean composition.
+- **Coroutines & Behaviors**: Write asynchronous game logic sequentially using `startCoroutine` and `YieldInstruction`s like `WaitForSeconds` and `WaitUntil`.
+- **Comprehensive Input System**: Fully abstracted `InputAction`s, `ButtonControl`s, and composite bindings.
+- **Kinematic Sweep-and-Prune Collisions**: Zero-allocation, AABB-based collision detection via `BoxCollisionTrigger` and `OvalCollisionTrigger`.
+- **Flutter Native**: `GameScene` and `StatefulGameWidget` integrate perfectly into any Flutter app. Render directly using the Canvas API.
+- **Event Dispatching System**: Clean event broadcasting system with built-in mixins (`Tickable`, `PointerReceiver`, `ScreenCollidable`, etc.) that can be applied directly to components or even to the `GameState` itself.
 
-## Getting started
+## Getting Started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+### 1. Define your GameObject
 
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+Create a custom widget extending `StatefulGameWidget` and implement the `GameState`. Because `GameState` acts as a `GameObject`, you can mix in event receivers directly!
 
 ```dart
-const like = 'sample';
+import 'package:flutter/material.dart';
+import 'package:goo2d/goo2d.dart';
+
+class Player extends StatefulGameWidget {
+  const Player({super.key});
+
+  @override
+  PlayerState createState() => PlayerState();
+}
+
+class PlayerState extends GameState<Player> with Tickable {
+  @override
+  void initState() {
+    addComponent(
+      ObjectTransform()..position = const Offset(50, 50),
+      BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 50, 50),
+      // RectangleRenderer is a custom component you create
+      RectangleRenderer()..color = Colors.blue, 
+    );
+  }
+
+  @override
+  void onUpdate(double dt) {
+    // This is called every frame automatically because we mixed in Tickable!
+    final transform = getComponent<ObjectTransform>();
+    transform.position += Offset(100 * dt, 0); 
+  }
+
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {
+    // You can yield nested Flutter Widgets or other GameObjects here if needed
+  }
+}
 ```
 
-## Additional information
+### 2. Add it to a GameScene
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+The `GameScene` provides the root `GameTicker` and initializes the `InputSystem` and `CollisionTrigger` passes.
+
+```dart
+void main() {
+  runApp(
+    const MaterialApp(
+      home: Scaffold(
+        body: GameScene(
+          child: Player(),
+        ),
+      ),
+    ),
+  );
+}
+```
+
+## Documentation
+
+For full documentation and tutorials, please refer to the `docs/` folder or the generated MkDocs site. It covers:
+- Core Architecture & Events
+- Transform Hierarchy
+- Input and Pointer Systems
+- Collisions and Screen Bounds
+- Coroutines and Lifecycle
+- Step-by-step tutorials for building your first game.

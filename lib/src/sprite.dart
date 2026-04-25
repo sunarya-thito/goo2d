@@ -1,7 +1,8 @@
 import 'dart:ui';
 
-import 'package:flutter/widgets.dart' show BoxFit, Alignment;
+import 'package:flutter/widgets.dart' show BoxFit, Alignment, applyBoxFit, FittedSizes;
 import 'package:goo2d/goo2d.dart';
+
 
 class SpriteOffset {
   final double? dx;
@@ -77,7 +78,7 @@ class SpriteRect {
 }
 
 class SpriteRenderer extends Behavior with Renderable {
-  Image? image;
+  GameSprite? sprite;
   SpriteRect? srcRect;
   SpriteRect? dstRect;
   BoxFit fit = BoxFit.cover;
@@ -85,8 +86,15 @@ class SpriteRenderer extends Behavior with Renderable {
 
   @override
   void render(Canvas canvas) {
-    final image = this.image;
-    if (image == null) return;
+    final sprite = this.sprite;
+    if (sprite == null) return;
+
+    final Image image;
+    try {
+      image = sprite.image;
+    } catch (_) {
+      return; // Image not loaded yet
+    }
 
     final srcRect = this.srcRect;
     final dstRect = this.dstRect;
@@ -97,13 +105,25 @@ class SpriteRenderer extends Behavior with Renderable {
       srcRect?.size?.width ?? image.width.toDouble(),
       srcRect?.size?.height ?? image.height.toDouble(),
     );
-    final dstR = Rect.fromLTWH(
-      dstRect?.offset?.dx ?? 0,
-      dstRect?.offset?.dy ?? 0,
+
+    final Size destinationSize = Size(
       dstRect?.size?.width ?? image.width.toDouble(),
       dstRect?.size?.height ?? image.height.toDouble(),
     );
 
-    canvas.drawImageRect(image, srcR, dstR, Paint());
+    final FittedSizes sizes = applyBoxFit(fit, srcR.size, destinationSize);
+    final Rect destinationRect = alignment.inscribe(
+      sizes.destination,
+      Rect.fromLTWH(
+        dstRect?.offset?.dx ?? 0,
+        dstRect?.offset?.dy ?? 0,
+        destinationSize.width,
+        destinationSize.height,
+      ),
+    );
+
+    canvas.drawImageRect(image, srcR, destinationRect, Paint());
   }
 }
+
+

@@ -64,15 +64,19 @@ abstract class GameState<T extends StatefulGameWidget>
   Size? get size => _element.size;
 
   @override
-  InheritedWidget dependOnInheritedElement(InheritedElement ancestor, {Object? aspect}) =>
-      _element.dependOnInheritedElement(ancestor, aspect: aspect);
+  InheritedWidget dependOnInheritedElement(
+    InheritedElement ancestor, {
+    Object? aspect,
+  }) => _element.dependOnInheritedElement(ancestor, aspect: aspect);
 
   @override
-  V? dependOnInheritedWidgetOfExactType<V extends InheritedWidget>({Object? aspect}) =>
-      _element.dependOnInheritedWidgetOfExactType<V>(aspect: aspect);
+  V? dependOnInheritedWidgetOfExactType<V extends InheritedWidget>({
+    Object? aspect,
+  }) => _element.dependOnInheritedWidgetOfExactType<V>(aspect: aspect);
 
   @override
-  InheritedElement? getElementForInheritedWidgetOfExactType<V extends InheritedWidget>() =>
+  InheritedElement?
+  getElementForInheritedWidgetOfExactType<V extends InheritedWidget>() =>
       _element.getElementForInheritedWidgetOfExactType<V>();
 
   @override
@@ -104,16 +108,23 @@ abstract class GameState<T extends StatefulGameWidget>
       _element.dispatchNotification(notification);
 
   @override
-  DiagnosticsNode describeElement(String name, {DiagnosticsTreeStyle style = DiagnosticsTreeStyle.errorProperty}) =>
-      _element.describeElement(name, style: style);
+  DiagnosticsNode describeElement(
+    String name, {
+    DiagnosticsTreeStyle style = DiagnosticsTreeStyle.errorProperty,
+  }) => _element.describeElement(name, style: style);
 
   @override
-  DiagnosticsNode describeWidget(String name, {DiagnosticsTreeStyle style = DiagnosticsTreeStyle.errorProperty}) =>
-      _element.describeWidget(name, style: style);
+  DiagnosticsNode describeWidget(
+    String name, {
+    DiagnosticsTreeStyle style = DiagnosticsTreeStyle.errorProperty,
+  }) => _element.describeWidget(name, style: style);
 
   @override
-  List<DiagnosticsNode> describeMissingAncestor({required Type expectedAncestorType}) =>
-      _element.describeMissingAncestor(expectedAncestorType: expectedAncestorType);
+  List<DiagnosticsNode> describeMissingAncestor({
+    required Type expectedAncestorType,
+  }) => _element.describeMissingAncestor(
+    expectedAncestorType: expectedAncestorType,
+  );
 
   @override
   DiagnosticsNode describeOwnershipChain(String name) =>
@@ -149,7 +160,9 @@ class StatefulGameElement extends MultiChildRenderObjectElement
     state.initState();
     // Trigger initial build of state children
     _rebuild();
-    const MountedEvent().dispatchTo(this);
+    if (state is LifecycleListener) {
+      (state as LifecycleListener).onMounted();
+    }
   }
 
   @override
@@ -167,11 +180,6 @@ class StatefulGameElement extends MultiChildRenderObjectElement
   @override
   void unmount() {
     state.dispose();
-    for (var component in components) {
-      if (component is LifecycleListener) {
-        component.onUnmounted();
-      }
-    }
     super.unmount();
     const UnmountedEvent().dispatchTo(this);
   }
@@ -227,11 +235,23 @@ class StatefulGameElement extends MultiChildRenderObjectElement
 
   // GameObject delegation to State
   @override
-  void addComponent(Component component, [Component? a, Component? b, Component? c, Component? d, Component? e, Component? f, Component? g, Component? h, Component? i, Component? j]) =>
-      state.addComponent(component, a, b, c, d, e, f, g, h, i, j);
+  void addComponent(
+    Component component, [
+    Component? a,
+    Component? b,
+    Component? c,
+    Component? d,
+    Component? e,
+    Component? f,
+    Component? g,
+    Component? h,
+    Component? i,
+    Component? j,
+  ]) => state.addComponent(component, a, b, c, d, e, f, g, h, i, j);
 
   @override
-  void broadcastEvent(Event<EventListener> event) => state.broadcastEvent(event);
+  void broadcastEvent(Event<EventListener> event) =>
+      state.broadcastEvent(event);
 
   @override
   Iterable<GameObject> get childrenObjects => state.childrenObjects;
@@ -243,20 +263,33 @@ class StatefulGameElement extends MultiChildRenderObjectElement
   V getComponent<V extends Component>() => state.getComponent<V>();
 
   @override
-  V getComponentInParent<V extends Component>() => state.getComponentInParent<V>();
+  V getComponentInParent<V extends Component>() =>
+      state.getComponentInParent<V>();
 
   @override
   Iterable<V> getComponents<V extends Component>() => state.getComponents<V>();
 
   @override
-  Iterable<V> getComponentsInChildren<V extends Component>() => state.getComponentsInChildren<V>();
+  Iterable<V> getComponentsInChildren<V extends Component>() =>
+      state.getComponentsInChildren<V>();
 
   @override
   GameObject? get parentObject => state.parentObject;
 
   @override
-  void removeComponent(Component component, [Component? a, Component? b, Component? c, Component? d, Component? e, Component? f, Component? g, Component? h, Component? i, Component? j]) =>
-      state.removeComponent(component, a, b, c, d, e, f, g, h, i, j);
+  void removeComponent(
+    Component component, [
+    Component? a,
+    Component? b,
+    Component? c,
+    Component? d,
+    Component? e,
+    Component? f,
+    Component? g,
+    Component? h,
+    Component? i,
+    Component? j,
+  ]) => state.removeComponent(component, a, b, c, d, e, f, g, h, i, j);
 
   @override
   GameObject get rootObject => state.rootObject;
@@ -268,11 +301,30 @@ class StatefulGameElement extends MultiChildRenderObjectElement
   V? tryGetComponent<V extends Component>() => state.tryGetComponent<V>();
 
   @override
-  V? tryGetComponentInParent<V extends Component>() => state.tryGetComponentInParent<V>();
+  V? tryGetComponentInParent<V extends Component>() =>
+      state.tryGetComponentInParent<V>();
 
   @override
   List<GameObject> get internalChildrenObjects => state.internalChildrenObjects;
 
   @override
-  set internalParentObject(GameObject? value) => state.internalParentObject = value;
+  Future<void> startCoroutine(CoroutineFunction coroutine) =>
+      state.startCoroutine(coroutine);
+
+  @override
+  Future<void> startCoroutineWithOption<T>(
+    CoroutineFunctionWithOptions<T> coroutine, {
+    required T option,
+  }) => state.startCoroutineWithOption<T>(coroutine, option: option);
+
+  @override
+  void stopCoroutine(Future<void> coroutine) => state.stopCoroutine(coroutine);
+
+  @override
+  void stopAllCoroutines([Function? coroutine]) =>
+      state.stopAllCoroutines(coroutine);
+
+  @override
+  set internalParentObject(GameObject? value) =>
+      state.internalParentObject = value;
 }

@@ -10,8 +10,8 @@ mixin Collidable implements EventListener {
 }
 
 class CollisionEvent extends Event<Collidable> {
-  final Collider self;
-  final Collider other;
+  final CollisionTrigger self;
+  final CollisionTrigger other;
   final Rect intersectionRect;
 
   const CollisionEvent(this.self, this.other, this.intersectionRect);
@@ -23,10 +23,10 @@ class CollisionEvent extends Event<Collidable> {
 }
 
 // -----------------------------------------------------------------------------
-// Collider base
+// CollisionTrigger base
 // -----------------------------------------------------------------------------
 
-abstract class Collider extends Component with LifecycleListener {
+abstract class CollisionTrigger extends Component with LifecycleListener {
   /// The transform of the game object, or `null` if none is attached.
   /// When absent, the collider operates in local space (identity transform).
   ObjectTransform? get transform =>
@@ -49,9 +49,9 @@ abstract class Collider extends Component with LifecycleListener {
   // ---------------------------------------------------------------------------
 
   /// All active colliders. Maintained incrementally via mount/unmount.
-  static final List<Collider> _active = [];
+  static final List<CollisionTrigger> _active = [];
 
-  static Iterable<Collider> get active => _active;
+  static Iterable<CollisionTrigger> get active => _active;
 
   bool _wasOverlappingScreen = false;
   bool _wasFullyInsideScreen = false;
@@ -144,10 +144,10 @@ abstract class Collider extends Component with LifecycleListener {
 }
 
 // -----------------------------------------------------------------------------
-// OvalCollider
+// OvalCollisionTrigger
 // -----------------------------------------------------------------------------
 
-class OvalCollider extends Collider {
+class OvalCollisionTrigger extends CollisionTrigger {
   double radiusX = 0;
   double radiusY = 0;
   Offset center = Offset.zero;
@@ -185,10 +185,10 @@ class OvalCollider extends Collider {
 }
 
 // -----------------------------------------------------------------------------
-// BoxCollider
+// BoxCollisionTrigger
 // -----------------------------------------------------------------------------
 
-class BoxCollider extends Collider {
+class BoxCollisionTrigger extends CollisionTrigger {
   Rect rect = Rect.zero;
 
   @override
@@ -239,13 +239,16 @@ double _max4(double a, double b, double c, double d) {
 // Internal accessors
 // -----------------------------------------------------------------------------
 
-void internalUpdateScreenState(Collider collider,
-    {required bool overlapping, required bool fullyInside}) {
+void internalUpdateScreenState(
+  CollisionTrigger collider, {
+  required bool overlapping,
+  required bool fullyInside,
+}) {
   collider._wasOverlappingScreen = overlapping;
   collider._wasFullyInsideScreen = fullyInside;
 }
 
-bool internalGetWasOverlapping(Collider collider) =>
+bool internalGetWasOverlapping(CollisionTrigger collider) =>
     collider._wasOverlappingScreen;
-bool internalGetWasFullyInside(Collider collider) =>
+bool internalGetWasFullyInside(CollisionTrigger collider) =>
     collider._wasFullyInsideScreen;

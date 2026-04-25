@@ -2,12 +2,13 @@ part of 'input.dart';
 
 /// Static-access class for all keyboard keys.
 class Keyboard {
-  static ButtonControl _key(LogicalKeyboardKey key) => InputSystem._keyboardDevice[key];
+  static ButtonControl _key(LogicalKeyboardKey key) =>
+      InputSystem._keyboardDevice[key];
 
   static ButtonControl get space => _key(LogicalKeyboardKey.space);
   static ButtonControl get enter => _key(LogicalKeyboardKey.enter);
   static ButtonControl get escape => _key(LogicalKeyboardKey.escape);
-  
+
   static ButtonControl get w => _key(LogicalKeyboardKey.keyW);
   static ButtonControl get a => _key(LogicalKeyboardKey.keyA);
   static ButtonControl get s => _key(LogicalKeyboardKey.keyS);
@@ -22,14 +23,14 @@ class Keyboard {
   static ButtonControl get e => _key(LogicalKeyboardKey.keyE);
   static ButtonControl get r => _key(LogicalKeyboardKey.keyR);
   static ButtonControl get f => _key(LogicalKeyboardKey.keyF);
-  
+
   static ButtonControl get shift => _key(LogicalKeyboardKey.shiftLeft);
   static ButtonControl get ctrl => _key(LogicalKeyboardKey.controlLeft);
   static ButtonControl get alt => _key(LogicalKeyboardKey.altLeft);
 
   static ButtonControl get backspace => _key(LogicalKeyboardKey.backspace);
   static ButtonControl get tab => _key(LogicalKeyboardKey.tab);
-  
+
   static ButtonControl get digit0 => _key(LogicalKeyboardKey.digit0);
   static ButtonControl get digit1 => _key(LogicalKeyboardKey.digit1);
   static ButtonControl get digit2 => _key(LogicalKeyboardKey.digit2);
