@@ -59,10 +59,12 @@ class Screen {
   /// Checks all active colliders against the screen bounds and dispatches events.
   /// This should be called once per frame, usually after movement logic.
   static void update(Size screenSize) {
+    if (!Camera.isReady) return;
+
     final camera = Camera.main;
     final Rect screenRect;
 
-    if (camera != null && camera.gameObject.active) {
+    if (camera.gameObject.active) {
       final tl = camera.screenToWorldPoint(Offset.zero, screenSize);
       final br = camera.screenToWorldPoint(
         Offset(screenSize.width, screenSize.height),
@@ -73,7 +75,7 @@ class Screen {
       screenRect = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
     }
 
-    for (final collider in CollisionTrigger.active) {
+    for (final collider in CollisionTrigger.activeColliders) {
       final bounds = collider.worldBounds;
       final overlapping = screenRect.overlaps(bounds);
 

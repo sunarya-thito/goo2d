@@ -71,17 +71,21 @@ abstract class GameObject implements BuildContext {
   set internalParentObject(GameObject? value);
 }
 
-mixin GameObjectMixin implements GameObject {
+abstract class GameObjectElement extends MultiChildRenderObjectElement
+    implements GameObject {
   final List<Component> _components = [];
   final List<GameObject> _childrenObjects = [];
   final List<CoroutineFuture> _runningCoroutines = [];
   GameObject? _parentObject;
 
-  @override
-  bool get active => true; // Default to true, subclasses can override
+  GameObjectElement(super.widget);
 
   @override
-  Object? get tag => null; // Default to null, subclasses can override
+  bool get active => mounted;
+
+  @override
+  Object? get tag =>
+      widget.key is GameTag ? (widget.key as GameTag).value : null;
 
   @override
   List<GameObject> get internalChildrenObjects => _childrenObjects;
@@ -173,7 +177,8 @@ mixin GameObjectMixin implements GameObject {
   T getComponent<T extends Component>() {
     final component = tryGetComponent<T>();
     if (component == null) {
-      throw StateError('GameObject "$this" does not have a component of type $T');
+      throw StateError(
+          'GameObject "$this" does not have a component of type $T');
     }
     return component;
   }
@@ -272,59 +277,10 @@ mixin GameObjectMixin implements GameObject {
       _runningCoroutines.clear();
     }
   }
-}
-
-class GameWidget extends MultiChildRenderObjectWidget {
-  static List<Component> _emptyComponents() {
-    return [];
-  }
-
-  final List<Component> Function() components;
-
-  const GameWidget({
-    super.key,
-    this.components = _emptyComponents,
-    super.children = const [],
-  });
-
-  @override
-  GameElement createElement() {
-    return GameElement(this);
-  }
-
-  @override
-  RenderObject createRenderObject(BuildContext context) {
-    return GameRenderObject(context as GameElement);
-  }
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    covariant RenderObject renderObject,
-  ) {
-    (renderObject as GameRenderObject).object = context as GameElement;
-  }
-}
-
-class GameElement extends MultiChildRenderObjectElement
-    with GameObjectMixin
-    implements GameObject {
-  GameElement(super.widget);
-
-  @override
-  Object? get tag =>
-      widget.key is GameTag ? (widget.key as GameTag).value : null;
-
-  @override
-  bool get active => mounted;
 
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    final components = (widget as GameWidget).components();
-    for (var component in components) {
-      addComponent(component);
-    }
     _attachToParent();
   }
 
@@ -369,6 +325,52 @@ class GameElement extends MultiChildRenderObjectElement
     return found;
   }
 }
+
+class GameWidget extends MultiChildRenderObjectWidget {
+  static List<Component> _emptyComponents() {
+    return [];
+  }
+
+  final List<Component> Function() components;
+
+  const GameWidget({
+    super.key,
+    this.components = _emptyComponents,
+    super.children = const [],
+  });
+
+  @override
+  GameElement createElement() {
+    return GameElement(this);
+  }
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return GameRenderObject(context as GameElement);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant RenderObject renderObject,
+  ) {
+    (renderObject as GameRenderObject).object = context as GameElement;
+  }
+}
+
+class GameElement extends GameObjectElement {
+  GameElement(super.widget);
+
+  @override
+  void mount(Element? parent, Object? newSlot) {
+    super.mount(parent, newSlot);
+    final components = (widget as GameWidget).components();
+    for (var component in components) {
+      addComponent(component);
+    }
+  }
+}
+
 
 class GameParentData extends ContainerBoxParentData<RenderBox> {}
 

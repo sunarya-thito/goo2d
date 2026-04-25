@@ -28,6 +28,11 @@ final childTag = GameTag('child');
 
 class _ExampleAppState extends State<ExampleApp> {
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GameScene(
       child: Stack(
@@ -86,9 +91,14 @@ class _ExampleAppState extends State<ExampleApp> {
   }
 }
 
-class CameraFollow extends Behavior with Tickable {
+class CameraFollow extends Behavior with Tickable, LifecycleListener {
   late GameTag targetTag;
   double smoothness = 5.0;
+
+  @override
+  void onMounted() {
+    Camera.main.backgroundColor = Colors.transparent;
+  }
 
   @override
   void onUpdate(double dt) {

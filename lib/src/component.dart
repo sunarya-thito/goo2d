@@ -22,7 +22,46 @@ abstract class Component {
   }
 
   T stateObject<T extends GameState>() {
-    return gameObject as T;
+    return gameObject.getComponent<T>();
+  }
+
+  Object? get tag => gameObject.tag;
+  bool get active => gameObject.active;
+  GameObject get rootObject => gameObject.rootObject;
+  GameObject? get parentObject => gameObject.parentObject;
+  Iterable<GameObject> get childrenObjects => gameObject.childrenObjects;
+  Iterable<Component> get components => gameObject.components;
+
+  void addComponent(
+    Component component, [
+    Component? a,
+    Component? b,
+    Component? c,
+    Component? d,
+    Component? e,
+    Component? f,
+    Component? g,
+    Component? h,
+    Component? i,
+    Component? j,
+  ]) {
+    gameObject.addComponent(component, a, b, c, d, e, f, g, h, i, j);
+  }
+
+  void removeComponent(
+    Component component, [
+    Component? a,
+    Component? b,
+    Component? c,
+    Component? d,
+    Component? e,
+    Component? f,
+    Component? g,
+    Component? h,
+    Component? i,
+    Component? j,
+  ]) {
+    gameObject.removeComponent(component, a, b, c, d, e, f, g, h, i, j);
   }
 
   void broadcastEvent(Event event) {

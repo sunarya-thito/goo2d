@@ -26,7 +26,7 @@ class MyGameObjectState extends GameState<MyGameObject> with PointerReceiver {
 
   @override
   void initState() {
-    print('MyGameObjectState initialized!');
+    super.initState();
     addComponent(
       ObjectTransform()..position = const Offset(50, 50),
       MyTestComponent(),
@@ -46,9 +46,9 @@ class MyGameObjectState extends GameState<MyGameObject> with PointerReceiver {
 
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    // Demonstrate that this GameState is also a BuildContext
-    final size = MediaQuery.of(this).size;
-    print('Screen size from GameState: $size');
+    // Demonstrate that this GameState provides access to BuildContext
+    final size = MediaQuery.of(context).size;
+    print('Screen size from GameState context: $size');
     if (test) {
       yield GameWidget(
         components: () => [
@@ -65,9 +65,10 @@ class MyTestComponent extends Behavior with LifecycleListener {
   @override
   void onMounted() {
     print('Component added to: ${gameObject.runtimeType}');
-    if (gameObject is MyGameObjectState) {
+    final state = gameObject.tryGetComponent<MyGameObjectState>();
+    if (state != null) {
       print(
-        'Successfully accessed GameState property: ${(gameObject as MyGameObjectState).test}',
+        'Successfully accessed GameState property: ${state.test}',
       );
     }
   }

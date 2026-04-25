@@ -3,18 +3,18 @@ import 'package:flutter/material.dart' show Colors;
 import 'package:goo2d/goo2d.dart';
 import 'package:vector_math/vector_math_64.dart' hide Colors;
 
-enum CameraClearFlags {
-  skybox,
-  solidColor,
-  depth,
-  nothing,
-}
+enum CameraClearFlags { skybox, solidColor, depth, nothing }
 
 class Camera extends Component with LifecycleListener {
   static Camera? _main;
 
   /// The first enabled camera tagged "MainCamera" (read only).
-  static Camera? get main => _main;
+  static Camera get main {
+    assert(_main != null, 'Camera is not ready');
+    return _main!;
+  }
+
+  static bool get isReady => _main != null;
 
   static final List<Camera> _allCameras = [];
 
@@ -119,10 +119,10 @@ class Camera extends Component with LifecycleListener {
     // In Unity 2D, (0,0) is center, and Y is up.
     // Let's assume Unity-like: Y is up, (0,0) is world origin.
     // Screen (0,0) is top-left.
-    
+
     final x = (screenVec.x + 1) / 2 * screenSize.width;
     final y = (1 - screenVec.y) / 2 * screenSize.height;
-    
+
     return Offset(x, y);
   }
 

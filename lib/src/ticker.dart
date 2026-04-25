@@ -139,7 +139,9 @@ class RenderGameTicker extends RenderProxyBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    final cameras = Camera.allCameras.where((c) => c.gameObject.active).toList();
+    final cameras = Camera.allCameras
+        .where((c) => c.gameObject.active)
+        .toList();
 
     if (cameras.isEmpty) {
       super.paint(context, offset);
@@ -162,7 +164,12 @@ class RenderGameTicker extends RenderProxyBox {
 
       // We need a matrix that maps [-1, 1] to [0, width] and [0, height]
       final viewportMatrix = Matrix4.identity()
-        ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
+        ..translateByDouble(
+          screenSize.width / 2,
+          screenSize.height / 2,
+          0.0,
+          1.0,
+        )
         ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
 
       final fullCameraMatrix = viewportMatrix * projMatrix * viewMatrix;
@@ -179,25 +186,37 @@ class RenderGameTicker extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    final camera = Camera.main;
-    if (camera != null && camera.gameObject.active) {
-      final screenSize = size;
-      final viewMatrix = camera.worldToCameraMatrix;
-      final projMatrix = camera.projectionMatrix(screenSize);
+    if (Camera.isReady) {
+      final camera = Camera.main;
+      if (camera.gameObject.active) {
+        final screenSize = size;
+        final viewMatrix = camera.worldToCameraMatrix;
+        final projMatrix = camera.projectionMatrix(screenSize);
 
-      final viewportMatrix = Matrix4.identity()
-        ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
-        ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
+        final viewportMatrix = Matrix4.identity()
+          ..translateByDouble(
+            screenSize.width / 2,
+            screenSize.height / 2,
+            0.0,
+            1.0,
+          )
+          ..scaleByDouble(
+            screenSize.width / 2,
+            -screenSize.height / 2,
+            1.0,
+            1.0,
+          );
 
-      final fullCameraMatrix = viewportMatrix * projMatrix * viewMatrix;
+        final fullCameraMatrix = viewportMatrix * projMatrix * viewMatrix;
 
-      return result.addWithPaintTransform(
-        transform: fullCameraMatrix,
-        position: position,
-        hitTest: (result, transformedPosition) {
-          return super.hitTestChildren(result, position: transformedPosition);
-        },
-      );
+        return result.addWithPaintTransform(
+          transform: fullCameraMatrix,
+          position: position,
+          hitTest: (result, transformedPosition) {
+            return super.hitTestChildren(result, position: transformedPosition);
+          },
+        );
+      }
     }
 
     return super.hitTest(result, position: position);

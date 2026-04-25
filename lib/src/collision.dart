@@ -51,7 +51,7 @@ abstract class CollisionTrigger extends Component with LifecycleListener {
   /// All active colliders. Maintained incrementally via mount/unmount.
   static final List<CollisionTrigger> _active = [];
 
-  static Iterable<CollisionTrigger> get active => _active;
+  static Iterable<CollisionTrigger> get activeColliders => _active;
 
   bool _wasOverlappingScreen = false;
   bool _wasFullyInsideScreen = false;
