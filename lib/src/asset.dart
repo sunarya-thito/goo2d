@@ -13,19 +13,24 @@ mixin AssetEnum on Enum implements GameAsset {
   GameAsset register();
 
   /// The underlying [GameAsset] instance.
-  GameAsset get _asset => _registries.putIfAbsent(this, register);
+  GameAsset get asset => _registries.putIfAbsent(this, register);
+
+  @visibleForTesting
+  static void reset() {
+    _registries.clear();
+  }
 
   @override
-  Future<Uint8List> loadBytes() => _asset.loadBytes();
+  Future<Uint8List> loadBytes() => asset.loadBytes();
 
   @override
-  Future<void> load() => _asset.load();
+  Future<void> load() => asset.load();
 
   @override
-  String get assetName => _asset.assetName;
+  String get assetName => asset.assetName;
 
   @override
-  void unload() => _asset.unload();
+  void unload() => asset.unload();
 }
 
 /// A mixin for [AssetEnum] that represents a local sprite asset.
@@ -37,7 +42,7 @@ mixin LocalGameSpriteEnum on AssetEnum implements LocalGameSprite {
   @override
   GameAsset register() => GameSprite.local(path);
 
-  LocalGameSprite get _instance => _asset as LocalGameSprite;
+  LocalGameSprite get _instance => asset as LocalGameSprite;
 
   @override
   ui.Image get image => _instance.image;
@@ -64,7 +69,7 @@ mixin NetworkGameSpriteEnum on AssetEnum implements NetworkGameSprite {
   @override
   GameAsset register() => GameSprite.network(uri);
 
-  NetworkGameSprite get _instance => _asset as NetworkGameSprite;
+  NetworkGameSprite get _instance => asset as NetworkGameSprite;
 
   @override
   String get assetName => _instance.assetName;
@@ -91,7 +96,7 @@ mixin LocalGameAudioEnum on AssetEnum implements LocalGameAudio {
   @override
   GameAsset register() => GameAudio.local(path);
 
-  LocalGameAudio get _instance => _asset as LocalGameAudio;
+  LocalGameAudio get _instance => asset as LocalGameAudio;
 
   @override
   String get assetName => _instance.assetName;
@@ -118,7 +123,7 @@ mixin NetworkGameAudioEnum on AssetEnum implements NetworkGameAudio {
   @override
   GameAsset register() => GameAudio.network(uri);
 
-  NetworkGameAudio get _instance => _asset as NetworkGameAudio;
+  NetworkGameAudio get _instance => asset as NetworkGameAudio;
 
   @override
   String get assetName => _instance.assetName;

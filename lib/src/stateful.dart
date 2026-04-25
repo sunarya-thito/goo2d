@@ -1,9 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:goo2d/goo2d.dart';
 
-abstract class StatefulGameWidget extends MultiChildRenderObjectWidget {
-  const StatefulGameWidget({super.key}) : super(children: const []);
+abstract class StatefulGameWidget extends RenderObjectWidget {
+  const StatefulGameWidget({super.key});
 
   @override
   StatefulGameElement createElement() => StatefulGameElement(this);
@@ -24,12 +23,31 @@ abstract class StatefulGameWidget extends MultiChildRenderObjectWidget {
 abstract class GameState<T extends StatefulGameWidget> extends Component {
   late StatefulGameElement _element;
 
+  final List<InputAction> _trackedInputActions = [];
+
   @override
   GameObject get gameObject => _element;
 
   T get widget => _element.widget as T;
 
   BuildContext get context => _element;
+
+  InputAction createInputAction({
+    required String name,
+    InputActionType type = InputActionType.value,
+    List<InputBinding> bindings = const [],
+    bool enable = true,
+  }) {
+    final action = InputAction(
+      game: game,
+      name: name,
+      type: type,
+      bindings: bindings,
+    );
+    _trackedInputActions.add(action);
+    if (enable) action.enable();
+    return action;
+  }
 
   void setState(VoidCallback fn) {
     fn();
@@ -46,9 +64,14 @@ abstract class GameState<T extends StatefulGameWidget> extends Component {
   void didChangeDependencies() {}
 
   @mustCallSuper
-  void dispose() {}
+  void dispose() {
+    for (var action in _trackedInputActions) {
+      action.dispose();
+    }
+    _trackedInputActions.clear();
+  }
 
-  Iterable<Widget> build(BuildContext context);
+  Iterable<Widget> build(BuildContext context) => const [];
 }
 
 class StatefulGameElement extends GameObjectElement {
@@ -65,12 +88,11 @@ class StatefulGameElement extends GameObjectElement {
     addComponent(state);
     state.initState();
 
-    // Trigger initial build of state children
     _rebuild();
   }
 
   @override
-  void update(MultiChildRenderObjectWidget newWidget) {
+  void update(StatefulGameWidget newWidget) {
     final oldWidget = widget as StatefulGameWidget;
     super.update(newWidget);
     state.didUpdateWidget(oldWidget);
@@ -89,8 +111,6 @@ class StatefulGameElement extends GameObjectElement {
     super.unmount();
   }
 
-  List<Element> _children = [];
-
   @override
   void performRebuild() {
     // Satisfy must_call_super to ensure updateRenderObject is called
@@ -100,6 +120,6 @@ class StatefulGameElement extends GameObjectElement {
 
   void _rebuild() {
     final widgets = state.build(this).toList();
-    _children = updateChildren(_children, widgets);
+    updateChildElements(widgets);
   }
 }

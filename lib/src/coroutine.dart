@@ -59,7 +59,7 @@ class CoroutineFuture implements Future<void> {
 }
 
 abstract class YieldInstruction {
-  Future<void> wait();
+  Future<void> wait(GameEngine game);
 }
 
 class WaitForSeconds extends YieldInstruction {
@@ -68,15 +68,15 @@ class WaitForSeconds extends YieldInstruction {
   WaitForSeconds(this.seconds);
 
   @override
-  Future<void> wait() async {
+  Future<void> wait(GameEngine game) async {
     await Future.delayed(Duration(milliseconds: (seconds * 1000).toInt()));
   }
 }
 
 class WaitForEndOfFrame extends YieldInstruction {
   @override
-  Future<void> wait() async {
-    await GameTicker.nextFrame;
+  Future<void> wait(GameEngine game) async {
+    await game.ticker.nextFrame;
   }
 }
 
@@ -86,9 +86,9 @@ class WaitUntil extends YieldInstruction {
   WaitUntil(this.predicate);
 
   @override
-  Future<void> wait() async {
+  Future<void> wait(GameEngine game) async {
     while (!predicate()) {
-      await GameTicker.nextFrame;
+      await game.ticker.nextFrame;
     }
   }
 }
@@ -99,37 +99,52 @@ class WaitWhile extends YieldInstruction {
   WaitWhile(this.predicate);
 
   @override
-  Future<void> wait() async {
+  Future<void> wait(GameEngine game) async {
     while (predicate()) {
-      await GameTicker.nextFrame;
+      await game.ticker.nextFrame;
     }
   }
 }
 
 @internal
 extension CoroutineInternal on GameObject {
-  void setupCoroutine(CoroutineFuture result, Stream yields, List<CoroutineFuture> runningCoroutines) {
+  void setupCoroutine(
+    CoroutineFuture result,
+    Stream yields,
+    List<CoroutineFuture> runningCoroutines,
+  ) {
+    final g = game;
     result.delegate = Future(() async {
       runningCoroutines.add(result);
       await runZoned(() async {
-        await for (final instruction in yields) {
-          if (!runningCoroutines.contains(result)) break;
+        Future<void> processYields(Stream stream) async {
+          await for (final instruction in stream) {
+            if (!runningCoroutines.contains(result)) break;
 
-          switch (instruction) {
-            case YieldInstruction():
-              await instruction.wait();
-              break;
-            case Future():
-              await instruction;
-              break;
-            case Stream():
-              await for (final _ in instruction) {}
-              break;
-            case null:
-              await GameTicker.nextFrame;
-              break;
+            switch (instruction) {
+              case YieldInstruction():
+                await instruction.wait(g);
+                break;
+              case Future():
+                await instruction;
+                break;
+              case Stream():
+                await processYields(instruction);
+                break;
+              case null:
+                try {
+                  await g.ticker.nextFrame;
+                } catch (_) {
+                  // Engine disposed
+                  return;
+                }
+                break;
+            }
+            if (!runningCoroutines.contains(result)) break;
           }
         }
+
+        await processYields(yields);
       }, zoneValues: {_currentCoroutineKey: result});
       runningCoroutines.remove(result);
     });

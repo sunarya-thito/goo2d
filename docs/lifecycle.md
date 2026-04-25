@@ -22,6 +22,33 @@ class MyComponent extends Component with LifecycleListener {
 }
 ```
 
+### GameState Lifecycle
+
+Since `GameState` is also a `Component`, it supports `LifecycleListener`. However, it also provides specific hooks that mirror Flutter's `State` lifecycle:
+
+- `initState()`: Called once when the state is created and mounted. Always call `super.initState()`.
+- `didUpdateWidget(T oldWidget)`: Called when the parent widget is rebuilt with new configuration.
+- `didChangeDependencies()`: Called when an `InheritedWidget` this state depends on changes.
+- `dispose()`: Called when the state is removed permanently. Always call `super.dispose()`.
+- `build(BuildContext context)`: Optional. Override this to yield child `GameObject` widgets.
+
+```dart
+class MyState extends GameState<MyWidget> {
+  @override
+  void initState() {
+    super.initState();
+    // Add components here
+    addComponent(MyComponent());
+  }
+  
+  @override
+  void dispose() {
+    // Cleanup logic
+    super.dispose();
+  }
+}
+```
+
 ## Ticking (The Game Loop)
 
 Goo2D drives logic using a continuous game loop provided by `GameTicker`. Once per frame, `GameTicker` calculates the delta time (`dt`) in seconds and broadcasts various events in a specific order:

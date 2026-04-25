@@ -55,16 +55,34 @@ class OuterScreenExitEvent extends Event<OuterScreenCollidable> {
   }
 }
 
-class Screen {
+class ScreenSystem implements GameSystem {
+  GameEngine? _game;
+  @override
+  GameEngine get game {
+    assert(_game != null, 'ScreenSystem: game is not ready. Did you call initialize()?');
+    return _game!;
+  }
+  @override
+  bool get gameAttached => _game != null;
+
+  ScreenSystem();
+
+  @override
+  void attach(GameEngine game) {
+    _game = game;
+  }
+ 
+  @override
+  void dispose() {}
+
+
   /// Checks all active colliders against the screen bounds and dispatches events.
   /// This should be called once per frame, usually after movement logic.
-  static void update(Size screenSize) {
-    if (!Camera.isReady) return;
-
-    final camera = Camera.main;
+  void update(Size screenSize) {
     final Rect screenRect;
 
-    if (camera.gameObject.active) {
+    if (game.cameras.isReady) {
+      final camera = game.cameras.main;
       final tl = camera.screenToWorldPoint(Offset.zero, screenSize);
       final br = camera.screenToWorldPoint(
         Offset(screenSize.width, screenSize.height),
@@ -75,7 +93,7 @@ class Screen {
       screenRect = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
     }
 
-    for (final collider in CollisionTrigger.activeColliders) {
+    for (final collider in game.collision.activeColliders) {
       final bounds = collider.worldBounds;
       final overlapping = screenRect.overlaps(bounds);
 

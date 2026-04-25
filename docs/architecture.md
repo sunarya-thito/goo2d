@@ -6,8 +6,8 @@ Goo2D is built on a strict Entity-Component-System (ECS) architecture, heavily i
 
 Everything in your game is either a `GameObject` or a `Component`. 
 
-- **`GameObject`**: A container. It has a parent, children, and a list of components. In Goo2D, both `GameElement` (created by `GameWidget`) and `GameState` (created by `StatefulGameWidget`) act as `GameObject`s.
-- **`Component`**: A piece of logic or data attached to a `GameObject`. Components can access their owning `GameObject` via the `gameObject` property.
+- **`GameObject`**: A container. It has a parent, children, and a list of components. In Goo2D, `GameElement` (created by `GameWidget`) and `StatefulGameElement` (created by `StatefulGameWidget`) act as `GameObject`s.
+- **`Component`**: A piece of logic or data attached to a `GameObject`. Components can access their owning `GameObject` via the `gameObject` property. In Goo2D, your `GameState` is also a `Component`.
 
 You can query components attached to a GameObject using:
 - `getComponent<T>()` / `tryGetComponent<T>()`
@@ -21,7 +21,7 @@ Goo2D bridges the gap between ECS and Flutter by making `GameObject`s double as 
 
 - **`GameRenderObject`**: A custom `RenderBox` that intercepts Flutter's painting and hit-testing phases. It applies coordinate transforms and dispatches raw `PointerEvent`s to the `GameObject`'s event system.
 - **`GameWidget`**: A stateless widget that creates a `GameElement`. It takes a list of `Component`s.
-- **`StatefulGameWidget`**: A stateful widget where the `GameState` itself *is* the `GameObject`.
+- **`StatefulGameWidget`**: A stateful widget that creates a `StatefulGameElement` (the `GameObject`) and a `GameState` (a `Component` attached to it).
 
 ## The Transform Hierarchy
 
@@ -42,7 +42,7 @@ The transform calculates a `localMatrix` and a `worldMatrix`. The `GameRenderObj
 
 Goo2D uses a robust event broadcasting system. Events are dispatched to a `GameObject`, which then propagates the event to any `Component`s that implement the required listener mixin.
 
-Because `GameState` implements `GameObject`, **you can apply these mixins directly to your `GameState`** to avoid creating a separate `Component` class just to listen to an event.
+Because `GameState` implements `Component`, **you can apply these mixins directly to your `GameState`** to listen to events directly without needing extra components.
 
 Here are the built-in mixins:
 

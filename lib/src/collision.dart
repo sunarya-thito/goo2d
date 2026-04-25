@@ -1,10 +1,6 @@
 import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
 
-// -----------------------------------------------------------------------------
-// Collision events
-// -----------------------------------------------------------------------------
-
 mixin Collidable implements EventListener {
   void onCollision(CollisionEvent collision);
 }
@@ -21,10 +17,6 @@ class CollisionEvent extends Event<Collidable> {
     listener.onCollision(this);
   }
 }
-
-// -----------------------------------------------------------------------------
-// CollisionTrigger base
-// -----------------------------------------------------------------------------
 
 abstract class CollisionTrigger extends Component with LifecycleListener {
   /// The transform of the game object, or `null` if none is attached.
@@ -44,26 +36,41 @@ abstract class CollisionTrigger extends Component with LifecycleListener {
   /// Whether the collider contains a point in local space.
   bool contains(Offset localPoint);
 
-  // ---------------------------------------------------------------------------
-  // Self-registration — colliders register on mount, no collection needed
-  // ---------------------------------------------------------------------------
+  /// Whether this collider interacts with another.
+  /// Broad-phase (AABB) is already checked before this is called.
+  bool collidesWith(CollisionTrigger other) {
+    // If either is an oval, do circle-based distance check (narrow phase)
+    if (this is OvalCollisionTrigger && other is OvalCollisionTrigger) {
+      final a = this as OvalCollisionTrigger;
+      final b = other;
+      final centerA = a.transform?.localToWorld(a.center) ?? a.center;
+      final centerB = b.transform?.localToWorld(b.center) ?? b.center;
+      final dx = centerA.dx - centerB.dx;
+      final dy = centerA.dy - centerB.dy;
+      final distSq = dx * dx + dy * dy;
 
-  /// All active colliders. Maintained incrementally via mount/unmount.
-  static final List<CollisionTrigger> _active = [];
+      // Approximate as circles using max radius
+      final rA = a.radiusX > a.radiusY ? a.radiusX : a.radiusY;
+      final rB = b.radiusX > b.radiusY ? b.radiusX : b.radiusY;
+      final rSum = rA + rB;
+      return distSq <= rSum * rSum;
+    }
 
-  static Iterable<CollisionTrigger> get activeColliders => _active;
+    // Default to AABB (already checked by caller, but for completeness)
+    return true;
+  }
 
   bool _wasOverlappingScreen = false;
   bool _wasFullyInsideScreen = false;
 
   @override
   void onMounted() {
-    _active.add(this);
+    game.collision.register(this);
   }
 
   @override
   void onUnmounted() {
-    _active.remove(this);
+    game.collision.unregister(this);
   }
 
   // ---------------------------------------------------------------------------
@@ -89,58 +96,6 @@ abstract class CollisionTrigger extends Component with LifecycleListener {
   }
 
   Rect _calculateWorldBounds(ObjectTransform transform);
-
-  // ---------------------------------------------------------------------------
-  // Collision detection — sweep-and-prune, zero per-frame allocation
-  // ---------------------------------------------------------------------------
-
-  /// Runs collision detection across all active colliders.
-  /// Called by the tick pipeline each frame.
-  static void runCollisionPass() {
-    final n = _active.length;
-    if (n < 2) return;
-
-    // Insertion sort by worldBounds.left — O(n) for nearly-sorted data
-    // (positions change only slightly frame-to-frame).
-    for (int i = 1; i < n; i++) {
-      final key = _active[i];
-      final keyLeft = key.worldBounds.left;
-      int j = i - 1;
-      while (j >= 0 && _active[j].worldBounds.left > keyLeft) {
-        _active[j + 1] = _active[j];
-        j--;
-      }
-      _active[j + 1] = key;
-    }
-
-    // Sweep-and-prune on X axis.
-    for (int i = 0; i < n; i++) {
-      final a = _active[i];
-      final aBounds = a.worldBounds;
-
-      for (int j = i + 1; j < n; j++) {
-        final b = _active[j];
-        final bBounds = b.worldBounds;
-
-        // Prune: b's left edge is past a's right edge → no more overlaps for a.
-        if (bBounds.left > aBounds.right) break;
-
-        // Layer filter
-        if (a.layerMask & b.layerMask == 0) continue;
-
-        // Y overlap check (X overlap guaranteed by sweep)
-        if (aBounds.bottom <= bBounds.top || bBounds.bottom <= aBounds.top) {
-          continue;
-        }
-
-        final intersection = aBounds.intersect(bBounds);
-        if (!intersection.isEmpty) {
-          a.broadcastEvent(CollisionEvent(a, b, intersection));
-          b.broadcastEvent(CollisionEvent(b, a, intersection));
-        }
-      }
-    }
-  }
 }
 
 // -----------------------------------------------------------------------------

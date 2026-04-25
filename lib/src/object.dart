@@ -13,7 +13,8 @@ class GameTag extends GlobalObjectKey {
 }
 
 abstract class GameObject implements BuildContext {
-  Object? get tag;
+  GameEngine get game;
+  GameTag? get tag;
   bool get active;
   GameObject get rootObject;
   GameObject? get parentObject;
@@ -71,21 +72,31 @@ abstract class GameObject implements BuildContext {
   set internalParentObject(GameObject? value);
 }
 
-abstract class GameObjectElement extends MultiChildRenderObjectElement
+abstract class GameObjectElement extends RenderObjectElement
     implements GameObject {
   final List<Component> _components = [];
   final List<GameObject> _childrenObjects = [];
   final List<CoroutineFuture> _runningCoroutines = [];
   GameObject? _parentObject;
 
+  List<Element> _childElements = [];
+
   GameObjectElement(super.widget);
+
+  @override
+  GameEngine get game {
+    final parent = _parentObject;
+    if (parent == null) {
+      throw StateError('GameObject "$this" is not attached to a Game tree');
+    }
+    return parent.game;
+  }
 
   @override
   bool get active => mounted;
 
   @override
-  Object? get tag =>
-      widget.key is GameTag ? (widget.key as GameTag).value : null;
+  GameTag? get tag => widget.key is GameTag ? widget.key as GameTag : null;
 
   @override
   List<GameObject> get internalChildrenObjects => _childrenObjects;
@@ -178,7 +189,8 @@ abstract class GameObjectElement extends MultiChildRenderObjectElement
     final component = tryGetComponent<T>();
     if (component == null) {
       throw StateError(
-          'GameObject "$this" does not have a component of type $T');
+        'GameObject "$this" does not have a component of type $T',
+      );
     }
     return component;
   }
@@ -285,6 +297,54 @@ abstract class GameObjectElement extends MultiChildRenderObjectElement
   }
 
   @override
+  void visitChildren(ElementVisitor visitor) {
+    for (final child in _childElements) {
+      visitor(child);
+    }
+  }
+
+  @override
+  void forgetChild(Element child) {
+    _childElements.remove(child);
+    super.forgetChild(child);
+  }
+
+  @protected
+  void updateChildElements(List<Widget> newWidgets) {
+    _childElements = updateChildren(_childElements, newWidgets);
+  }
+
+  @override
+  void insertRenderObjectChild(RenderObject child, Object? slot) {
+    final renderObject = this.renderObject as GameRenderObject;
+    final Element? afterElement = (slot as IndexedSlot<Element?>?)?.value;
+    renderObject.insert(
+      child as RenderBox,
+      after: afterElement?.renderObject as RenderBox?,
+    );
+  }
+
+  @override
+  void moveRenderObjectChild(
+    RenderObject child,
+    Object? oldSlot,
+    Object? newSlot,
+  ) {
+    final renderObject = this.renderObject as GameRenderObject;
+    final Element? afterElement = (newSlot as IndexedSlot<Element?>?)?.value;
+    renderObject.move(
+      child as RenderBox,
+      after: afterElement?.renderObject as RenderBox?,
+    );
+  }
+
+  @override
+  void removeRenderObjectChild(RenderObject child, Object? slot) {
+    final renderObject = this.renderObject as GameRenderObject;
+    renderObject.remove(child as RenderBox);
+  }
+
+  @override
   void activate() {
     super.activate();
     _attachToParent();
@@ -298,6 +358,7 @@ abstract class GameObjectElement extends MultiChildRenderObjectElement
 
   @override
   void unmount() {
+    stopAllCoroutines();
     super.unmount();
     const UnmountedEvent().dispatchTo(this);
   }
@@ -326,17 +387,20 @@ abstract class GameObjectElement extends MultiChildRenderObjectElement
   }
 }
 
-class GameWidget extends MultiChildRenderObjectWidget {
+class GameWidget extends RenderObjectWidget {
   static List<Component> _emptyComponents() {
     return [];
   }
 
-  final List<Component> Function() components;
+  final List<Widget> children;
+  final Iterable<Component> Function() components;
+  final GameEngine? game;
 
   const GameWidget({
     super.key,
+    this.children = const [],
     this.components = _emptyComponents,
-    super.children = const [],
+    this.game,
   });
 
   @override
@@ -359,18 +423,42 @@ class GameWidget extends MultiChildRenderObjectWidget {
 }
 
 class GameElement extends GameObjectElement {
-  GameElement(super.widget);
+  late final GameEngine _game;
+
+  GameElement(GameWidget super.widget);
+
+  @override
+  GameEngine get game => _game;
+
+  @override
+  GameWidget get widget => super.widget as GameWidget;
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    _game =
+        widget.game ??
+        parent?.dependOnInheritedWidgetOfExactType<GameProvider>()?.game ??
+        GameEngine();
     super.mount(parent, newSlot);
-    final components = (widget as GameWidget).components();
+    final components = widget.components();
     for (var component in components) {
       addComponent(component);
     }
+    updateChildElements(widget.children);
+  }
+
+  @override
+  void update(GameWidget newWidget) {
+    super.update(newWidget);
+    updateChildElements(newWidget.children);
+  }
+
+  @override
+  void unmount() {
+    _game.dispose();
+    super.unmount();
   }
 }
-
 
 class GameParentData extends ContainerBoxParentData<RenderBox> {}
 
@@ -518,15 +606,5 @@ class GameRenderObject extends RenderBox
     } else if (event is PointerHoverEvent) {
       object.broadcastEvent(GamePointerHoverEvent(event));
     }
-  }
-}
-
-class GameScene extends StatelessWidget {
-  final Widget child;
-  const GameScene({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(child: GameTicker(child: child));
   }
 }

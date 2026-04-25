@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:vector_math/vector_math_64.dart' show Vector2;
 
 part 'keyboard.dart';
 
@@ -38,47 +37,69 @@ class InputEvent {
   void dispose() => _listeners.clear();
 }
 
-class InputSystem {
-  static final KeyboardDevice _keyboardDevice = KeyboardDevice();
-  static bool _initialized = false;
-  static final List<InputAction> _actions = [];
-  static int dynamicUpdateCount = 0;
+class InputSystem implements GameSystem {
+  KeyboardState? _keyboard;
+  KeyboardState get keyboard {
+    assert(
+      _keyboard != null,
+      'KeyboardState is not ready. Did you call initialize() on GameEngine?',
+    );
+    return _keyboard!;
+  }
+
+  final List<InputAction> _actions = [];
+  int dynamicUpdateCount = 0;
+
+  GameEngine? _game;
+  @override
+  GameEngine get game {
+    assert(_game != null, 'InputSystem is not attached to a GameEngine');
+    return _game!;
+  }
+
+  @override
+  bool get gameAttached => _game != null;
 
   static final Map<Type, Object Function()> _defaultValues = {
     bool: () => false,
     double: () => 0.0,
-    Vector2: () => Vector2.zero(),
+    Offset: () => Offset.zero,
   };
+
+  InputSystem();
+
+  @override
+  void attach(GameEngine game) {
+    _game = game;
+    _keyboard = KeyboardState(game);
+  }
 
   static void registerDefaultValue<T extends Object>(T Function() provider) =>
       _defaultValues[T] = provider;
+
   static T getDefaultValue<T>() {
     final provider = _defaultValues[T];
     if (provider == null) throw UnimplementedError('No default value for $T');
     return provider() as T;
   }
 
-  static void init() {
-    if (_initialized) return;
-    _initialized = true;
-    ServicesBinding.instance.keyboard.addHandler((event) {
-      if (event is KeyDownEvent) {
-        _keyboardDevice[event.logicalKey].press();
-      } else if (event is KeyUpEvent) {
-        _keyboardDevice[event.logicalKey].release();
-      }
-      return false;
-    });
-  }
+  void _registerAction(InputAction action) => _actions.add(action);
+  void _unregisterAction(InputAction action) => _actions.remove(action);
 
-  static void _registerAction(InputAction action) => _actions.add(action);
-  static void _unregisterAction(InputAction action) => _actions.remove(action);
-
-  static void update() {
+  void update() {
     dynamicUpdateCount++;
     for (var action in _actions) {
       if (action.enabled) action._updatePhase();
     }
+  }
+
+  @override
+  void dispose() {
+    _keyboard?.dispose();
+    for (var action in List<InputAction>.from(_actions)) {
+      action.dispose();
+    }
+    _actions.clear();
   }
 }
 
@@ -89,10 +110,16 @@ abstract class InputControl<T> {
   int lastFrameReleased = -1;
   int lastUpdateReleased = -1;
   bool get isPressed;
+  bool get wasPressedThisFrame;
+  bool get wasReleasedThisFrame;
 }
 
 class ButtonControl extends InputControl<bool> {
+  final GameEngine game;
   bool _isPressed = false;
+
+  ButtonControl(this.game);
+
   @override
   bool get value => _isPressed;
   @override
@@ -100,24 +127,63 @@ class ButtonControl extends InputControl<bool> {
   @override
   double get magnitude => _isPressed ? 1.0 : 0.0;
 
+  @override
+  bool get wasPressedThisFrame => lastFramePressed == game.ticker.frameCount;
+  @override
+  bool get wasReleasedThisFrame => lastFrameReleased == game.ticker.frameCount;
+
   void press() {
-    if (!_isPressed) lastFramePressed = frameCount;
+    if (!_isPressed) lastFramePressed = game.ticker.frameCount;
     _isPressed = true;
   }
 
   void release() {
     if (_isPressed) {
-      lastFrameReleased = frameCount;
-      lastUpdateReleased = InputSystem.dynamicUpdateCount;
+      lastFrameReleased = game.ticker.frameCount;
+      lastUpdateReleased = game.input.dynamicUpdateCount;
     }
     _isPressed = false;
   }
 }
 
-class KeyboardDevice {
+class KeyboardState {
+  final GameEngine game;
   final Map<LogicalKeyboardKey, ButtonControl> _keys = {};
+
+  KeyboardState(this.game) {
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
   ButtonControl operator [](LogicalKeyboardKey key) =>
-      _keys.putIfAbsent(key, () => ButtonControl());
+      _keys.putIfAbsent(key, () => ButtonControl(game));
+
+  bool _handleKeyEvent(KeyEvent event) {
+    final key = event.logicalKey;
+    final control = this[key];
+    if (event is KeyDownEvent) {
+      control.press();
+    } else if (event is KeyUpEvent) {
+      control.release();
+    }
+    return false;
+  }
+
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+  }
+
+  // Helper properties for common keys
+  ButtonControl get space => this[LogicalKeyboardKey.space];
+  ButtonControl get enter => this[LogicalKeyboardKey.enter];
+  ButtonControl get escape => this[LogicalKeyboardKey.escape];
+  ButtonControl get left => this[LogicalKeyboardKey.arrowLeft];
+  ButtonControl get right => this[LogicalKeyboardKey.arrowRight];
+  ButtonControl get up => this[LogicalKeyboardKey.arrowUp];
+  ButtonControl get down => this[LogicalKeyboardKey.arrowDown];
+  ButtonControl get keyA => this[LogicalKeyboardKey.keyA];
+  ButtonControl get keyD => this[LogicalKeyboardKey.keyD];
+  ButtonControl get keyS => this[LogicalKeyboardKey.keyS];
+  ButtonControl get keyW => this[LogicalKeyboardKey.keyW];
 }
 
 abstract class InputBinding {
@@ -129,7 +195,6 @@ abstract class InputBinding {
   bool get wasReleasedThisFrame;
   bool get wasReleasedThisDynamicUpdate;
 
-  // Polymorphic cast to avoid 'is T' checks in the core loop
   T? asValue<T>() {
     final val = read();
     try {
@@ -145,7 +210,7 @@ abstract class InputBinding {
     required ButtonControl down,
     required ButtonControl left,
     required ButtonControl right,
-  }) = Vector2CompositeBinding;
+  }) = CompositeBinding;
 }
 
 class SimpleInputBinding extends InputBinding {
@@ -161,15 +226,22 @@ class SimpleInputBinding extends InputBinding {
   @override
   InputControl? get activeControl => isPressed ? control : null;
   @override
-  bool get wasReleasedThisFrame => control.lastFrameReleased == frameCount;
+  bool get wasReleasedThisFrame =>
+      control.lastFrameReleased ==
+      (control is ButtonControl
+          ? (control as ButtonControl).game.ticker.frameCount
+          : -1);
   @override
   bool get wasReleasedThisDynamicUpdate =>
-      control.lastUpdateReleased == InputSystem.dynamicUpdateCount;
+      control.lastUpdateReleased ==
+      (control is ButtonControl
+          ? (control as ButtonControl).game.input.dynamicUpdateCount
+          : -1);
 }
 
-class Vector2CompositeBinding extends InputBinding {
+class CompositeBinding extends InputBinding {
   final ButtonControl up, down, left, right;
-  Vector2CompositeBinding({
+  CompositeBinding({
     required this.up,
     required this.down,
     required this.left,
@@ -183,11 +255,11 @@ class Vector2CompositeBinding extends InputBinding {
     if (down.isPressed) y -= 1;
     if (left.isPressed) x -= 1;
     if (right.isPressed) x += 1;
-    return Vector2(x, y);
+    return Offset(x, y);
   }
 
   @override
-  double get magnitude => (read() as Vector2).length;
+  double get magnitude => (read() as Offset).distance;
   @override
   bool get isPressed => magnitude > 0;
   @override
@@ -201,19 +273,20 @@ class Vector2CompositeBinding extends InputBinding {
 
   @override
   bool get wasReleasedThisFrame =>
-      up.lastFrameReleased == frameCount ||
-      down.lastFrameReleased == frameCount ||
-      left.lastFrameReleased == frameCount ||
-      right.lastFrameReleased == frameCount;
+      up.lastFrameReleased == up.game.ticker.frameCount ||
+      down.lastFrameReleased == down.game.ticker.frameCount ||
+      left.lastFrameReleased == left.game.ticker.frameCount ||
+      right.lastFrameReleased == right.game.ticker.frameCount;
   @override
   bool get wasReleasedThisDynamicUpdate =>
-      up.lastUpdateReleased == InputSystem.dynamicUpdateCount ||
-      down.lastUpdateReleased == InputSystem.dynamicUpdateCount ||
-      left.lastUpdateReleased == InputSystem.dynamicUpdateCount ||
-      right.lastUpdateReleased == InputSystem.dynamicUpdateCount;
+      up.lastUpdateReleased == up.game.input.dynamicUpdateCount ||
+      down.lastUpdateReleased == down.game.input.dynamicUpdateCount ||
+      left.lastUpdateReleased == left.game.input.dynamicUpdateCount ||
+      right.lastUpdateReleased == right.game.input.dynamicUpdateCount;
 }
 
 class InputAction {
+  final GameEngine game;
   final String name;
   final InputActionType type;
   final List<InputBinding> bindings;
@@ -242,11 +315,12 @@ class InputAction {
   set canceled(InputEvent value) {}
 
   InputAction({
+    required this.game,
     required this.name,
     this.type = InputActionType.button,
     this.bindings = const [],
   }) {
-    InputSystem._registerAction(this);
+    game.input._registerAction(this);
   }
 
   InputActionPhase get phase => _phase;
@@ -257,9 +331,11 @@ class InputAction {
       _phase == InputActionPhase.performed;
   InputControl? get activeControl => _activeControl;
 
-  bool get wasPressedThisFrame => _lastFrameStarted == frameCount;
-  bool get wasPerformedThisFrame => _lastFramePerformed == frameCount;
-  bool get wasCompletedThisFrame => _lastFrameCanceled == frameCount;
+  bool get wasPressedThisFrame => _lastFrameStarted == game.ticker.frameCount;
+  bool get wasPerformedThisFrame =>
+      _lastFramePerformed == game.ticker.frameCount;
+  bool get wasCompletedThisFrame =>
+      _lastFrameCanceled == game.ticker.frameCount;
   bool get wasReleasedThisFrame {
     for (var b in bindings) {
       if (b.wasReleasedThisFrame) return true;
@@ -268,11 +344,11 @@ class InputAction {
   }
 
   bool get wasPressedThisDynamicUpdate =>
-      _lastUpdateStarted == InputSystem.dynamicUpdateCount;
+      _lastUpdateStarted == game.input.dynamicUpdateCount;
   bool get wasPerformedThisDynamicUpdate =>
-      _lastUpdatePerformed == InputSystem.dynamicUpdateCount;
+      _lastUpdatePerformed == game.input.dynamicUpdateCount;
   bool get wasCompletedThisDynamicUpdate =>
-      _lastUpdateCanceled == InputSystem.dynamicUpdateCount;
+      _lastUpdateCanceled == game.input.dynamicUpdateCount;
   bool get wasReleasedThisDynamicUpdate {
     for (var b in bindings) {
       if (b.wasReleasedThisDynamicUpdate) return true;
@@ -316,8 +392,8 @@ class InputAction {
       }
     }
 
-    final updateCount = InputSystem.dynamicUpdateCount;
-    final currentFrame = frameCount;
+    final updateCount = game.input.dynamicUpdateCount;
+    final currentFrame = game.ticker.frameCount;
 
     if (_phase == InputActionPhase.waiting && currentlyPressed) {
       _phase = InputActionPhase.started;
@@ -358,7 +434,7 @@ class InputAction {
 
   void dispose() {
     disable();
-    InputSystem._unregisterAction(this);
+    game.input._unregisterAction(this);
     _started.dispose();
     _performed.dispose();
     _canceled.dispose();

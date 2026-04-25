@@ -1,25 +1,10 @@
-import 'dart:async';
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
 import 'package:goo2d/goo2d.dart';
 
-double _deltaTime = 0.0;
-
-/// The delta time of the current frame in seconds.
-double get deltaTime => _deltaTime;
-
-double _fixedDeltaTime = 0.02;
-
-/// The fixed delta time for the physics/fixed update loop in seconds. Defaults to 0.02 (50Hz).
-double get fixedDeltaTime => _fixedDeltaTime;
-set fixedDeltaTime(double value) => _fixedDeltaTime = value;
-
-int _frameCount = 0;
-
-/// The current frame count of the engine.
-int get frameCount => _frameCount;
+// Delta time and frame count are now managed by the Game instance.
 
 mixin Tickable implements EventListener {
   void onUpdate(double dt);
@@ -66,22 +51,37 @@ class LateTickEvent extends Event<LateTickable> {
   }
 }
 
-class GameTicker extends SingleChildRenderObjectWidget {
-  const GameTicker({super.key, required super.child});
+class GameTicker extends StatelessWidget {
+  final Widget child;
+  const GameTicker({super.key, required this.child});
 
-  static final _frameController = StreamController<void>.broadcast();
+  @override
+  Widget build(BuildContext context) {
+    return _InternalGameTicker(
+      game: GameProvider.of(context),
+      child: child,
+    );
+  }
+}
 
-  /// A future that completes when the next engine tick finishes.
-  static Future<void> get nextFrame => _frameController.stream.first;
+class _InternalGameTicker extends SingleChildRenderObjectWidget {
+  final GameEngine game;
+  const _InternalGameTicker({required this.game, required super.child});
 
   @override
   RenderGameTicker createRenderObject(BuildContext context) {
-    return RenderGameTicker();
+    return RenderGameTicker(game);
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, RenderGameTicker renderObject) {
+    renderObject.game = game;
   }
 }
 
 class RenderGameTicker extends RenderProxyBox {
-  RenderGameTicker();
+  GameEngine game;
+  RenderGameTicker(this.game);
 
   Ticker? _ticker;
   Duration _lastTick = Duration.zero;
@@ -90,7 +90,6 @@ class RenderGameTicker extends RenderProxyBox {
   @override
   void attach(PipelineOwner owner) {
     super.attach(owner);
-    InputSystem.init();
     _ticker = Ticker(_onTick);
     _ticker!.start();
   }
@@ -103,43 +102,44 @@ class RenderGameTicker extends RenderProxyBox {
   }
 
   void _onTick(Duration elapsed) {
-    _frameCount++;
-    InputSystem.update();
     final delta = elapsed - _lastTick;
-    _deltaTime = delta.inMicroseconds / 1000000.0;
+    final dt = delta.inMicroseconds / 1000000.0;
     _lastTick = elapsed;
 
-    _accumulator += _deltaTime;
+    game.ticker.update(dt);
+    game.input.update();
+
+    _accumulator += dt;
 
     // 1. Fixed Update Loop
-    while (_accumulator >= _fixedDeltaTime) {
-      _propagateFixedTick(this, _fixedDeltaTime);
-      _accumulator -= _fixedDeltaTime;
+    while (_accumulator >= game.ticker.fixedDeltaTime) {
+      _propagateFixedTick(this, game.ticker.fixedDeltaTime);
+      _accumulator -= game.ticker.fixedDeltaTime;
     }
 
     // 2. Dispatch tick events to all game objects
-    _propagateTick(this, _deltaTime);
+    _propagateTick(this, dt);
 
     // 3. Run screen boundary pass
     if (hasSize) {
-      Screen.update(size);
+      game.screen.update(size);
     }
 
     // 4. Run centralized collision detection
-    CollisionTrigger.runCollisionPass();
+    game.collision.runCollisionPass();
 
     // 5. Dispatch late tick events
-    _propagateLateTick(this, _deltaTime);
+    _propagateLateTick(this, dt);
 
     markNeedsPaint();
 
     // Signal completion of frame
-    GameTicker._frameController.add(null);
+    game.ticker.signalFrameComplete();
   }
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    final cameras = Camera.allCameras
+    final cameras = game.cameras.allCameras
         .where((c) => c.gameObject.active)
         .toList();
 
@@ -186,8 +186,8 @@ class RenderGameTicker extends RenderProxyBox {
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (Camera.isReady) {
-      final camera = Camera.main;
+    if (game.cameras.isReady) {
+      final camera = game.cameras.main;
       if (camera.gameObject.active) {
         final screenSize = size;
         final viewMatrix = camera.worldToCameraMatrix;

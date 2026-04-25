@@ -66,6 +66,7 @@ class Player extends StatefulGameWidget {
 class PlayerState extends GameState<Player> {
   @override
   void initState() {
+    super.initState();
     // We add two components here:
     // 1. ObjectTransform for spatial positioning.
     // 2. Our custom RectangleRenderer to draw it.
@@ -73,11 +74,6 @@ class PlayerState extends GameState<Player> {
       ObjectTransform()..position = const Offset(100, 100),
       RectangleRenderer()..color = Colors.red,
     );
-  }
-
-  @override
-  Iterable<Widget> build(BuildContext context) sync* {
-    // We don't have any child Flutter widgets to yield yet.
   }
 }
 ```

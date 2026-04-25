@@ -21,6 +21,11 @@ abstract class Component {
     return _gameObject!;
   }
 
+  GameEngine get game => gameObject.game;
+  KeyboardState get keyboard => game.input.keyboard;
+  double get deltaTime => game.ticker.deltaTime;
+  int get frameCount => game.ticker.frameCount;
+
   T stateObject<T extends GameState>() {
     return gameObject.getComponent<T>();
   }

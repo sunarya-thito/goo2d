@@ -1,3 +1,4 @@
+export 'src/game.dart';
 export 'src/event.dart';
 export 'src/component.dart' hide internalAttach;
 export 'src/object.dart';

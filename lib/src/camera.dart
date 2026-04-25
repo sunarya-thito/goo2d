@@ -6,21 +6,6 @@ import 'package:vector_math/vector_math_64.dart' hide Colors;
 enum CameraClearFlags { skybox, solidColor, depth, nothing }
 
 class Camera extends Component with LifecycleListener {
-  static Camera? _main;
-
-  /// The first enabled camera tagged "MainCamera" (read only).
-  static Camera get main {
-    assert(_main != null, 'Camera is not ready');
-    return _main!;
-  }
-
-  static bool get isReady => _main != null;
-
-  static final List<Camera> _allCameras = [];
-
-  /// Returns all enabled cameras in the scene.
-  static List<Camera> get allCameras => List.unmodifiable(_allCameras);
-
   /// The camera that is currently rendering (read only).
   static Camera? current;
 
@@ -28,7 +13,7 @@ class Camera extends Component with LifecycleListener {
   double orthographicSize = 10.0;
 
   /// The color with which the screen will be cleared.
-  Color backgroundColor = Colors.black;
+  Color backgroundColor = Colors.transparent;
 
   /// How the camera clears the background.
   CameraClearFlags clearFlags = CameraClearFlags.solidColor;
@@ -50,28 +35,12 @@ class Camera extends Component with LifecycleListener {
 
   @override
   void onMounted() {
-    _allCameras.add(this);
-    _allCameras.sort((a, b) => a.depth.compareTo(b.depth));
-    _updateMainCamera();
+    game.cameras.registerCamera(this);
   }
 
   @override
   void onUnmounted() {
-    _allCameras.remove(this);
-    if (_main == this) {
-      _main = null;
-      _updateMainCamera();
-    }
-  }
-
-  void _updateMainCamera() {
-    if (_main != null && _main!.gameObject.active) return;
-    for (final cam in _allCameras) {
-      if (cam.gameObject.tag == 'MainCamera') {
-        _main = cam;
-        break;
-      }
-    }
+    game.cameras.unregisterCamera(this);
   }
 
   /// Matrix that transforms from world to camera space.
