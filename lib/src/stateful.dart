@@ -21,16 +21,18 @@ abstract class StatefulGameWidget extends RenderObjectWidget {
 }
 
 abstract class GameState<T extends StatefulGameWidget> extends Component {
-  late StatefulGameElement _element;
+  StatefulGameElement? _element;
 
   final List<InputAction> _trackedInputActions = [];
 
   @override
-  GameObject get gameObject => _element;
+  GameObject get gameObject => _element!;
 
-  T get widget => _element.widget as T;
+  T get widget => _element!.widget as T;
 
-  BuildContext get context => _element;
+  BuildContext get context => _element!;
+
+  bool get mounted => _element != null;
 
   InputAction createInputAction({
     required String name,
@@ -50,8 +52,9 @@ abstract class GameState<T extends StatefulGameWidget> extends Component {
   }
 
   void setState(VoidCallback fn) {
+    assert(_element != null, 'Cannot call setState on an unmounted widget');
     fn();
-    _element.markNeedsBuild();
+    _element!.markNeedsBuild();
   }
 
   @mustCallSuper
@@ -87,6 +90,7 @@ class StatefulGameElement extends GameObjectElement {
 
     addComponent(state);
     state.initState();
+    state.didChangeDependencies();
 
     _rebuild();
   }

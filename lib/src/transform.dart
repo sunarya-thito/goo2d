@@ -5,10 +5,6 @@ import 'package:goo2d/goo2d.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 class ObjectTransform extends Component with LifecycleListener {
-  // ---------------------------------------------------------------------------
-  // Local-space properties
-  // ---------------------------------------------------------------------------
-
   Offset _localPosition = Offset.zero;
 
   /// Rotation angle in radians (counter-clockwise).
@@ -40,10 +36,6 @@ class ObjectTransform extends Component with LifecycleListener {
     _markDirty();
   }
 
-  // ---------------------------------------------------------------------------
-  // Parent / child linkage for dirty propagation
-  // ---------------------------------------------------------------------------
-
   ObjectTransform? _parentTransform;
   final List<ObjectTransform> _childTransforms = [];
 
@@ -58,10 +50,6 @@ class ObjectTransform extends Component with LifecycleListener {
     _parentTransform?._childTransforms.remove(this);
     _parentTransform = null;
   }
-
-  // ---------------------------------------------------------------------------
-  // Dirty-flag cached matrices
-  // ---------------------------------------------------------------------------
 
   Matrix4? _cachedLocal;
   Matrix4? _cachedWorld;
@@ -114,10 +102,6 @@ class ObjectTransform extends Component with LifecycleListener {
     return _cachedWorldInverse!;
   }
 
-  // ---------------------------------------------------------------------------
-  // World-space position
-  // ---------------------------------------------------------------------------
-
   /// World-space position.
   Offset get position {
     final t = worldMatrix.getTranslation();
@@ -134,10 +118,6 @@ class ObjectTransform extends Component with LifecycleListener {
     }
     _markDirty();
   }
-
-  // ---------------------------------------------------------------------------
-  // World-space angle
-  // ---------------------------------------------------------------------------
 
   /// World-space rotation angle in radians.
   double get angle {
@@ -156,10 +136,6 @@ class ObjectTransform extends Component with LifecycleListener {
     _markDirty();
   }
 
-  // ---------------------------------------------------------------------------
-  // World-space scale
-  // ---------------------------------------------------------------------------
-
   /// World-space scale.
   Offset get scale {
     final wm = worldMatrix;
@@ -177,10 +153,6 @@ class ObjectTransform extends Component with LifecycleListener {
     }
     _markDirty();
   }
-
-  // ---------------------------------------------------------------------------
-  // Coordinate space conversion
-  // ---------------------------------------------------------------------------
 
   /// Transforms a position from local space to world space.
   Offset localToWorld(Offset local) {

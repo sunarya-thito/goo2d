@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:goo2d/src/component.dart';
-import 'package:goo2d/src/coroutine.dart';
 import 'package:meta/meta.dart';
+import 'game.dart';
+import 'coroutine.dart';
 
 class GameTag extends GlobalObjectKey {
   const GameTag(super.value);
@@ -78,18 +79,20 @@ abstract class GameObjectElement extends RenderObjectElement
   final List<GameObject> _childrenObjects = [];
   final List<CoroutineFuture> _runningCoroutines = [];
   GameObject? _parentObject;
-
   List<Element> _childElements = [];
+  GameEngine? _game;
 
   GameObjectElement(super.widget);
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _game = dependOnInheritedWidgetOfExactType<GameProvider>()?.game;
+  }
+
+  @override
   GameEngine get game {
-    final parent = _parentObject;
-    if (parent == null) {
-      throw StateError('GameObject "$this" is not attached to a Game tree');
-    }
-    return parent.game;
+    return _game!;
   }
 
   @override
@@ -294,6 +297,7 @@ abstract class GameObjectElement extends RenderObjectElement
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
     _attachToParent();
+    _game = parent?.dependOnInheritedWidgetOfExactType<GameProvider>()?.game;
   }
 
   @override
@@ -358,9 +362,9 @@ abstract class GameObjectElement extends RenderObjectElement
 
   @override
   void unmount() {
+    const UnmountedEvent().dispatchTo(this);
     stopAllCoroutines();
     super.unmount();
-    const UnmountedEvent().dispatchTo(this);
   }
 
   void _attachToParent() {
@@ -394,13 +398,11 @@ class GameWidget extends RenderObjectWidget {
 
   final List<Widget> children;
   final Iterable<Component> Function() components;
-  final GameEngine? game;
 
   const GameWidget({
     super.key,
     this.children = const [],
     this.components = _emptyComponents,
-    this.game,
   });
 
   @override
@@ -423,22 +425,13 @@ class GameWidget extends RenderObjectWidget {
 }
 
 class GameElement extends GameObjectElement {
-  late final GameEngine _game;
-
   GameElement(GameWidget super.widget);
-
-  @override
-  GameEngine get game => _game;
 
   @override
   GameWidget get widget => super.widget as GameWidget;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _game =
-        widget.game ??
-        parent?.dependOnInheritedWidgetOfExactType<GameProvider>()?.game ??
-        GameEngine();
     super.mount(parent, newSlot);
     final components = widget.components();
     for (var component in components) {
@@ -451,12 +444,6 @@ class GameElement extends GameObjectElement {
   void update(GameWidget newWidget) {
     super.update(newWidget);
     updateChildElements(newWidget.children);
-  }
-
-  @override
-  void unmount() {
-    _game.dispose();
-    super.unmount();
   }
 }
 
@@ -533,16 +520,26 @@ class GameRenderObject extends RenderBox
   @override
   void paint(PaintingContext context, Offset offset) {
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
+
     if (optionalTransform != null) {
-      layer = context.pushTransform(
-        needsCompositing,
-        offset,
-        optionalTransform.localMatrix,
-        (context, offset) {
-          RenderEvent(context.canvas).dispatchTo(object);
-          defaultPaint(context, offset);
-        },
-      );
+      if (object.game.isSecondaryPass) {
+        context.canvas.save();
+        context.canvas.translate(offset.dx, offset.dy);
+        context.canvas.transform(optionalTransform.localMatrix.storage);
+        RenderEvent(context.canvas).dispatchTo(object);
+        defaultPaint(context, Offset.zero);
+        context.canvas.restore();
+      } else {
+        layer = context.pushTransform(
+          needsCompositing,
+          offset,
+          optionalTransform.localMatrix,
+          (context, offset) {
+            RenderEvent(context.canvas).dispatchTo(object);
+            defaultPaint(context, offset);
+          },
+        );
+      }
     } else {
       context.canvas.save();
       context.canvas.translate(offset.dx, offset.dy);
@@ -550,6 +547,22 @@ class GameRenderObject extends RenderBox
       context.canvas.restore();
       defaultPaint(context, offset);
     }
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    final optionalTransform = object.tryGetComponent<ObjectTransform>();
+    if (optionalTransform != null) {
+      return result.addWithPaintTransform(
+        transform: optionalTransform.localMatrix,
+        position: position,
+        hitTest: (BoxHitTestResult result, Offset? transformedPosition) {
+          if (transformedPosition == null) return false;
+          return defaultHitTestChildren(result, position: transformedPosition);
+        },
+      );
+    }
+    return defaultHitTestChildren(result, position: position);
   }
 
   @override
@@ -576,11 +589,6 @@ class GameRenderObject extends RenderBox
       return true;
     }
     return false;
-  }
-
-  @override
-  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    return defaultHitTestChildren(result, position: position);
   }
 
   @override

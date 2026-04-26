@@ -29,7 +29,7 @@ class InputEvent {
   }
 
   void invoke(CallbackContext context) {
-    for (var listener in _listeners) {
+    for (var listener in List<void Function(CallbackContext)>.from(_listeners)) {
       listener(context);
     }
   }
@@ -104,17 +104,19 @@ class InputSystem implements GameSystem {
 }
 
 abstract class InputControl<T> {
+  GameEngine get game;
   T get value;
   double get magnitude;
   int lastFramePressed = -1;
   int lastFrameReleased = -1;
   int lastUpdateReleased = -1;
   bool get isPressed;
-  bool get wasPressedThisFrame;
-  bool get wasReleasedThisFrame;
+  bool get wasPressedThisFrame => lastFramePressed == game.ticker.frameCount;
+  bool get wasReleasedThisFrame => lastFrameReleased == game.ticker.frameCount;
 }
 
 class ButtonControl extends InputControl<bool> {
+  @override
   final GameEngine game;
   bool _isPressed = false;
 
@@ -126,11 +128,6 @@ class ButtonControl extends InputControl<bool> {
   bool get isPressed => _isPressed;
   @override
   double get magnitude => _isPressed ? 1.0 : 0.0;
-
-  @override
-  bool get wasPressedThisFrame => lastFramePressed == game.ticker.frameCount;
-  @override
-  bool get wasReleasedThisFrame => lastFrameReleased == game.ticker.frameCount;
 
   void press() {
     if (!_isPressed) lastFramePressed = game.ticker.frameCount;
@@ -226,17 +223,10 @@ class SimpleInputBinding extends InputBinding {
   @override
   InputControl? get activeControl => isPressed ? control : null;
   @override
-  bool get wasReleasedThisFrame =>
-      control.lastFrameReleased ==
-      (control is ButtonControl
-          ? (control as ButtonControl).game.ticker.frameCount
-          : -1);
+  bool get wasReleasedThisFrame => control.wasReleasedThisFrame;
   @override
   bool get wasReleasedThisDynamicUpdate =>
-      control.lastUpdateReleased ==
-      (control is ButtonControl
-          ? (control as ButtonControl).game.input.dynamicUpdateCount
-          : -1);
+      control.lastUpdateReleased == control.game.input.dynamicUpdateCount;
 }
 
 class CompositeBinding extends InputBinding {
@@ -334,8 +324,8 @@ class InputAction {
   bool get wasPressedThisFrame => _lastFrameStarted == game.ticker.frameCount;
   bool get wasPerformedThisFrame =>
       _lastFramePerformed == game.ticker.frameCount;
-  bool get wasCompletedThisFrame =>
-      _lastFrameCanceled == game.ticker.frameCount;
+  bool get wasCanceledThisFrame => _lastFrameCanceled == game.ticker.frameCount;
+  bool get wasCompletedThisFrame => wasCanceledThisFrame;
   bool get wasReleasedThisFrame {
     for (var b in bindings) {
       if (b.wasReleasedThisFrame) return true;
@@ -347,8 +337,9 @@ class InputAction {
       _lastUpdateStarted == game.input.dynamicUpdateCount;
   bool get wasPerformedThisDynamicUpdate =>
       _lastUpdatePerformed == game.input.dynamicUpdateCount;
-  bool get wasCompletedThisDynamicUpdate =>
+  bool get wasCanceledThisDynamicUpdate =>
       _lastUpdateCanceled == game.input.dynamicUpdateCount;
+  bool get wasCompletedThisDynamicUpdate => wasCanceledThisDynamicUpdate;
   bool get wasReleasedThisDynamicUpdate {
     for (var b in bindings) {
       if (b.wasReleasedThisDynamicUpdate) return true;

@@ -1,9 +1,57 @@
 import 'dart:ui' as ui;
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:flutter_soloud/flutter_soloud.dart' as soloud;
 import 'package:http/http.dart' as http;
+
+/// A dedicated class for asset sources, allowing separation of source from asset logic.
+abstract interface class AssetSource {
+  /// Loads the raw bytes from the source.
+  Future<Uint8List> loadBytes();
+
+  /// A human-readable name for the asset, usually derived from the source.
+  String get name;
+
+  /// Creates a [LocalSource] from a bundle [path].
+  factory AssetSource.local(String path) = LocalSource;
+
+  /// Creates a [NetworkSource] from a [uri] and optional [headers].
+  factory AssetSource.network(Uri uri, {Map<String, String>? headers}) =
+      NetworkSource;
+}
+
+/// An [AssetSource] that loads data from the local Flutter asset bundle.
+class LocalSource implements AssetSource {
+  final String path;
+  LocalSource(this.path);
+
+  @override
+  Future<Uint8List> loadBytes() {
+    return rootBundle.load(path).then((data) => data.buffer.asUint8List());
+  }
+
+  @override
+  String get name => path;
+}
+
+/// An [AssetSource] that loads data from a network URL.
+class NetworkSource implements AssetSource {
+  final Uri uri;
+  final Map<String, String>? headers;
+  NetworkSource(this.uri, {this.headers});
+
+  @override
+  Future<Uint8List> loadBytes() {
+    return http
+        .get(uri, headers: headers)
+        .then((response) => response.bodyBytes);
+  }
+
+  @override
+  String get name => uri.pathSegments.lastOrNull ?? uri.toString();
+}
 
 mixin AssetEnum on Enum implements GameAsset {
   static final Map<Enum, GameAsset> _registries = {};
@@ -21,128 +69,88 @@ mixin AssetEnum on Enum implements GameAsset {
   }
 
   @override
-  Future<Uint8List> loadBytes() => asset.loadBytes();
+  AssetSource get source => asset.source;
 
   @override
   Future<void> load() => asset.load();
 
   @override
-  String get assetName => asset.assetName;
+  bool get isLoaded => asset.isLoaded;
 
   @override
   void unload() => asset.unload();
 }
 
-/// A mixin for [AssetEnum] that represents a local sprite asset.
-mixin LocalGameSpriteEnum on AssetEnum implements LocalGameSprite {
-  /// The local file path to the sprite.
+/// A mixin for [AssetEnum] that represents a texture asset.
+mixin TextureAssetEnum on AssetEnum implements GameTexture {
+  /// The source of the texture.
   @override
-  String get path;
-
-  @override
-  GameAsset register() => GameSprite.local(path);
-
-  LocalGameSprite get _instance => asset as LocalGameSprite;
+  AssetSource get source;
 
   @override
-  ui.Image get image => _instance.image;
+  GameAsset register() => GameTexture(source);
+
+  GameTexture get _instance => asset as GameTexture;
 
   @override
-  String get assetName => _instance.assetName;
+  int get width => _instance.width;
 
   @override
-  Future<void> load() => _instance.load();
-
-  @override
-  void unload() => _instance.unload();
-
-  @override
-  Future<Uint8List> loadBytes() => _instance.loadBytes();
-}
-
-/// A mixin for [AssetEnum] that represents a network sprite asset.
-mixin NetworkGameSpriteEnum on AssetEnum implements NetworkGameSprite {
-  /// The URI of the sprite.
-  @override
-  Uri get uri;
-
-  @override
-  GameAsset register() => GameSprite.network(uri);
-
-  NetworkGameSprite get _instance => asset as NetworkGameSprite;
-
-  @override
-  String get assetName => _instance.assetName;
+  int get height => _instance.height;
 
   @override
   ui.Image get image => _instance.image;
 
   @override
-  Future<void> load() => _instance.load();
+  Future<void> apply() => _instance.apply();
 
   @override
-  void unload() => _instance.unload();
+  ui.Color getPixel(int x, int y) => _instance.getPixel(x, y);
 
   @override
-  Future<Uint8List> loadBytes() => _instance.loadBytes();
+  ui.Color getPixelBilinear(double u, double v) =>
+      _instance.getPixelBilinear(u, v);
+
+  @override
+  Uint8List getPixelData() => _instance.getPixelData();
+
+  @override
+  List<ui.Color> getPixels() => _instance.getPixels();
+
+  @override
+  Uint32List getPixels32() => _instance.getPixels32();
+
+  @override
+  void setPixel(int x, int y, ui.Color color) =>
+      _instance.setPixel(x, y, color);
+
+  @override
+  void setPixelData(Uint8List data) => _instance.setPixelData(data);
+
+  @override
+  void setPixels(List<ui.Color> pixels) => _instance.setPixels(pixels);
+
+  @override
+  void setPixels32(Uint32List pixels) => _instance.setPixels32(pixels);
 }
 
-/// A mixin for [AssetEnum] that represents a local audio asset.
-mixin LocalGameAudioEnum on AssetEnum implements LocalGameAudio {
-  /// The local file path to the audio file.
+/// A mixin for [AssetEnum] that represents an audio asset.
+mixin AudioAssetEnum on AssetEnum implements GameAudio {
+  /// The source of the audio.
   @override
-  String get path;
-
-  @override
-  GameAsset register() => GameAudio.local(path);
-
-  LocalGameAudio get _instance => asset as LocalGameAudio;
+  AssetSource get source;
 
   @override
-  String get assetName => _instance.assetName;
+  GameAsset register() => GameAudio(source);
+
+  GameAudio get _instance => asset as GameAudio;
 
   @override
-  AudioSource get audioSource => _instance.audioSource;
-
-  @override
-  Future<void> load() => _instance.load();
-
-  @override
-  void unload() => _instance.unload();
-
-  @override
-  Future<Uint8List> loadBytes() => _instance.loadBytes();
-}
-
-/// A mixin for [AssetEnum] that represents a network audio asset.
-mixin NetworkGameAudioEnum on AssetEnum implements NetworkGameAudio {
-  /// The URI of the audio file.
-  @override
-  Uri get uri;
-
-  @override
-  GameAsset register() => GameAudio.network(uri);
-
-  NetworkGameAudio get _instance => asset as NetworkGameAudio;
-
-  @override
-  String get assetName => _instance.assetName;
-
-  @override
-  AudioSource get audioSource => _instance.audioSource;
-
-  @override
-  Future<void> load() => _instance.load();
-
-  @override
-  void unload() => _instance.unload();
-
-  @override
-  Future<Uint8List> loadBytes() => _instance.loadBytes();
+  soloud.AudioSource get audioSource => _instance.audioSource;
 }
 
 class GameAssetProgress {
-  final GameAsset? loadingAsset;
+  final GameAsset loadingAsset;
   final int assetLoaded;
   final int assetCount;
 
@@ -152,6 +160,8 @@ class GameAssetProgress {
 }
 
 abstract class GameAsset {
+  AssetSource get source;
+
   /// Loads a collection of assets defined by [AssetEnum]s.
   ///
   /// This iterates over the provided [assets], initializes them via their `call()`
@@ -167,44 +177,38 @@ abstract class GameAsset {
     }
   }
 
-  String get assetName;
-  @protected
-  Future<Uint8List> loadBytes();
+  bool get isLoaded;
   Future<void> load();
   void unload();
 }
 
-mixin LocalGameAsset on GameAsset {
-  String get path;
-
+class GameTexture extends GameAsset {
   @override
-  Future<Uint8List> loadBytes() {
-    return rootBundle.load(path).then((data) => data.buffer.asUint8List());
-  }
-}
+  final AssetSource source;
 
-mixin NetworkGameAsset on GameAsset {
-  Uri get uri;
+  GameTexture(this.source);
 
-  @override
-  Future<Uint8List> loadBytes() {
-    return http.get(uri).then((response) => response.bodyBytes);
-  }
-}
-
-abstract class GameSprite implements GameAsset {
-  factory GameSprite.local(String path) = LocalGameSprite;
-  factory GameSprite.network(Uri uri) = NetworkGameSprite;
-  GameSprite();
   ui.Image? _loadedImage;
+  Uint32List? _buffer;
+  bool _isDirty = false;
+
+  int get width => _loadedImage?.width ?? 0;
+  int get height => _loadedImage?.height ?? 0;
+
+  @override
+  bool get isLoaded => _loadedImage != null;
 
   @override
   Future<void> load() async {
-    final bytes = await loadBytes();
+    final bytes = await source.loadBytes();
     final codec = await ui.instantiateImageCodec(bytes);
     try {
       final frameInfo = await codec.getNextFrame();
       _loadedImage = frameInfo.image;
+      final byteData = await _loadedImage!.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
+      _buffer = Uint32List.fromList(byteData!.buffer.asUint32List());
     } finally {
       codec.dispose();
     }
@@ -213,72 +217,173 @@ abstract class GameSprite implements GameAsset {
   @override
   void unload() {
     _loadedImage = null;
+    _buffer = null;
+    _isDirty = false;
   }
 
   ui.Image get image {
-    assert(_loadedImage != null, 'Image not yet loaded');
+    assert(_loadedImage != null, 'Texture not yet loaded');
     return _loadedImage!;
+  }
+
+  /// Unity-parity Apply(). Uploads CPU buffer to GPU image.
+  Future<void> apply() async {
+    if (!_isDirty || _buffer == null) return;
+    final completer = ui.ImmutableBuffer.fromUint8List(
+      _buffer!.buffer.asUint8List(),
+    );
+    final buffer = await completer;
+    final descriptor = ui.ImageDescriptor.raw(
+      buffer,
+      width: width,
+      height: height,
+      pixelFormat: ui.PixelFormat.rgba8888,
+    );
+    final codec = await descriptor.instantiateCodec();
+    final frame = await codec.getNextFrame();
+    _loadedImage = frame.image;
+    _isDirty = false;
+    codec.dispose();
+    buffer.dispose();
+  }
+
+  ui.Color getPixel(int x, int y) {
+    if (_buffer == null) return const ui.Color(0x00000000);
+    final pixel = _buffer![y * width + x];
+    // RGBA8888 in Uint32List (LE) is 0xAABBGGRR? No, usually it's 0xRRGGBBAA or similar depending on endianness.
+    // Flutter's rawRgba is [R, G, B, A] bytes.
+    // In a Uint32List on LE: byte 0 is R, 1 is G, 2 is B, 3 is A.
+    // So value is 0xAABBGGRR.
+    return ui.Color.fromARGB(
+      (pixel >> 24) & 0xFF, // A
+      pixel & 0xFF, // R
+      (pixel >> 8) & 0xFF, // G
+      (pixel >> 16) & 0xFF, // B
+    );
+  }
+
+  ui.Color getPixelBilinear(double u, double v) {
+    if (_buffer == null) return const ui.Color(0x00000000);
+    final x = u * (width - 1);
+    final y = v * (height - 1);
+    final x1 = x.floor();
+    final y1 = y.floor();
+    final x2 = (x1 + 1).clamp(0, width - 1);
+    final y2 = (y1 + 1).clamp(0, height - 1);
+
+    final f11 = getPixel(x1, y1);
+    final f21 = getPixel(x2, y1);
+    final f12 = getPixel(x1, y2);
+    final f22 = getPixel(x2, y2);
+
+    final tx = x - x1;
+    final ty = y - y1;
+
+    final r1 = _lerpChannel(f11.r * 255, f21.r * 255, tx);
+    final r2 = _lerpChannel(f12.r * 255, f22.r * 255, tx);
+    final r = _lerpChannel(r1, r2, ty);
+
+    final g1 = _lerpChannel(f11.g * 255, f21.g * 255, tx);
+    final g2 = _lerpChannel(f12.g * 255, f22.g * 255, tx);
+    final g = _lerpChannel(g1, g2, ty);
+
+    final b1 = _lerpChannel(f11.b * 255, f21.b * 255, tx);
+    final b2 = _lerpChannel(f12.b * 255, f22.b * 255, tx);
+    final b = _lerpChannel(b1, b2, ty);
+
+    final a1 = _lerpChannel(f11.a * 255, f21.a * 255, tx);
+    final a2 = _lerpChannel(f12.a * 255, f22.a * 255, tx);
+    final a = _lerpChannel(a1, a2, ty);
+
+    return ui.Color.fromARGB(
+      a.round().clamp(0, 255),
+      r.round().clamp(0, 255),
+      g.round().clamp(0, 255),
+      b.round().clamp(0, 255),
+    );
+  }
+
+  double _lerpChannel(double a, double b, double t) => a + (b - a) * t;
+
+  Uint8List getPixelData() => _buffer!.buffer.asUint8List();
+
+  List<ui.Color> getPixels() {
+    if (_buffer == null) return [];
+    return List.generate(width * height, (i) {
+      final pixel = _buffer![i];
+      return ui.Color.fromARGB(
+        (pixel >> 24) & 0xFF,
+        pixel & 0xFF,
+        (pixel >> 8) & 0xFF,
+        (pixel >> 16) & 0xFF,
+      );
+    });
+  }
+
+  Uint32List getPixels32() => Uint32List.fromList(_buffer!);
+
+  void setPixel(int x, int y, ui.Color color) {
+    if (_buffer == null) return;
+    final pixel =
+        ((color.a * 255).round().clamp(0, 255) << 24) |
+        ((color.b * 255).round().clamp(0, 255) << 16) |
+        ((color.g * 255).round().clamp(0, 255) << 8) |
+        (color.r * 255).round().clamp(0, 255);
+    _buffer![y * width + x] = pixel;
+    _isDirty = true;
+  }
+
+  void setPixelData(Uint8List data) {
+    _buffer = Uint32List.fromList(data.buffer.asUint32List());
+    _isDirty = true;
+  }
+
+  void setPixels(List<ui.Color> pixels) {
+    if (_buffer == null) return;
+    for (var i = 0; i < pixels.length; i++) {
+      final color = pixels[i];
+      _buffer![i] =
+          ((color.a * 255).round().clamp(0, 255) << 24) |
+          ((color.b * 255).round().clamp(0, 255) << 16) |
+          ((color.g * 255).round().clamp(0, 255) << 8) |
+          (color.r * 255).round().clamp(0, 255);
+    }
+    _isDirty = true;
+  }
+
+  void setPixels32(Uint32List pixels) {
+    _buffer = Uint32List.fromList(pixels);
+    _isDirty = true;
   }
 }
 
-class LocalGameSprite extends GameSprite with LocalGameAsset {
+class GameAudio extends GameAsset {
   @override
-  final String path;
+  final AssetSource source;
 
-  @override
-  String get assetName => path;
+  GameAudio(this.source);
 
-  LocalGameSprite(this.path);
-}
-
-class NetworkGameSprite extends GameSprite with NetworkGameAsset {
-  @override
-  final Uri uri;
-
-  @override
-  String get assetName => uri.pathSegments.lastOrNull ?? uri.toString();
-
-  NetworkGameSprite(this.uri);
-}
-
-abstract class GameAudio extends GameAsset {
-  factory GameAudio.local(String path) = LocalGameAudio;
-  factory GameAudio.network(Uri uri) = NetworkGameAudio;
-  GameAudio();
-  AudioSource? _loadedAudioSource;
+  soloud.AudioSource? _loadedAudioSource;
 
   @override
   Future<void> load() async {
-    final bytes = await loadBytes();
-    _loadedAudioSource = await SoLoud.instance.loadMem('$hashCode', bytes);
+    final bytes = await source.loadBytes();
+    _loadedAudioSource = await soloud.SoLoud.instance.loadMem(
+      '$hashCode',
+      bytes,
+    );
   }
 
-  AudioSource get audioSource {
+  @override
+  bool get isLoaded => _loadedAudioSource != null;
+
+  soloud.AudioSource get audioSource {
     assert(_loadedAudioSource != null, 'Audio not yet loaded');
     return _loadedAudioSource!;
   }
 
   @override
   void unload() {
-    SoLoud.instance.disposeSource(audioSource);
+    soloud.SoLoud.instance.disposeSource(audioSource);
   }
-}
-
-class LocalGameAudio extends GameAudio with LocalGameAsset {
-  @override
-  final String path;
-  LocalGameAudio(this.path);
-
-  @override
-  String get assetName => path;
-}
-
-class NetworkGameAudio extends GameAudio with NetworkGameAsset {
-  @override
-  final Uri uri;
-
-  @override
-  String get assetName => uri.pathSegments.lastOrNull ?? uri.toString();
-
-  NetworkGameAudio(this.uri);
 }

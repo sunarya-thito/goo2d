@@ -5,10 +5,7 @@ import 'package:vector_math/vector_math_64.dart' hide Colors;
 
 enum CameraClearFlags { skybox, solidColor, depth, nothing }
 
-class Camera extends Component with LifecycleListener {
-  /// The camera that is currently rendering (read only).
-  static Camera? current;
-
+class Camera extends Behavior with LifecycleListener {
   /// Camera's half-size (half of the vertical viewing volume).
   double orthographicSize = 10.0;
 
@@ -21,17 +18,24 @@ class Camera extends Component with LifecycleListener {
   /// This is used to render parts of the scene selectively.
   int cullingMask = -1;
 
-  /// Camera's depth in the camera rendering order.
-  double depth = 0;
-
-  /// Where on the screen is the camera rendered (0-1).
-  Rect rect = const Rect.fromLTWH(0, 0, 1, 1);
-
   /// Near clipping plane distance.
   double nearClipPlane = -100.0;
 
   /// Far clipping plane distance.
   double farClipPlane = 100.0;
+
+  double _depth = 0.0;
+
+  /// Camera's rendering priority. Higher values are rendered later.
+  /// The camera with the highest depth is treated as the MainCamera.
+  double get depth => _depth;
+  set depth(double value) {
+    if (_depth == value) return;
+    _depth = value;
+    if (isAttached) {
+      game.cameras.notifyDepthChanged();
+    }
+  }
 
   @override
   void onMounted() {
@@ -45,13 +49,15 @@ class Camera extends Component with LifecycleListener {
 
   /// Matrix that transforms from world to camera space.
   Matrix4 get worldToCameraMatrix {
-    final transform = gameObject.getComponent<ObjectTransform>();
+    final transform =
+        gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
     return Matrix4.inverted(transform.worldMatrix);
   }
 
   /// Matrix that transforms from camera to world space.
   Matrix4 get cameraToWorldMatrix {
-    final transform = gameObject.getComponent<ObjectTransform>();
+    final transform =
+        gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
     return transform.worldMatrix.clone();
   }
 
@@ -73,60 +79,37 @@ class Camera extends Component with LifecycleListener {
     return r;
   }
 
-  /// Transforms [position] from world space into screen space.
+  /// Converts a world space point to screen space point.
   Offset worldToScreenPoint(Offset worldPoint, Size screenSize) {
     final viewMatrix = worldToCameraMatrix;
     final projMatrix = projectionMatrix(screenSize);
-    final vpMatrix = projMatrix * viewMatrix;
 
-    final worldVec = Vector3(worldPoint.dx, worldPoint.dy, 0);
-    final screenVec = vpMatrix.transform3(worldVec);
+    final viewportMatrix = Matrix4.identity()
+      ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
+      ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
 
-    // Normalize from [-1, 1] to [0, 1] then to [0, screenSize]
-    // Note: Y is usually inverted in screen space vs world space in some engines,
-    // but in Flutter (0,0) is top-left.
-    // In Unity 2D, (0,0) is center, and Y is up.
-    // Let's assume Unity-like: Y is up, (0,0) is world origin.
-    // Screen (0,0) is top-left.
+    final fullMatrix = viewportMatrix * projMatrix * viewMatrix;
+    final worldVec = Vector4(worldPoint.dx, worldPoint.dy, 0.0, 1.0);
+    final screenVec = fullMatrix.transform(worldVec);
 
-    final x = (screenVec.x + 1) / 2 * screenSize.width;
-    final y = (1 - screenVec.y) / 2 * screenSize.height;
-
-    return Offset(x, y);
+    return Offset(screenVec.x / screenVec.w, screenVec.y / screenVec.w);
   }
 
-  /// Transforms [position] from screen space into world space.
+  /// Converts a screen space point to world space point.
   Offset screenToWorldPoint(Offset screenPoint, Size screenSize) {
     final viewMatrix = worldToCameraMatrix;
     final projMatrix = projectionMatrix(screenSize);
-    final vpMatrix = projMatrix * viewMatrix;
-    final invVpMatrix = Matrix4.inverted(vpMatrix);
 
-    // Normalize from [0, screenSize] to [-1, 1]
-    final nx = (screenPoint.dx / screenSize.width) * 2 - 1;
-    final ny = 1 - (screenPoint.dy / screenSize.height) * 2;
+    final viewportMatrix = Matrix4.identity()
+      ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
+      ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
 
-    final clipVec = Vector3(nx, ny, 0);
-    final worldVec = invVpMatrix.transform3(clipVec);
+    final fullMatrix = viewportMatrix * projMatrix * viewMatrix;
+    final invMatrix = Matrix4.inverted(fullMatrix);
 
-    return Offset(worldVec.x, worldVec.y);
-  }
+    final screenVec = Vector4(screenPoint.dx, screenPoint.dy, 0.0, 1.0);
+    final worldVec = invMatrix.transform(screenVec);
 
-  /// Transforms [position] from viewport space into world space.
-  Offset viewportToWorldPoint(Offset viewportPoint, Size screenSize) {
-    final screenPoint = Offset(
-      viewportPoint.dx * screenSize.width,
-      viewportPoint.dy * screenSize.height,
-    );
-    return screenToWorldPoint(screenPoint, screenSize);
-  }
-
-  /// Transforms [position] from world space into viewport space.
-  Offset worldToViewportPoint(Offset worldPoint, Size screenSize) {
-    final screenPoint = worldToScreenPoint(worldPoint, screenSize);
-    return Offset(
-      screenPoint.dx / screenSize.width,
-      screenPoint.dy / screenSize.height,
-    );
+    return Offset(worldVec.x / worldVec.w, worldVec.y / worldVec.w);
   }
 }

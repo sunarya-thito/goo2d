@@ -1,8 +1,10 @@
-
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
-import 'package:goo2d/goo2d.dart';
+import 'game.dart';
+import 'event.dart';
+import 'object.dart';
+import 'camera.dart';
 
 // Delta time and frame count are now managed by the Game instance.
 
@@ -57,10 +59,7 @@ class GameTicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _InternalGameTicker(
-      game: GameProvider.of(context),
-      child: child,
-    );
+    return _InternalGameTicker(game: GameProvider.of(context), child: child);
   }
 }
 
@@ -111,115 +110,54 @@ class RenderGameTicker extends RenderProxyBox {
 
     _accumulator += dt;
 
-    // 1. Fixed Update Loop
     while (_accumulator >= game.ticker.fixedDeltaTime) {
       _propagateFixedTick(this, game.ticker.fixedDeltaTime);
       _accumulator -= game.ticker.fixedDeltaTime;
     }
 
-    // 2. Dispatch tick events to all game objects
     _propagateTick(this, dt);
 
-    // 3. Run screen boundary pass
     if (hasSize) {
       game.screen.update(size);
     }
 
-    // 4. Run centralized collision detection
     game.collision.runCollisionPass();
 
-    // 5. Dispatch late tick events
     _propagateLateTick(this, dt);
 
     markNeedsPaint();
 
-    // Signal completion of frame
     game.ticker.signalFrameComplete();
   }
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    final cameras = game.cameras.allCameras
-        .where((c) => c.gameObject.active)
-        .toList();
-
-    if (cameras.isEmpty) {
+    if (!game.cameras.isReady) {
       super.paint(context, offset);
       return;
     }
 
-    for (final camera in cameras) {
-      Camera.current = camera;
-      final screenSize = size;
-
-      // 1. Clear background if needed
-      if (camera.clearFlags == CameraClearFlags.solidColor) {
-        final paint = Paint()..color = camera.backgroundColor;
-        context.canvas.drawRect(offset & screenSize, paint);
-      }
-
-      // 2. Calculate Camera Transform
-      final viewMatrix = camera.worldToCameraMatrix;
-      final projMatrix = camera.projectionMatrix(screenSize);
-
-      // We need a matrix that maps [-1, 1] to [0, width] and [0, height]
-      final viewportMatrix = Matrix4.identity()
-        ..translateByDouble(
-          screenSize.width / 2,
-          screenSize.height / 2,
-          0.0,
-          1.0,
-        )
-        ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
-
-      final fullCameraMatrix = viewportMatrix * projMatrix * viewMatrix;
-
-      // 3. Render the scene with the camera transform
-      context.pushTransform(true, offset, fullCameraMatrix, (context, offset) {
-        // We need to handle cullingMask here if we want Unity parity.
-        // For now, we just render everything.
-        super.paint(context, offset);
-      });
+    final camera = game.cameras.main;
+    if (!camera.gameObject.active || !camera.enabled) {
+      super.paint(context, offset);
+      return;
     }
-    Camera.current = null;
+
+    final screenSize = size;
+    game.ticker.screenSize = screenSize;
+
+    if (camera.clearFlags == CameraClearFlags.solidColor) {
+      final paint = Paint()..color = camera.backgroundColor;
+      context.canvas.drawRect(offset & screenSize, paint);
+    }
+
+    super.paint(context, offset);
   }
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    if (game.cameras.isReady) {
-      final camera = game.cameras.main;
-      if (camera.gameObject.active) {
-        final screenSize = size;
-        final viewMatrix = camera.worldToCameraMatrix;
-        final projMatrix = camera.projectionMatrix(screenSize);
-
-        final viewportMatrix = Matrix4.identity()
-          ..translateByDouble(
-            screenSize.width / 2,
-            screenSize.height / 2,
-            0.0,
-            1.0,
-          )
-          ..scaleByDouble(
-            screenSize.width / 2,
-            -screenSize.height / 2,
-            1.0,
-            1.0,
-          );
-
-        final fullCameraMatrix = viewportMatrix * projMatrix * viewMatrix;
-
-        return result.addWithPaintTransform(
-          transform: fullCameraMatrix,
-          position: position,
-          hitTest: (result, transformedPosition) {
-            return super.hitTestChildren(result, position: transformedPosition);
-          },
-        );
-      }
-    }
-
-    return super.hitTest(result, position: position);
+    // Default hit testing for children in screen space
+    return super.hitTestChildren(result, position: position);
   }
 
   void _propagateTick(RenderObject root, double dt) {

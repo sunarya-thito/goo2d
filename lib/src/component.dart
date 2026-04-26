@@ -8,11 +8,6 @@ void internalAttach(Component component, GameObject gameObject) {
   component._gameObject = gameObject;
 }
 
-T lerp<T>(T a, T b, double t) {
-  // convert a and b to dynamic, assuming they overload the operator
-  return ((a as dynamic) + ((b as dynamic) - (a as dynamic)) * t) as T;
-}
-
 abstract class Component {
   GameObject? _gameObject;
 
@@ -20,6 +15,8 @@ abstract class Component {
     assert(_gameObject != null, 'Component is not added to a GameObject');
     return _gameObject!;
   }
+
+  bool get isAttached => _gameObject != null;
 
   GameEngine get game => gameObject.game;
   KeyboardState get keyboard => game.input.keyboard;

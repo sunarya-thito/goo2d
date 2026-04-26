@@ -1,32 +1,36 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:meta/meta.dart';
 
-class MockAsset extends GameAsset {
+class MockSource implements AssetSource {
+  @override
   final String name;
-  bool loaded = false;
-  int loadCount = 0;
-
-  MockAsset(this.name);
+  MockSource(this.name);
 
   @override
-  String get assetName => name;
+  Future<Uint8List> loadBytes() async => Uint8List(0);
+}
+
+class MockAsset extends GameAsset {
+  @override
+  final AssetSource source;
+
+  @override
+  bool isLoaded = false;
+  int loadCount = 0;
+
+  MockAsset(String name) : source = MockSource(name);
 
   @override
   Future<void> load() async {
-    loaded = true;
+    isLoaded = true;
     loadCount++;
   }
 
   @override
   void unload() {
-    loaded = false;
+    isLoaded = false;
   }
-
-  @override
-  @protected
-  Future<Uint8List> loadBytes() async => Uint8List(0);
 }
 
 enum TestAssets with AssetEnum {
@@ -35,7 +39,7 @@ enum TestAssets with AssetEnum {
 
   @override
   GameAsset register() => MockAsset(name);
-  
+
   MockAsset get mock => asset as MockAsset;
 }
 
@@ -48,9 +52,9 @@ void main() {
     test('should lazily register assets', () {
       // Accessing for the first time should register
       final assetA = TestAssets.assetA.mock;
-      expect(assetA.name, equals('assetA'));
+      expect(assetA.source.name, equals('assetA'));
       expect(assetA.loadCount, equals(0));
-      
+
       // Accessing again should return the same instance
       final assetA2 = TestAssets.assetA.mock;
       expect(assetA2, same(assetA));
@@ -68,16 +72,16 @@ void main() {
     test('loadAll should load assets and report progress', () async {
       final assets = [TestAssets.assetA, TestAssets.assetB];
       final stream = GameAsset.loadAll(assets);
-      
+
       final results = await stream.toList();
-      
+
       expect(results.length, equals(2));
       expect(results[0].assetLoaded, equals(1));
       expect(results[0].assetCount, equals(2));
       expect(results[1].assetLoaded, equals(2));
-      
-      expect(TestAssets.assetA.mock.loaded, isTrue);
-      expect(TestAssets.assetB.mock.loaded, isTrue);
+
+      expect(TestAssets.assetA.mock.isLoaded, isTrue);
+      expect(TestAssets.assetB.mock.isLoaded, isTrue);
     });
   });
 }

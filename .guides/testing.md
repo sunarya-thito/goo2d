@@ -10,6 +10,7 @@
 - **Method Group**: `group('[methodName]()', () { ... })` for public methods.
 - **Atomicity**: Each `test()` must verify ONE behavior. Use descriptive strings: `'should [behavior] when [context]'`.
 - **Pattern**: Arrange -> Act -> Assert.
+- **Value**: Avoid "obvious" tests. Focus on logic, complex state, and side effects rather than simple property assignments.
 
 ## 3. Environment & Isolation
 - **Binding**: Use `AutomatedTestWidgetsFlutterBinding.ensureInitialized()`.

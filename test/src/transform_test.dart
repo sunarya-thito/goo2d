@@ -10,9 +10,7 @@ void main() {
     testWidgets('should have identity matrix by default', (tester) async {
       final transform = ObjectTransform();
       await tester.pumpWidget(
-        Game(
-          child: GameWidget(components: () => [transform]),
-        ),
+        Game(child: GameWidget(components: () => [transform])),
       );
       await tester.pump();
 
@@ -23,31 +21,37 @@ void main() {
       expect(transform.localScale, equals(const Offset(1, 1)));
     });
 
-    testWidgets('should calculate localMatrix correctly when properties are set', (tester) async {
-      final transform = ObjectTransform();
-      await tester.pumpWidget(
-        Game(
-          child: GameWidget(components: () => [transform]),
-        ),
-      );
-      await tester.pump();
+    testWidgets(
+      'should calculate localMatrix correctly when properties are set',
+      (tester) async {
+        final transform = ObjectTransform();
+        await tester.pumpWidget(
+          Game(child: GameWidget(components: () => [transform])),
+        );
+        await tester.pump();
 
-      transform.localPosition = const Offset(10, 20);
-      transform.localAngle = math.pi / 2; // 90 degrees
-      transform.localScale = const Offset(2, 3);
+        transform.localPosition = const Offset(10, 20);
+        transform.localAngle = math.pi / 2; // 90 degrees
+        transform.localScale = const Offset(2, 3);
 
-      final expected = Matrix4.identity()
-        ..translate(10.0, 20.0, 0.0)
-        ..rotateZ(math.pi / 2)
-        ..scale(2.0, 3.0, 1.0);
+        final expected = Matrix4.identity()
+          ..translateByDouble(10.0, 20.0, 0.0, 1.0)
+          ..rotateZ(math.pi / 2)
+          ..scaleByDouble(2.0, 3.0, 1.0, 1.0);
 
-      // Compare matrix elements roughly for precision
-      for (int i = 0; i < 16; i++) {
-        expect(transform.localMatrix.storage[i], closeTo(expected.storage[i], 0.0001));
-      }
-    });
+        // Compare matrix elements roughly for precision
+        for (int i = 0; i < 16; i++) {
+          expect(
+            transform.localMatrix.storage[i],
+            closeTo(expected.storage[i], 0.0001),
+          );
+        }
+      },
+    );
 
-    testWidgets('should propagate worldMatrix through hierarchy', (tester) async {
+    testWidgets('should propagate worldMatrix through hierarchy', (
+      tester,
+    ) async {
       final parentTransform = ObjectTransform();
       final childTransform = ObjectTransform();
 
@@ -56,9 +60,7 @@ void main() {
           child: GameWidget(
             components: () => [parentTransform],
             children: [
-              GameWidget(
-                components: () => [childTransform],
-              ),
+              GameWidget(components: () => [childTransform]),
             ],
           ),
         ),
@@ -77,7 +79,9 @@ void main() {
       expect(childTransform.position, equals(const Offset(150, 150)));
     });
 
-    testWidgets('should increment version and dirty cache on change', (tester) async {
+    testWidgets('should increment version and dirty cache on change', (
+      tester,
+    ) async {
       final parentTransform = ObjectTransform();
       final childTransform = ObjectTransform();
 
@@ -86,9 +90,7 @@ void main() {
           child: GameWidget(
             components: () => [parentTransform],
             children: [
-              GameWidget(
-                components: () => [childTransform],
-              ),
+              GameWidget(components: () => [childTransform]),
             ],
           ),
         ),
@@ -102,17 +104,17 @@ void main() {
       var _ = childTransform.worldMatrix;
 
       parentTransform.localPosition = const Offset(1, 1);
-      
+
       expect(parentTransform.version, greaterThan(initialParentVersion));
       expect(childTransform.version, greaterThan(initialChildVersion));
-      
+
       // World position should update
       expect(childTransform.position, equals(const Offset(1, 1)));
     });
 
     testWidgets('should handle deep nesting (10 levels)', (tester) async {
       final transforms = List.generate(10, (_) => ObjectTransform());
-      
+
       Widget buildHierarchy(int index) {
         if (index >= transforms.length) return const SizedBox();
         return GameWidget(
@@ -131,28 +133,30 @@ void main() {
       // 10 levels of (10, 0) should result in (100, 0) world position for the last child
       expect(transforms.last.position.dx, closeTo(100.0, 0.0001));
     });
-    testWidgets('should correctly convert localToWorld and worldToLocal', (tester) async {
+    testWidgets('should correctly convert localToWorld and worldToLocal', (
+      tester,
+    ) async {
       final transform = ObjectTransform();
       await tester.pumpWidget(
-        Game(
-          child: GameWidget(components: () => [transform]),
-        ),
+        Game(child: GameWidget(components: () => [transform])),
       );
       await tester.pump();
 
       transform.localPosition = const Offset(100, 100);
       transform.localAngle = math.pi / 4; // 45 degrees
-      
+
       final localPoint = const Offset(10, 10);
       final worldPoint = transform.localToWorld(localPoint);
-      
+
       // Revert back
       final convertedBack = transform.worldToLocal(worldPoint);
       expect(convertedBack.dx, closeTo(localPoint.dx, 0.0001));
       expect(convertedBack.dy, closeTo(localPoint.dy, 0.0001));
     });
 
-    testWidgets('should set world-space position correctly with parent', (tester) async {
+    testWidgets('should set world-space position correctly with parent', (
+      tester,
+    ) async {
       final parentTransform = ObjectTransform();
       final childTransform = ObjectTransform();
 
@@ -161,9 +165,7 @@ void main() {
           child: GameWidget(
             components: () => [parentTransform],
             children: [
-              GameWidget(
-                components: () => [childTransform],
-              ),
+              GameWidget(components: () => [childTransform]),
             ],
           ),
         ),
@@ -178,9 +180,9 @@ void main() {
 
       expect(childTransform.position.dx, closeTo(100.0, 0.0001));
       expect(childTransform.position.dy, closeTo(200.0, 0.0001));
-      
+
       // In parent space (rotated 90 deg), (100, 200) relative to (100, 100)
-      // Vector (0, 100) in world. 
+      // Vector (0, 100) in world.
       // Parent's X axis is (0, 1) in world. Parent's Y axis is (-1, 0) in world.
       // So world vector (0, 100) is 100 units along parent's X axis.
       // localPosition should be (100, 0).

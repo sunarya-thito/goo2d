@@ -1,6 +1,13 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
-import 'package:goo2d/goo2d.dart';
+import 'package:flutter_soloud/flutter_soloud.dart';
+import 'input.dart';
+import 'collision.dart';
+import 'camera.dart';
+import 'screen.dart';
+import 'ticker.dart';
+
+import 'world.dart';
 
 abstract interface class GameSystem {
   GameEngine get game;
@@ -10,11 +17,16 @@ abstract interface class GameSystem {
 }
 
 class GameEngine {
+  static GameEngine of(BuildContext context) {
+    return GameProvider.of(context);
+  }
+
   final TickerState _ticker;
   final InputSystem _input;
   final CollisionSystem _collision;
   final CameraSystem _cameras;
   final ScreenSystem _screen;
+  final AudioSystem _audio;
 
   GameEngine._create({
     required TickerState ticker,
@@ -22,11 +34,13 @@ class GameEngine {
     required CollisionSystem collision,
     required CameraSystem cameras,
     required ScreenSystem screen,
+    required AudioSystem audio,
   }) : _ticker = ticker,
        _input = input,
        _collision = collision,
        _cameras = cameras,
-       _screen = screen;
+       _screen = screen,
+       _audio = audio;
 
   factory GameEngine() => GameEngine._create(
     ticker: TickerState(),
@@ -34,6 +48,7 @@ class GameEngine {
     collision: CollisionSystem(),
     cameras: CameraSystem(),
     screen: ScreenSystem(),
+    audio: AudioSystem(),
   );
 
   TickerState get ticker => _ticker;
@@ -41,6 +56,9 @@ class GameEngine {
   CollisionSystem get collision => _collision;
   CameraSystem get cameras => _cameras;
   ScreenSystem get screen => _screen;
+  AudioSystem get audio => _audio;
+
+  bool isSecondaryPass = false;
 
   void dispose() {
     _input.dispose();
@@ -48,6 +66,7 @@ class GameEngine {
     _collision.dispose();
     _cameras.dispose();
     _screen.dispose();
+    _audio.dispose();
   }
 
   void initialize() {
@@ -56,13 +75,16 @@ class GameEngine {
     _collision.attach(this);
     _cameras.attach(this);
     _screen.attach(this);
+    _audio.attach(this);
   }
 }
 
 class TickerState implements GameSystem {
   double deltaTime = 0.0;
   double fixedDeltaTime = 0.02;
+  double time = 0.0;
   int frameCount = 0;
+  Size screenSize = Size.zero;
 
   final _frameController = StreamController<void>.broadcast();
   Future<void> get nextFrame {
@@ -88,6 +110,7 @@ class TickerState implements GameSystem {
 
   void update(double dt) {
     deltaTime = dt;
+    time += dt;
     frameCount++;
   }
 
@@ -121,7 +144,11 @@ class CameraSystem implements GameSystem {
   void attach(GameEngine game) => _game = game;
 
   Camera get main {
-    assert(_main != null, 'Main camera is not ready for this game instance');
+    if (_main == null) {
+      throw StateError(
+        'Main camera is not ready for this game instance. Make sure you have a GameWidget with GameTag(\'MainCamera\')',
+      );
+    }
     return _main!;
   }
 
@@ -130,9 +157,10 @@ class CameraSystem implements GameSystem {
   List<Camera> get allCameras => List.unmodifiable(_allCameras);
 
   void registerCamera(Camera camera) {
-    _allCameras.add(camera);
-    _allCameras.sort((a, b) => a.depth.compareTo(b.depth));
-    _updateMainCamera();
+    if (!_allCameras.contains(camera)) {
+      _allCameras.add(camera);
+      _updateMainCamera();
+    }
   }
 
   void unregisterCamera(Camera camera) {
@@ -143,13 +171,19 @@ class CameraSystem implements GameSystem {
     }
   }
 
+  void notifyDepthChanged() {
+    _updateMainCamera();
+  }
+
   void _updateMainCamera() {
-    for (final cam in _allCameras) {
-      if (cam.gameObject.tag == 'MainCamera') {
-        _main = cam;
-        break;
-      }
+    if (_allCameras.isEmpty) {
+      _main = null;
+      return;
     }
+    // Sort by depth descending, so the highest depth is at index 0.
+    _allCameras.sort((a, b) => b.depth.compareTo(a.depth));
+    _main = _allCameras.first;
+    // print('DEBUG: CameraSystem._updateMainCamera: _main set to $_main (depth: ${_main?.depth})');
   }
 
   @override
@@ -231,6 +265,61 @@ class CollisionSystem implements GameSystem {
   }
 }
 
+class AudioSystem implements GameSystem {
+  static Future<void> initialize({
+    PlaybackDevice? device,
+    bool automaticCleanup = false,
+    int sampleRate = 44100,
+    int bufferSize = 2048,
+    Channels channels = Channels.stereo,
+  }) async {
+    await SoLoud.instance.init(
+      device: device,
+      automaticCleanup: automaticCleanup,
+      sampleRate: sampleRate,
+      bufferSize: bufferSize,
+      channels: channels,
+    );
+  }
+
+  final Set<SoundHandle> _handles = {};
+
+  GameEngine? _game;
+  @override
+  GameEngine get game {
+    assert(_game != null, 'AudioSystem is not attached to a GameEngine');
+    return _game!;
+  }
+
+  @override
+  bool get gameAttached => _game != null;
+
+  @override
+  void attach(GameEngine game) {
+    _game = game;
+  }
+
+  /// Registers a sound handle to be managed by this game instance.
+  void registerHandle(SoundHandle handle) {
+    _handles.add(handle);
+  }
+
+  /// Unregisters a sound handle.
+  void unregisterHandle(SoundHandle handle) {
+    _handles.remove(handle);
+  }
+
+  @override
+  void dispose() {
+    for (final handle in _handles) {
+      if (SoLoud.instance.getIsValidVoiceHandle(handle)) {
+        SoLoud.instance.stop(handle);
+      }
+    }
+    _handles.clear();
+  }
+}
+
 class GameProvider extends InheritedWidget {
   final GameEngine game;
 
@@ -288,7 +377,9 @@ class _GameState extends State<Game> {
   Widget build(BuildContext context) {
     return GameProvider(
       game: _game,
-      child: RepaintBoundary(child: GameTicker(child: widget.child)),
+      child: RepaintBoundary(
+        child: GameTicker(child: World(child: widget.child)),
+      ),
     );
   }
 }

@@ -73,10 +73,6 @@ abstract class CollisionTrigger extends Component with LifecycleListener {
     game.collision.unregister(this);
   }
 
-  // ---------------------------------------------------------------------------
-  // World bounds caching (invalidated when transform changes)
-  // ---------------------------------------------------------------------------
-
   Rect? _cachedWorldBounds;
   int _cachedVersion = -1;
 
@@ -97,10 +93,6 @@ abstract class CollisionTrigger extends Component with LifecycleListener {
 
   Rect _calculateWorldBounds(ObjectTransform transform);
 }
-
-// -----------------------------------------------------------------------------
-// OvalCollisionTrigger
-// -----------------------------------------------------------------------------
 
 class OvalCollisionTrigger extends CollisionTrigger {
   double radiusX = 0;
@@ -139,10 +131,6 @@ class OvalCollisionTrigger extends CollisionTrigger {
   }
 }
 
-// -----------------------------------------------------------------------------
-// BoxCollisionTrigger
-// -----------------------------------------------------------------------------
-
 class BoxCollisionTrigger extends CollisionTrigger {
   Rect rect = Rect.zero;
 
@@ -170,10 +158,6 @@ class BoxCollisionTrigger extends CollisionTrigger {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------------
-
 double _min4(double a, double b, double c, double d) {
   double m = a;
   if (b < m) m = b;
@@ -189,10 +173,6 @@ double _max4(double a, double b, double c, double d) {
   if (d > m) m = d;
   return m;
 }
-
-// -----------------------------------------------------------------------------
-// Internal accessors
-// -----------------------------------------------------------------------------
 
 void internalUpdateScreenState(
   CollisionTrigger collider, {
