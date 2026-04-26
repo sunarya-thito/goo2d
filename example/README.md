@@ -23,3 +23,9 @@ https://kenney-assets.itch.io/pixel-shmup
 
 Explosion Pack by ansimuz
 https://ansimuz.itch.io/explosion-animations-pack
+
+Small Explosion Audio Pack by EpeSami
+https://epesami.itch.io/small-explosion-audio-pack
+
+Background Music FREE-ATLAST Fight loop Vacum by nebula studio
+https://nebula-audio.itch.io/atlas-fight-loop-vacum

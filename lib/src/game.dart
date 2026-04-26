@@ -311,9 +311,11 @@ class AudioSystem implements GameSystem {
 
   @override
   void dispose() {
-    for (final handle in _handles) {
-      if (SoLoud.instance.getIsValidVoiceHandle(handle)) {
-        SoLoud.instance.stop(handle);
+    if (SoLoud.instance.isInitialized) {
+      for (final handle in _handles) {
+        if (SoLoud.instance.getIsValidVoiceHandle(handle)) {
+          SoLoud.instance.stop(handle);
+        }
       }
     }
     _handles.clear();

@@ -4,8 +4,6 @@ import 'game.dart';
 import 'camera.dart';
 import 'object.dart';
 import 'world.dart';
-import 'transform.dart';
-import 'render.dart';
 
 class CameraView extends SingleChildRenderObjectWidget {
   final GameTag cameraTag;
@@ -31,7 +29,6 @@ class CameraView extends SingleChildRenderObjectWidget {
 class RenderCameraView extends RenderProxyBox {
   GameEngine game;
   GameTag cameraTag;
-  bool _debugMatrixPrinted = false;
 
   RenderCameraView({required this.game, required this.cameraTag});
 
@@ -40,7 +37,9 @@ class RenderCameraView extends RenderProxyBox {
 
   @override
   void performLayout() {
-    size = constraints.constrain(constraints.isTight ? constraints.biggest : const Size(150, 150));
+    size = constraints.constrain(
+      constraints.isTight ? constraints.biggest : const Size(150, 150),
+    );
   }
 
   @override
@@ -111,8 +110,8 @@ class RenderCameraView extends RenderProxyBox {
         context.canvas.clipRect(offset & size);
         context.canvas.translate(offset.dx, offset.dy);
         context.canvas.transform(fullCameraMatrix.storage);
-        
-        _paintFiltered(context, Offset.zero, world!.child!);
+
+        _paintFiltered(context, Offset.zero, world.child!);
         context.canvas.restore();
       } finally {
         game.isSecondaryPass = false;
@@ -172,9 +171,11 @@ class RenderCameraView extends RenderProxyBox {
       // Local scaling to fit the RenderBox size
       final localScaleX = size.width / screenSize.width;
       final localScaleY = size.height / screenSize.height;
-      final localScaleMatrix = Matrix4.identity()..scaleByDouble(localScaleX, localScaleY, 1.0, 1.0);
+      final localScaleMatrix = Matrix4.identity()
+        ..scaleByDouble(localScaleX, localScaleY, 1.0, 1.0);
 
-      final fullCameraMatrix = localScaleMatrix * viewportMatrix * projMatrix * viewMatrix;
+      final fullCameraMatrix =
+          localScaleMatrix * viewportMatrix * projMatrix * viewMatrix;
 
       // Find the RenderWorld ancestor and all roots to test against
       RenderWorld? world;
@@ -193,12 +194,13 @@ class RenderCameraView extends RenderProxyBox {
           if (node is GameRenderObject) {
             // Check if this node is part of our own HUD branch
             if (_isAncestorOf(node, this)) return;
-            
+
             worldRoots.add(node);
           } else {
             node.visitChildren(findWorldRoots);
           }
         }
+
         findWorldRoots(world.child!);
       }
 

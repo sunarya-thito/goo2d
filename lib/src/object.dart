@@ -511,10 +511,10 @@ class GameRenderObject extends RenderBox
     );
     RenderObject? child = firstChild;
     while (child != null) {
-      child.layout(BoxConstraints.tight(objectSize));
+      child.layout(BoxConstraints.loose(objectSize));
       child = (child.parentData as GameParentData).nextSibling;
     }
-    size = objectSize;
+    size = objectSize.isInfinite ? Size.zero : objectSize;
   }
 
   @override

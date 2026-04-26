@@ -32,7 +32,8 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
   soloud.SoundHandle? _handle;
 
   /// Whether the audio is currently playing.
-  bool get isPlaying => _handle != null && soloud.SoLoud.instance.getIsValidVoiceHandle(_handle!);
+  bool get isPlaying =>
+      _handle != null && soloud.SoLoud.instance.getIsValidVoiceHandle(_handle!);
 
   @override
   void onMounted() {
@@ -49,7 +50,7 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
   /// Plays the [clip].
   Future<void> play() async {
     if (clip == null) return;
-    
+
     // Ensure clip is loaded
     if (!clip!.isLoaded) {
       await clip!.load();
@@ -88,7 +89,7 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
 
   /// Stops the audio.
   void stop() {
-    if (_handle != null) {
+    if (_handle != null && soloud.SoLoud.instance.isInitialized) {
       if (soloud.SoLoud.instance.getIsValidVoiceHandle(_handle!)) {
         soloud.SoLoud.instance.stop(_handle!);
       }
@@ -119,13 +120,13 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
     }
 
     // 3D Mode with Relative Positioning
-    // Find the listener in this game instance. 
+    // Find the listener in this game instance.
     // We check the main camera first, then look for any AudioListener component.
     AudioListener? listener;
     if (game.cameras.isReady) {
-       listener = game.cameras.main.gameObject.tryGetComponent<AudioListener>();
+      listener = game.cameras.main.gameObject.tryGetComponent<AudioListener>();
     }
-    
+
     listener ??= game.cameras.allCameras
         .map((c) => c.gameObject.tryGetComponent<AudioListener>())
         .whereType<AudioListener>()
@@ -137,12 +138,13 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
       return;
     }
 
-    final listenerTransform = listener.gameObject.getComponent<ObjectTransform>();
-    
+    final listenerTransform = listener.gameObject
+        .getComponent<ObjectTransform>();
+
     // Calculate relative position
     final sourceWorldPos = transform.position;
     final listenerWorldPos = listenerTransform.position;
-    
+
     double dx = sourceWorldPos.dx - listenerWorldPos.dx;
     double dy = sourceWorldPos.dy - listenerWorldPos.dy;
 
@@ -150,13 +152,13 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
     final angle = -listenerTransform.angle;
     final cosA = math.cos(angle);
     final sinA = math.sin(angle);
-    
+
     final rx = dx * cosA - dy * sinA;
     final ry = dx * sinA + dy * cosA;
 
     // We set velocity to 0 for now as we don't track it explicitly in this simplified version
     soloud.SoLoud.instance.set3dSourceParameters(_handle!, rx, ry, 0, 0, 0, 0);
-    
+
     // Update other properties if they changed
     soloud.SoLoud.instance.setVolume(_handle!, volume);
     soloud.SoLoud.instance.setRelativePlaySpeed(_handle!, pitch);
