@@ -7,6 +7,7 @@ import 'package:example/docs/camera_example.dart';
 import 'package:example/docs/coroutine_example.dart';
 import 'package:example/docs/sprites_example.dart';
 import 'package:example/docs/audio_example.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// This is the entry point used exclusively for the GitHub Pages documentation site.
 /// It acts as a router to load specific "Cookbook" examples based on the URL hash,
@@ -50,7 +51,12 @@ class _DocsRouterAppState extends State<DocsRouterApp> {
                   child: CircularProgressIndicator(color: Colors.white),
                 );
               }
-              return const Game(child: app.BattleWorld());
+              return DefaultTextStyle(
+                style: GoogleFonts.jersey10(),
+                child: const Game(
+                  child: app.BattleWorld(),
+                ),
+              );
             },
           ),
         );
