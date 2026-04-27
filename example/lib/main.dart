@@ -596,32 +596,77 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
     final int endY = (bounds.bottom / size).ceil() + 2;
 
     // Iterate only over visible tiles.
-    canvas.save();
-    // Flip once for the entire background
-    canvas.scale(1, -1);
+    final int count = (endX - startX + 1) * (endY - startY + 1);
+    final transforms = Float32List(count * 4);
+    final rects = Float32List(count * 4);
 
+    int idx = 0;
     for (int y = startY; y <= endY; y++) {
       for (int x = startX; x <= endX; x++) {
-        // Draw grass
-        // We use -(y * size + size) because the canvas is flipped.
-        canvas.drawImageRect(
+        // RSTransform: scos, ssin, tx, ty
+        // Since we are inside a scale(1, -1) block, we just need translation.
+        transforms[idx * 4 + 0] = 1.0;
+        transforms[idx * 4 + 1] = 0.0;
+        transforms[idx * 4 + 2] = x * size;
+        transforms[idx * 4 + 3] = -(y * size + size);
+
+        rects[idx * 4 + 0] = grass.rect.left;
+        rects[idx * 4 + 1] = grass.rect.top;
+        rects[idx * 4 + 2] = grass.rect.right;
+        rects[idx * 4 + 3] = grass.rect.bottom;
+
+        idx++;
+      }
+    }
+
+    canvas.save();
+    canvas.scale(1, -1);
+    canvas.drawRawAtlas(
+      grass.texture.image,
+      transforms,
+      rects,
+      null,
+      null,
+      null,
+      _paint,
+    );
+
+    // Only draw deco in main pass to save minimap performance
+    if (!game.isSecondaryPass) {
+      final decoTransforms = Float32List(count * 4);
+      final decoRects = Float32List(count * 4);
+      int decoCount = 0;
+
+      for (int y = startY; y <= endY; y++) {
+        for (int x = startX; x <= endX; x++) {
+          final h = _hash(x, y);
+          if (h % 10 == 0) {
+            final deco = _sheet[(0, 3 + (h % 6))];
+            decoTransforms[decoCount * 4 + 0] = 1.0;
+            decoTransforms[decoCount * 4 + 1] = 0.0;
+            decoTransforms[decoCount * 4 + 2] = x * size;
+            decoTransforms[decoCount * 4 + 3] = -(y * size + size);
+
+            decoRects[decoCount * 4 + 0] = deco.rect.left;
+            decoRects[decoCount * 4 + 1] = deco.rect.top;
+            decoRects[decoCount * 4 + 2] = deco.rect.right;
+            decoRects[decoCount * 4 + 3] = deco.rect.bottom;
+
+            decoCount++;
+          }
+        }
+      }
+
+      if (decoCount > 0) {
+        canvas.drawRawAtlas(
           grass.texture.image,
-          grass.rect,
-          ui.Rect.fromLTWH(x * size, -(y * size + size), size, size),
+          decoTransforms.sublist(0, decoCount * 4),
+          decoRects.sublist(0, decoCount * 4),
+          null,
+          null,
+          null,
           _paint,
         );
-
-        // Draw deco
-        final h = _hash(x, y);
-        if (h % 10 == 0) {
-          final deco = _sheet[(0, 3 + (h % 6))];
-          canvas.drawImageRect(
-            deco.texture.image,
-            deco.rect,
-            ui.Rect.fromLTWH(x * size, -(y * size + size), size, size),
-            _paint,
-          );
-        }
       }
     }
     canvas.restore();
