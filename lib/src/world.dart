@@ -22,6 +22,9 @@ class RenderWorld extends RenderProxyBox {
   GameEngine game;
 
   RenderWorld({required this.game});
+  
+  @override
+  bool get isRepaintBoundary => true;
 
   Matrix4? _getTransform() {
     if (!game.cameras.isReady) return null;
@@ -61,12 +64,17 @@ class RenderWorld extends RenderProxyBox {
       context.paintChild(child!, Offset.zero);
       context.canvas.restore();
     } else {
-      context.pushTransform(needsCompositing, offset, transform, (
-        context,
-        offset,
-      ) {
-        context.paintChild(child!, offset);
-      });
+      game.currentRenderCamera = game.cameras.main;
+      try {
+        context.pushTransform(needsCompositing, offset, transform, (
+          context,
+          offset,
+        ) {
+          context.paintChild(child!, offset);
+        });
+      } finally {
+        game.currentRenderCamera = null;
+      }
     }
   }
 

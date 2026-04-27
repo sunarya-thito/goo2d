@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:meta/meta.dart';
 import 'input.dart';
 import 'collision.dart';
 import 'camera.dart';
@@ -27,6 +28,10 @@ class GameEngine {
   final CameraSystem _cameras;
   final ScreenSystem _screen;
   final AudioSystem _audio;
+
+  /// The currently rendering camera. Only set during the paint pass.
+  @internal
+  Camera? currentRenderCamera;
 
   GameEngine._create({
     required TickerState ticker,

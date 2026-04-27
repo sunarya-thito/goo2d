@@ -2,7 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:goo2d/goo2d.dart';
 
 abstract class StatefulGameWidget extends RenderObjectWidget {
-  const StatefulGameWidget({super.key});
+  final int layer;
+
+  const StatefulGameWidget({
+    super.key,
+    this.layer = RenderLayer.defaultLayer,
+  });
 
   @override
   StatefulGameElement createElement() => StatefulGameElement(this);
@@ -84,6 +89,7 @@ class StatefulGameElement extends GameObjectElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    layer = (widget as StatefulGameWidget).layer;
     state = (widget as StatefulGameWidget).createState();
     state._element = this;
     super.mount(parent, newSlot);
@@ -97,6 +103,7 @@ class StatefulGameElement extends GameObjectElement {
 
   @override
   void update(StatefulGameWidget newWidget) {
+    layer = newWidget.layer;
     final oldWidget = widget as StatefulGameWidget;
     super.update(newWidget);
     state.didUpdateWidget(oldWidget);

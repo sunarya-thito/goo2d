@@ -31,6 +31,9 @@ class RenderCameraView extends RenderProxyBox {
   GameTag cameraTag;
 
   RenderCameraView({required this.game, required this.cameraTag});
+  
+  @override
+  bool get isRepaintBoundary => true;
 
   @override
   bool get alwaysNeedsCompositing => false;
@@ -105,6 +108,7 @@ class RenderCameraView extends RenderProxyBox {
 
     if (world != null && world.child != null) {
       game.isSecondaryPass = true;
+      game.currentRenderCamera = camera;
       try {
         context.canvas.save();
         context.canvas.clipRect(offset & size);
@@ -115,6 +119,7 @@ class RenderCameraView extends RenderProxyBox {
         context.canvas.restore();
       } finally {
         game.isSecondaryPass = false;
+        game.currentRenderCamera = null;
       }
     }
 
@@ -137,6 +142,12 @@ class RenderCameraView extends RenderProxyBox {
         _paintFiltered(context, childOffset, child);
       });
     } else {
+      if (node is GameRenderObject) {
+        final camera = cameraTag.gameObject?.tryGetComponent<Camera>();
+        if (camera != null && (node.object.layer & camera.cullingMask) == 0) {
+          return;
+        }
+      }
       context.paintChild(node, offset);
     }
   }

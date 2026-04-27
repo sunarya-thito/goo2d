@@ -16,3 +16,14 @@ class RenderEvent extends Event<Renderable> {
     listener.render(canvas);
   }
 }
+
+/// Bitmask for rendering layers.
+class RenderLayer {
+  static const int none = 0;
+  static const int defaultLayer = 1 << 0;
+  static const int world = 1 << 0;
+  static const int ui = 1 << 1;
+  static const int all = 0xFFFFFFFF;
+
+  RenderLayer._();
+}

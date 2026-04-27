@@ -151,7 +151,8 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
         Camera()
           ..depth = 0.0
           ..orthographicSize = 3.0
-          ..backgroundColor = Colors.black87,
+          ..backgroundColor = Colors.black87
+          ..cullingMask = RenderLayer.world,
         FollowTarget(targetTag: playerTag),
       ],
     );
@@ -160,9 +161,12 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     yield* enemies;
 
     // HUD
-    yield const InstructionsUI(key: GameTag('Instructions'));
-    yield const MinimapUI(key: GameTag('Minimap'));
-    yield const FPSUI(key: GameTag('FPS'));
+    yield const InstructionsUI(
+      key: GameTag('Instructions'),
+      layer: RenderLayer.ui,
+    );
+    yield const MinimapUI(key: GameTag('Minimap'), layer: RenderLayer.ui);
+    yield const FPSUI(key: GameTag('FPS'), layer: RenderLayer.ui);
   }
 
   @override
@@ -593,39 +597,42 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
     final int endY = (bounds.bottom / size).ceil() + 2;
 
     // Iterate only over visible tiles.
+    canvas.save();
+    // Flip once for the entire background
+    canvas.scale(1, -1);
+
     for (int y = startY; y <= endY; y++) {
-      // Optimize by translating/scaling once per row instead of per tile
-      canvas.save();
-      canvas.translate(startX * size, y * size + size);
-      canvas.scale(1, -1);
       for (int x = startX; x <= endX; x++) {
+        // Draw grass
+        // We use -(y * size + size) because the canvas is flipped.
         canvas.drawImageRect(
           grass.texture.image,
           grass.rect,
-          ui.Rect.fromLTWH(0, 0, size + 0.01, size + 0.01),
+          ui.Rect.fromLTWH(x * size, -(y * size + size), size, size),
           _paint,
         );
+
+        // Draw deco
         final h = _hash(x, y);
         if (h % 10 == 0) {
           final deco = _sheet[(0, 3 + (h % 6))];
           canvas.drawImageRect(
             deco.texture.image,
             deco.rect,
-            ui.Rect.fromLTWH(0, 0, size + 0.01, size + 0.01),
+            ui.Rect.fromLTWH(x * size, -(y * size + size), size, size),
             _paint,
           );
         }
-        canvas.translate(size, 0);
       }
-      canvas.restore();
     }
+    canvas.restore();
   }
 }
 
 // --- UI Components ---
 
 class InstructionsUI extends StatefulGameWidget {
-  const InstructionsUI({super.key});
+  const InstructionsUI({super.key, super.layer});
   @override
   GameState<InstructionsUI> createState() => InstructionsState();
 }
@@ -653,7 +660,7 @@ class InstructionsState extends GameState<InstructionsUI> {
 }
 
 class MinimapUI extends StatefulGameWidget {
-  const MinimapUI({super.key});
+  const MinimapUI({super.key, super.layer});
   @override
   GameState<MinimapUI> createState() => MinimapState();
 }
@@ -696,7 +703,7 @@ class BattleWorldProvider extends InheritedWidget {
 }
 
 class FPSUI extends StatefulGameWidget {
-  const FPSUI({super.key});
+  const FPSUI({super.key, super.layer});
   @override
   GameState<FPSUI> createState() => FPSState();
 }

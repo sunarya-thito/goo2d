@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
 
 enum SpriteExampleTexture with AssetEnum, TextureAssetEnum {
-  explosion;
+  explosion
+  ;
+
   @override
   AssetSource get source => AssetSource.local("assets/sprites/$name.png");
 }
@@ -36,7 +38,7 @@ class SpriteWorld extends StatefulGameWidget {
   GameState<SpriteWorld> createState() => _SpriteWorldState();
 }
 
-class _SpriteWorldState extends GameState<SpriteWorld> {
+class _SpriteWorldState extends GameState<SpriteWorld> with Tickable {
   late final SpriteSheet explosionSheet;
   int _currentFrame = 0;
   double _timer = 0;

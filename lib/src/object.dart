@@ -22,6 +22,10 @@ abstract class GameObject implements BuildContext {
   Iterable<GameObject> get childrenObjects;
   Iterable<Component> get components;
 
+  /// The rendering layer of this object.
+  int get layer;
+  set layer(int value);
+
   void addComponent(
     Component component, [
     Component? a,
@@ -82,7 +86,18 @@ abstract class GameObjectElement extends RenderObjectElement
   List<Element> _childElements = [];
   GameEngine? _game;
 
+  int _layer = RenderLayer.defaultLayer;
   GameObjectElement(super.widget);
+
+  @override
+  int get layer => _layer;
+
+  @override
+  set layer(int value) {
+    if (_layer == value) return;
+    _layer = value;
+    renderObject.markNeedsPaint();
+  }
 
   @override
   void didChangeDependencies() {
@@ -398,11 +413,13 @@ class GameWidget extends RenderObjectWidget {
 
   final List<Widget> children;
   final Iterable<Component> Function() components;
+  final int layer;
 
   const GameWidget({
     super.key,
     this.children = const [],
     this.components = _emptyComponents,
+    this.layer = RenderLayer.defaultLayer,
   });
 
   @override
@@ -432,6 +449,7 @@ class GameElement extends GameObjectElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    layer = widget.layer;
     super.mount(parent, newSlot);
     final components = widget.components();
     for (var component in components) {
@@ -442,6 +460,7 @@ class GameElement extends GameObjectElement {
 
   @override
   void update(GameWidget newWidget) {
+    layer = newWidget.layer;
     super.update(newWidget);
     updateChildElements(newWidget.children);
   }
@@ -519,6 +538,11 @@ class GameRenderObject extends RenderBox
 
   @override
   void paint(PaintingContext context, Offset offset) {
+    final camera = object.game.currentRenderCamera;
+    if (camera != null && (object.layer & camera.cullingMask) == 0) {
+      return;
+    }
+
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
 
     if (optionalTransform != null) {
@@ -526,6 +550,25 @@ class GameRenderObject extends RenderBox
         context.canvas.save();
         context.canvas.translate(offset.dx, offset.dy);
         context.canvas.transform(optionalTransform.localMatrix.storage);
+
+        // Frustum culling
+        final optionalSize = object.tryGetComponent<ObjectSize>();
+        if (optionalSize != null) {
+          final clip = context.canvas.getLocalClipBounds();
+          if (!clip.isInfinite) {
+            final objRect = Rect.fromLTWH(
+              0,
+              0,
+              optionalSize.size.width,
+              optionalSize.size.height,
+            );
+            if (!clip.overlaps(objRect)) {
+              context.canvas.restore();
+              return;
+            }
+          }
+        }
+
         RenderEvent(context.canvas).dispatchTo(object);
         defaultPaint(context, Offset.zero);
         context.canvas.restore();
@@ -535,6 +578,23 @@ class GameRenderObject extends RenderBox
           offset,
           optionalTransform.localMatrix,
           (context, offset) {
+            // Frustum culling in composited layer
+            final optionalSize = object.tryGetComponent<ObjectSize>();
+            if (optionalSize != null) {
+              final clip = context.canvas.getLocalClipBounds();
+              if (!clip.isInfinite) {
+                final objRect = Rect.fromLTWH(
+                  0,
+                  0,
+                  optionalSize.size.width,
+                  optionalSize.size.height,
+                );
+                if (!clip.overlaps(objRect)) {
+                  return;
+                }
+              }
+            }
+
             RenderEvent(context.canvas).dispatchTo(object);
             defaultPaint(context, offset);
           },
