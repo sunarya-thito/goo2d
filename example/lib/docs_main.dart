@@ -24,7 +24,7 @@ class DocsRouterApp extends StatefulWidget {
 }
 
 class _DocsRouterAppState extends State<DocsRouterApp> {
-  String _route = '/';
+  String _route = '/collision';
 
   @override
   void initState() {
@@ -52,7 +52,7 @@ class _DocsRouterAppState extends State<DocsRouterApp> {
                 );
               }
               return DefaultTextStyle(
-                style: GoogleFonts.jersey10(),
+                style: GoogleFonts.jersey10(letterSpacing: 2),
                 child: const Game(
                   child: app.BattleWorld(),
                 ),

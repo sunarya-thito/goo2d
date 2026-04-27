@@ -45,6 +45,8 @@ If you are hosting your game on a platform that does not allow you to set custom
 <script src="coi-serviceworker.min.js"></script>
 ```
 
+3. Deploy it with `--pwa-strategy=none` flag to prevent flutter service worker from interfering with coi-serviceworker.min.js.
+
 This script will automatically reload the page and set the required isolation context via a service worker.
 
 ---

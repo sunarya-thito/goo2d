@@ -5,7 +5,8 @@ import 'dart:math' as math;
 
 enum CollisionExampleTexture with AssetEnum, TextureAssetEnum {
   enemy,
-  ship;
+  ship
+  ;
 
   @override
   AssetSource get source => AssetSource.local("assets/sprites/$name.png");
@@ -63,7 +64,7 @@ class _CollisionExampleWorldState extends GameState<CollisionExampleWorld> {
   @override
   Iterable<Widget> build(BuildContext context) sync* {
     yield const MovingBox();
-    
+
     // Denser grid fully contained within the visible area (orthographicSize 5.0)
     for (double x = -8; x <= 8; x += 2.0) {
       for (double y = -4; y <= 4; y += 2.0) {
@@ -82,6 +83,13 @@ class _CollisionExampleWorldState extends GameState<CollisionExampleWorld> {
       ],
     );
   }
+
+  List<Component> get c => [
+    ObjectTransform(),
+    Camera()
+      ..orthographicSize = 5.0
+      ..depth = 1.0,
+  ];
 }
 
 class MovingBox extends StatefulGameWidget {
@@ -128,7 +136,7 @@ class BouncingBehavior extends Behavior
   void onOuterScreenEnter() {
     final transform = getComponent<ObjectTransform>();
     final camera = game.cameras.main;
-    
+
     // Get world coordinates of screen corners
     final tl = camera.screenToWorldPoint(Offset.zero, game.ticker.screenSize);
     final br = camera.screenToWorldPoint(
@@ -144,18 +152,30 @@ class BouncingBehavior extends Behavior
     final random = math.Random();
     // Bounce horizontally
     if (transform.position.dx - 0.8 <= left && _velocity.dx < 0) {
-      _velocity = Offset(-_velocity.dx, _velocity.dy + (random.nextDouble() - 0.5) * 0.5);
+      _velocity = Offset(
+        -_velocity.dx,
+        _velocity.dy + (random.nextDouble() - 0.5) * 0.5,
+      );
     } else if (transform.position.dx + 0.8 >= right && _velocity.dx > 0) {
-      _velocity = Offset(-_velocity.dx, _velocity.dy + (random.nextDouble() - 0.5) * 0.5);
+      _velocity = Offset(
+        -_velocity.dx,
+        _velocity.dy + (random.nextDouble() - 0.5) * 0.5,
+      );
     }
 
     // Bounce vertically
     if (transform.position.dy + 0.8 >= top && _velocity.dy > 0) {
-      _velocity = Offset(_velocity.dx + (random.nextDouble() - 0.5) * 0.5, -_velocity.dy);
+      _velocity = Offset(
+        _velocity.dx + (random.nextDouble() - 0.5) * 0.5,
+        -_velocity.dy,
+      );
     } else if (transform.position.dy - 0.8 <= bottom && _velocity.dy < 0) {
-      _velocity = Offset(_velocity.dx + (random.nextDouble() - 0.5) * 0.5, -_velocity.dy);
+      _velocity = Offset(
+        _velocity.dx + (random.nextDouble() - 0.5) * 0.5,
+        -_velocity.dy,
+      );
     }
-    
+
     // Normalize speed
     final speed = 3.0;
     final currentSpeed = _velocity.distance;
@@ -181,30 +201,40 @@ class BouncingBehavior extends Behavior
   void onCollision(CollisionEvent event) {
     _hitCount = (_hitCount + 1) % _colors.length;
     _renderer.color = _colors[_hitCount];
-    
+
     final transform = getComponent<ObjectTransform>();
     final selfPos = transform.position;
-    final otherPos = event.other.gameObject.getComponent<ObjectTransform>().position;
+    final otherPos = event.other.gameObject
+        .getComponent<ObjectTransform>()
+        .position;
     final diff = selfPos - otherPos;
-    
+
     // Determine which axis has more overlap/separation
     final random = math.Random();
     if (diff.dx.abs() > diff.dy.abs()) {
       // Horizontal collision: Only flip if moving towards the object
-      if ((_velocity.dx > 0 && diff.dx < 0) || (_velocity.dx < 0 && diff.dx > 0)) {
-        _velocity = Offset(-_velocity.dx, _velocity.dy + (random.nextDouble() - 0.5) * 0.5);
+      if ((_velocity.dx > 0 && diff.dx < 0) ||
+          (_velocity.dx < 0 && diff.dx > 0)) {
+        _velocity = Offset(
+          -_velocity.dx,
+          _velocity.dy + (random.nextDouble() - 0.5) * 0.5,
+        );
         // Small push-out to prevent sticking
         transform.position += Offset(_velocity.dx.sign * 0.1, 0);
       }
     } else {
       // Vertical collision: Only flip if moving towards the object
-      if ((_velocity.dy > 0 && diff.dy < 0) || (_velocity.dy < 0 && diff.dy > 0)) {
-        _velocity = Offset(_velocity.dx + (random.nextDouble() - 0.5) * 0.5, -_velocity.dy);
+      if ((_velocity.dy > 0 && diff.dy < 0) ||
+          (_velocity.dy < 0 && diff.dy > 0)) {
+        _velocity = Offset(
+          _velocity.dx + (random.nextDouble() - 0.5) * 0.5,
+          -_velocity.dy,
+        );
         // Small push-out to prevent sticking
         transform.position += Offset(0, _velocity.dy.sign * 0.1);
       }
     }
-    
+
     // Normalize speed to keep it consistent
     final speed = 3.0; // Fixed speed
     final currentSpeed = _velocity.distance;

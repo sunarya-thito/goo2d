@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Goo2D',
+  title: 'GOO2D',
   tagline: 'A Low Level Flutter 2D Game Engine',
   favicon: 'img/favicon.ico',
 
@@ -50,17 +50,23 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/docusaurus-social-card.jpg',
+    metadata: [
+      {
+        name: 'google-site-verification',
+        content: 'k4G19fqxzdMBYSdYwj8sAVvyx4X7ijNm2f8YJn2t2ZQ',
+      },
+    ],
+    image: 'img/header.jpg',
     colorMode: {
       defaultMode: 'dark',
       disableSwitch: true,
       respectPrefersColorScheme: false,
     },
     navbar: {
-      title: 'Goo2D',
+      title: 'GOO2D',
       logo: {
-        alt: 'Goo2D Logo',
-        src: 'img/logo.svg',
+        alt: 'GOO2D Logo',
+        src: 'img/gluey.png',
       },
       items: [
         {

@@ -670,8 +670,8 @@ class InstructionsState extends GameState<InstructionsUI> {
           child: const Text(
             'W (thrust) - A (rotate) - D (rotate) - Space (shoot)',
             style: TextStyle(
-              fontSize: 24,
-              color: Colors.white,
+              fontSize: 48,
+              color: Colors.black,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -758,8 +758,8 @@ class FPSState extends GameState<FPSUI> with Tickable {
           child: Text(
             'FPS: ${_fps.round()}',
             style: const TextStyle(
-              fontSize: 20,
-              color: Colors.white,
+              fontSize: 36,
+              color: Colors.black,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -790,8 +790,8 @@ class MuteState extends GameState<MuteUI> {
             child: IconButton(
               icon: Icon(
                 _muted ? Icons.volume_off : Icons.volume_up,
-                color: Colors.white,
-                size: 32,
+                color: Colors.black,
+                size: 48,
               ),
               onPressed: () {
                 setState(() {
