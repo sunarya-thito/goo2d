@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
 
 enum AudioExampleSound with AssetEnum, AudioAssetEnum {
-  bgm(type: 'wav'),
+  bgm,
   click,
   ;
 
-  final String type;
-  const AudioExampleSound({this.type = 'ogg'});
-
   @override
-  AssetSource get source => AssetSource.local('assets/audios/$name.$type');
+  AssetSource get source => AssetSource.local('assets/audios/$name.ogg');
 }
 
 class AudioExample extends StatefulGameWidget {

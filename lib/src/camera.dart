@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart' show Colors;
+import 'package:meta/meta.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:vector_math/vector_math_64.dart' hide Colors;
 
@@ -25,6 +26,15 @@ class Camera extends Behavior with LifecycleListener {
   double farClipPlane = 100.0;
 
   double _depth = 0.0;
+  
+  Matrix4? _cachedProjectionMatrix;
+  Size? _cachedProjectionSize;
+  double? _cachedOrthographicSize;
+
+  Matrix4? _cachedFullMatrix;
+  Matrix4? _cachedFullMatrixInverse;
+  Size? _cachedFullMatrixSize;
+  int? _cachedFullMatrixTransformVersion;
 
   /// Camera's rendering priority. Higher values are rendered later.
   /// The camera with the highest depth is treated as the MainCamera.
@@ -51,18 +61,24 @@ class Camera extends Behavior with LifecycleListener {
   Matrix4 get worldToCameraMatrix {
     final transform =
         gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
-    return Matrix4.inverted(transform.worldMatrix);
+    return transform.worldInverse;
   }
 
   /// Matrix that transforms from camera to world space.
   Matrix4 get cameraToWorldMatrix {
     final transform =
         gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
-    return transform.worldMatrix.clone();
+    return transform.worldMatrix;
   }
 
   /// The projection matrix (strictly orthographic).
   Matrix4 projectionMatrix(Size screenSize) {
+    if (_cachedProjectionMatrix != null &&
+        _cachedProjectionSize == screenSize &&
+        _cachedOrthographicSize == orthographicSize) {
+      return _cachedProjectionMatrix!;
+    }
+
     final aspect = screenSize.width / screenSize.height;
     final halfHeight = orthographicSize;
     final halfWidth = halfHeight * aspect;
@@ -76,11 +92,26 @@ class Camera extends Behavior with LifecycleListener {
       nearClipPlane,
       farClipPlane,
     );
+
+    _cachedProjectionMatrix = r;
+    _cachedProjectionSize = screenSize;
+    _cachedOrthographicSize = orthographicSize;
+
     return r;
   }
 
-  /// Converts a world space point to screen space point.
-  Offset worldToScreenPoint(Offset worldPoint, Size screenSize) {
+  /// Matrix that transforms from world space to screen space.
+  @internal
+  Matrix4 getFullMatrix(Size screenSize) {
+    final transform =
+        gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
+    if (_cachedFullMatrix != null &&
+        _cachedFullMatrixSize == screenSize &&
+        _cachedFullMatrixTransformVersion == transform.version &&
+        _cachedOrthographicSize == orthographicSize) {
+      return _cachedFullMatrix!;
+    }
+
     final viewMatrix = worldToCameraMatrix;
     final projMatrix = projectionMatrix(screenSize);
 
@@ -88,7 +119,33 @@ class Camera extends Behavior with LifecycleListener {
       ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
       ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
 
-    final fullMatrix = viewportMatrix * projMatrix * viewMatrix;
+    _cachedFullMatrix = viewportMatrix * projMatrix * viewMatrix;
+    _cachedFullMatrixInverse = null; // Clear inverse cache
+    _cachedFullMatrixSize = screenSize;
+    _cachedFullMatrixTransformVersion = transform.version;
+
+    return _cachedFullMatrix!;
+  }
+
+  /// The inverse of [getFullMatrix].
+  @internal
+  Matrix4 getFullMatrixInverse(Size screenSize) {
+    if (_cachedFullMatrixInverse != null &&
+        _cachedFullMatrixSize == screenSize &&
+        _cachedFullMatrixTransformVersion ==
+            (gameObject.tryGetComponent<ObjectTransform>()?.version ?? -1) &&
+        _cachedOrthographicSize == orthographicSize) {
+      return _cachedFullMatrixInverse!;
+    }
+
+    final full = getFullMatrix(screenSize);
+    _cachedFullMatrixInverse = Matrix4.inverted(full);
+    return _cachedFullMatrixInverse!;
+  }
+
+  /// Converts a world space point to screen space point.
+  Offset worldToScreenPoint(Offset worldPoint, Size screenSize) {
+    final fullMatrix = getFullMatrix(screenSize);
     final worldVec = Vector4(worldPoint.dx, worldPoint.dy, 0.0, 1.0);
     final screenVec = fullMatrix.transform(worldVec);
 
@@ -97,16 +154,7 @@ class Camera extends Behavior with LifecycleListener {
 
   /// Converts a screen space point to world space point.
   Offset screenToWorldPoint(Offset screenPoint, Size screenSize) {
-    final viewMatrix = worldToCameraMatrix;
-    final projMatrix = projectionMatrix(screenSize);
-
-    final viewportMatrix = Matrix4.identity()
-      ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
-      ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
-
-    final fullMatrix = viewportMatrix * projMatrix * viewMatrix;
-    final invMatrix = Matrix4.inverted(fullMatrix);
-
+    final invMatrix = getFullMatrixInverse(screenSize);
     final screenVec = Vector4(screenPoint.dx, screenPoint.dy, 0.0, 1.0);
     final worldVec = invMatrix.transform(screenVec);
 

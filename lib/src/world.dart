@@ -34,14 +34,7 @@ class RenderWorld extends RenderProxyBox {
       return null;
     }
 
-    final viewMatrix = camera.worldToCameraMatrix;
-    final projMatrix = camera.projectionMatrix(screenSize);
-
-    final viewportMatrix = Matrix4.identity()
-      ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
-      ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
-
-    return viewportMatrix * projMatrix * viewMatrix;
+    return camera.getFullMatrix(screenSize);
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/painting.dart';
+import 'package:meta/meta.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:vector_math/vector_math_64.dart';
 
@@ -96,7 +97,8 @@ class ObjectTransform extends Component with LifecycleListener {
     return _cachedWorld!;
   }
 
-  Matrix4 get _worldInverse {
+  @internal
+  Matrix4 get worldInverse {
     if (_cachedWorldInverse != null) return _cachedWorldInverse!;
     _cachedWorldInverse = Matrix4.inverted(worldMatrix);
     return _cachedWorldInverse!;
@@ -110,7 +112,7 @@ class ObjectTransform extends Component with LifecycleListener {
 
   set position(Offset value) {
     if (_parentTransform != null) {
-      final inv = _parentTransform!._worldInverse;
+      final inv = _parentTransform!.worldInverse;
       final local = inv.transform3(Vector3(value.dx, value.dy, 0));
       _localPosition = Offset(local.x, local.y);
     } else {
@@ -162,7 +164,7 @@ class ObjectTransform extends Component with LifecycleListener {
 
   /// Transforms a position from world space to local space.
   Offset worldToLocal(Offset world) {
-    final local = _worldInverse.transform3(Vector3(world.dx, world.dy, 0));
+    final local = worldInverse.transform3(Vector3(world.dx, world.dy, 0));
     return Offset(local.x, local.y);
   }
 

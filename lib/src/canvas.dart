@@ -32,20 +32,7 @@ class RenderCanvasWidget extends RenderProxyBox {
       return null;
     }
     
-    final viewMatrix = camera.worldToCameraMatrix;
-    final projMatrix = camera.projectionMatrix(screenSize);
-
-    final viewportMatrix = Matrix4.identity()
-      ..translateByDouble(screenSize.width / 2, screenSize.height / 2, 0.0, 1.0)
-      ..scaleByDouble(screenSize.width / 2, -screenSize.height / 2, 1.0, 1.0);
-
-    final fullCameraMatrix = viewportMatrix * projMatrix * viewMatrix;
-    
-    try {
-      return Matrix4.inverted(fullCameraMatrix);
-    } catch (e) {
-      return null;
-    }
+    return camera.getFullMatrixInverse(screenSize);
   }
 
   @override
