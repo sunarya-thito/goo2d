@@ -314,6 +314,17 @@ class AudioSystem implements GameSystem {
     _handles.remove(handle);
   }
 
+  double _globalVolume = 1.0;
+
+  /// Gets or sets the global volume for this game instance (0.0 to 1.0).
+  double get globalVolume => _globalVolume;
+  set globalVolume(double value) {
+    _globalVolume = value.clamp(0.0, 1.0);
+    if (SoLoud.instance.isInitialized) {
+      SoLoud.instance.setGlobalVolume(_globalVolume);
+    }
+  }
+
   @override
   void dispose() {
     if (SoLoud.instance.isInitialized) {

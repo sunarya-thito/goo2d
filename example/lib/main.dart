@@ -165,6 +165,7 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     );
     yield const MinimapUI(key: GameTag('Minimap'), layer: RenderLayer.ui);
     yield const FPSUI(key: GameTag('FPS'), layer: RenderLayer.ui);
+    yield const MuteUI(key: GameTag('Mute'), layer: RenderLayer.ui);
   }
 
   @override
@@ -546,12 +547,19 @@ class BulletOutOfScreenDestroyer extends Behavior
 
 class TiledBackground extends Component with LifecycleListener, Renderable {
   late SpriteSheet _sheet;
+  late GameSprite _grass;
+
   @override
-  void onMounted() => _sheet = SpriteSheet.grid(
-    texture: MyGameTexture.tilesPacked,
-    rows: 10,
-    columns: 12,
-  );
+  void onMounted() {
+    _sheet = SpriteSheet.grid(
+      texture: MyGameTexture.tilesPacked,
+      rows: 10,
+      columns: 12,
+      ppu: 64.0,
+    );
+    _grass = _sheet[(2, 4)];
+  }
+
   int _hash(int x, int y) {
     var h = x * 374761393 + y * 668265263;
     return (h ^ (h >> 13)) * 12741261 & 0x7FFFFFFF;
@@ -563,8 +571,7 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
 
   @override
   void render(ui.Canvas canvas) {
-    final grass = _sheet[(2, 4)];
-    final double size = grass.rect.width / grass.pixelsPerUnit;
+    final double size = _grass.rect.width / _grass.pixelsPerUnit;
 
     // Get the visible area in world space.
     ui.Rect bounds = canvas.getLocalClipBounds();
@@ -595,78 +602,49 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
     final int startY = (bounds.top / size).floor() - 2;
     final int endY = (bounds.bottom / size).ceil() + 2;
 
-    // Iterate only over visible tiles.
-    final int count = (endX - startX + 1) * (endY - startY + 1);
-    final transforms = Float32List(count * 4);
-    final rects = Float32List(count * 4);
+    canvas.save();
+    // Flip the canvas for the entire background.
+    canvas.scale(1, -1);
 
-    int idx = 0;
-    for (int y = startY; y <= endY; y++) {
-      for (int x = startX; x <= endX; x++) {
-        // RSTransform: scos, ssin, tx, ty
-        // Since we are inside a scale(1, -1) block, we just need translation.
-        transforms[idx * 4 + 0] = 1.0;
-        transforms[idx * 4 + 1] = 0.0;
-        transforms[idx * 4 + 2] = x * size;
-        transforms[idx * 4 + 3] = -(y * size + size);
-
-        rects[idx * 4 + 0] = grass.rect.left;
-        rects[idx * 4 + 1] = grass.rect.top;
-        rects[idx * 4 + 2] = grass.rect.right;
-        rects[idx * 4 + 3] = grass.rect.bottom;
-
-        idx++;
-      }
+    // 1. Minimap Optimization
+    // In secondary passes (like the minimap), drawing thousands of tiles is overkill.
+    // We just draw a single representative color for the whole visible area.
+    if (game.isSecondaryPass) {
+      canvas.drawRect(
+        ui.Rect.fromLTRB(
+          startX * size,
+          -(endY * size + size),
+          (endX + 1) * size,
+          -(startY * size),
+        ),
+        ui.Paint()..color = const Color(0xFF354c26),
+      );
+      canvas.restore();
+      return;
     }
 
-    canvas.save();
-    canvas.scale(1, -1);
-    canvas.drawRawAtlas(
-      grass.texture.image,
-      transforms,
-      rects,
-      null,
-      null,
-      null,
-      _paint,
-    );
-
-    // Only draw deco in main pass to save minimap performance
-    if (!game.isSecondaryPass) {
-      final decoTransforms = Float32List(count * 4);
-      final decoRects = Float32List(count * 4);
-      int decoCount = 0;
-
-      for (int y = startY; y <= endY; y++) {
-        for (int x = startX; x <= endX; x++) {
-          final h = _hash(x, y);
-          if (h % 10 == 0) {
-            final deco = _sheet[(0, 3 + (h % 6))];
-            decoTransforms[decoCount * 4 + 0] = 1.0;
-            decoTransforms[decoCount * 4 + 1] = 0.0;
-            decoTransforms[decoCount * 4 + 2] = x * size;
-            decoTransforms[decoCount * 4 + 3] = -(y * size + size);
-
-            decoRects[decoCount * 4 + 0] = deco.rect.left;
-            decoRects[decoCount * 4 + 1] = deco.rect.top;
-            decoRects[decoCount * 4 + 2] = deco.rect.right;
-            decoRects[decoCount * 4 + 3] = deco.rect.bottom;
-
-            decoCount++;
-          }
-        }
-      }
-
-      if (decoCount > 0) {
-        canvas.drawRawAtlas(
-          grass.texture.image,
-          decoTransforms.sublist(0, decoCount * 4),
-          decoRects.sublist(0, decoCount * 4),
-          null,
-          null,
-          null,
+    // 2. Main Pass Rendering
+    for (int y = startY; y <= endY; y++) {
+      for (int x = startX; x <= endX; x++) {
+        // Draw grass
+        canvas.drawImageRect(
+          _grass.texture.image,
+          _grass.rect,
+          ui.Rect.fromLTWH(x * size, -(y * size + size), size, size),
           _paint,
         );
+
+        // Draw deco (Random details)
+        final h = _hash(x, y);
+        if (h % 10 == 0) {
+          final deco = _sheet[(0, 3 + (h % 6))];
+          canvas.drawImageRect(
+            deco.texture.image,
+            deco.rect,
+            ui.Rect.fromLTWH(x * size, -(y * size + size), size, size),
+            _paint,
+          );
+        }
       }
     }
     canvas.restore();
@@ -783,6 +761,44 @@ class FPSState extends GameState<FPSUI> with Tickable {
               fontSize: 20,
               color: Colors.white,
               fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MuteUI extends StatefulGameWidget {
+  const MuteUI({super.key, super.layer});
+  @override
+  GameState<MuteUI> createState() => MuteState();
+}
+
+class MuteState extends GameState<MuteUI> {
+  bool _muted = false;
+
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {
+    yield CanvasWidget(
+      child: Align(
+        alignment: Alignment.bottomRight,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Material(
+            color: Colors.transparent,
+            child: IconButton(
+              icon: Icon(
+                _muted ? Icons.volume_off : Icons.volume_up,
+                color: Colors.white,
+                size: 32,
+              ),
+              onPressed: () {
+                setState(() {
+                  _muted = !_muted;
+                  game.audio.globalVolume = _muted ? 0.0 : 1.0;
+                });
+              },
             ),
           ),
         ),
