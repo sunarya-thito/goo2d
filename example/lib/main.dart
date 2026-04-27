@@ -1,14 +1,15 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // --- Assets ---
 
 enum MyGameTexture with AssetEnum, TextureAssetEnum {
   ship,
-  // ignore: constant_identifier_names
-  tiles_packed,
+  tilesPacked,
   enemy,
   explosion,
   ;
@@ -30,9 +31,24 @@ enum MyGameSound with AssetEnum, AudioAssetEnum {
 }
 
 Future<void> loadAllGameAssets() async {
-  await AudioSystem.initialize();
-  await for (final _ in GameAsset.loadAll(MyGameTexture.values)) {}
-  await for (final _ in GameAsset.loadAll(MyGameSound.values)) {}
+  await GoogleFonts.pendingFonts([
+    GoogleFonts.jersey10(),
+  ]);
+  await AudioSystem.initialize(); // we use audio, so we need to initialize it.
+  await for (final p in GameAsset.loadAll(MyGameTexture.values)) {
+    if (kDebugMode) {
+      print(
+        'Loading ${p.loadingAsset.source.name} (${p.assetLoaded}/${p.assetCount})',
+      );
+    }
+  }
+  await for (final p in GameAsset.loadAll(MyGameSound.values)) {
+    if (kDebugMode) {
+      print(
+        'Loading ${p.loadingAsset.source.name} (${p.assetLoaded}/${p.assetCount})',
+      );
+    }
+  }
 }
 
 // --- Entry Point ---
@@ -53,8 +69,11 @@ class MyApp extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            return const Game(
-              child: BattleWorld(),
+            return DefaultTextStyle(
+              style: GoogleFonts.jersey10(),
+              child: const Game(
+                child: BattleWorld(),
+              ),
             );
           },
         ),
@@ -241,7 +260,7 @@ class PlayerState extends GameState<Player> with Tickable {
     super.initState();
     _world = getComponentInParent<BattleWorldState>();
     _bulletSprite = SpriteSheet.grid(
-      texture: MyGameTexture.tiles_packed,
+      texture: MyGameTexture.tilesPacked,
       rows: 10,
       columns: 12,
       ppu: 64.0,
@@ -527,7 +546,7 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
   late SpriteSheet _sheet;
   @override
   void onMounted() => _sheet = SpriteSheet.grid(
-    texture: MyGameTexture.tiles_packed,
+    texture: MyGameTexture.tilesPacked,
     rows: 10,
     columns: 12,
   );

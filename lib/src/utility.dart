@@ -47,21 +47,21 @@ class MathUtils {
     final omega = 2.0 / smoothTime;
     final x = omega * dt;
     final exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
-    
+
     double change = current - target;
     final maxChange = maxSpeed * smoothTime;
     change = change.clamp(-maxChange, maxChange);
-    
+
     final temp = (currentVelocity + omega * change) * dt;
     final newVelocity = (currentVelocity - omega * temp) * exp;
     double newValue = target + (change + temp) * exp;
-    
+
     // Prevent overshooting
     if ((target - current > 0) == (newValue > target)) {
       newValue = target;
       return SmoothDampResult(newValue, 0);
     }
-    
+
     return SmoothDampResult(newValue, newVelocity);
   }
 
@@ -77,17 +77,17 @@ class MathUtils {
     final omega = 2.0 / smoothTime;
     final x = omega * dt;
     final exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
-    
+
     Offset change = current - target;
     final maxChange = maxSpeed * smoothTime;
     if (change.distance > maxChange) {
       change = change / change.distance * maxChange;
     }
-    
+
     final temp = (currentVelocity + change * omega) * dt;
     final newVelocity = (currentVelocity - change * (omega * omega * dt)) * exp;
     final newValue = target + (change + temp) * exp;
-    
+
     return SmoothDampResult(newValue, newVelocity);
   }
 }

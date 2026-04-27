@@ -1,0 +1,60 @@
+name: Deploy Documentation Site to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs_site/**'
+      - 'example/**'
+      - 'lib/**'
+      - '.github/workflows/deploy_docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: docs_site/package-lock.json
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Build Playable Examples (Flutter Web)
+        working-directory: ./example
+        run: |
+          flutter pub get
+          flutter build web -t lib/docs_main.dart --base-href /goo2d/play/
+
+      - name: Copy Flutter Web Build to Docusaurus Static Folder
+        run: |
+          mkdir -p docs_site/static/play
+          cp -r example/build/web/* docs_site/static/play/
+
+      - name: Install Docusaurus Dependencies
+        working-directory: ./docs_site
+        run: npm ci
+
+      - name: Build Docusaurus Site
+        working-directory: ./docs_site
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs_site/build
+          publish_branch: gh-pages

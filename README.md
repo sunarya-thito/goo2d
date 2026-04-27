@@ -1,27 +1,25 @@
 # Goo2D
 
+![Goo2D Battle Example](https://via.placeholder.com/800x400.png?text=[Replace+with+an+Animated+GIF+of+BattleWorld+Here])
+
 > **⚠️ Under Heavy Development**
 >
 > Goo2D is currently in an early, active phase of heavy development. The APIs are subject to change rapidly. At this moment, we **may not accept external contributions**, as the core architecture is still being finalized.
 
-Goo2D is an unopinionated 2D Entity-Component-System (ECS) engine built natively for Flutter. It bridges the gap between traditional game loops and Flutter's RenderObject pipeline, providing a clean, object-oriented architecture for building interactive experiences. 
+A low-level 2D Entity-Component-System (ECS) engine built natively for Flutter. 
 
-Goo2D provides the low-level architectural primitives (GameObjects, Components, Coroutines, and Swept Collision) that allow you to build whatever mechanics you need, with seamless interoperability with Flutter's widget tree.
+Goo2D strips away standard UI boilerplate, providing the architectural primitives—GameObjects, Components, Coroutines, and Swept Collision—required to build games directly on the Flutter Canvas.
 
-## Key Features
+## Technical Highlights
 
-- **Strict Entity-Component Architecture**: Everything is a `GameObject` or a `Component`. No magic, just clean composition.
-- **Coroutines & Behaviors**: Write asynchronous game logic sequentially using `startCoroutine` and `YieldInstruction`s like `WaitForSeconds` and `WaitUntil`.
-- **Comprehensive Input System**: Fully abstracted `InputAction`s, `ButtonControl`s, and composite bindings.
-- **Kinematic Sweep-and-Prune Collisions**: Zero-allocation, AABB-based collision detection via `BoxCollisionTrigger` and `OvalCollisionTrigger`.
-- **Flutter Native**: `GameScene` and `StatefulGameWidget` integrate perfectly into any Flutter app. Render directly using the Canvas API.
-- **Event Dispatching System**: Clean event broadcasting system with built-in mixins (`Tickable`, `PointerReceiver`, `ScreenCollidable`, etc.) that can be applied directly to components or even to the `GameState` itself.
+* **Strict Entity-Component Architecture:** No inheritance spaghetti. Compose your game logic strictly through `GameObject`s and `Component`s.
+* **Sequential Coroutines:** Stop relying on messy Timers. Write state machines and timing logic sequentially using `startCoroutine` and native yield instructions like `WaitForSeconds`.
+* **Sweep-and-Prune Collision:** Kinematic, AABB-based broadphase collision detection out of the box via `BoxCollisionTrigger`.
+* **Abstracted Input System:** Map raw keyboard and pointer data to logical `InputAction`s using composite bindings.
 
-## Getting Started
+## The 60-Second Quickstart
 
-### 1. Define your GameObject
-
-Create a custom widget extending `StatefulGameWidget` and implement the `GameState`. Because `GameState` acts as a `GameObject`, you can mix in event receivers directly!
+Building a game world uses the standard Flutter `build` syntax you already know, paired with a dedicated `onUpdate` game loop.
 
 ```dart
 import 'package:flutter/material.dart';
@@ -29,7 +27,6 @@ import 'package:goo2d/goo2d.dart';
 
 class Player extends StatefulGameWidget {
   const Player({super.key});
-
   @override
   PlayerState createState() => PlayerState();
 }
@@ -37,39 +34,39 @@ class Player extends StatefulGameWidget {
 class PlayerState extends GameState<Player> with Tickable {
   @override
   void initState() {
+    super.initState();
+    // 1. Attach components to give your object physical presence
     addComponent(
       ObjectTransform()..position = const Offset(50, 50),
       BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 50, 50),
-      // RectangleRenderer is a custom component you create
-      RectangleRenderer()..color = Colors.blue, 
     );
   }
 
   @override
   void onUpdate(double dt) {
-    // This is called every frame automatically because we mixed in Tickable!
+    // 2. The engine ticks this automatically every frame
     final transform = getComponent<ObjectTransform>();
     transform.position += Offset(100 * dt, 0); 
   }
 
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    // You can yield nested Flutter Widgets or other GameObjects here if needed
+    // 3. Yield your visual representation
+    yield const Text('🚀', style: TextStyle(fontSize: 40));
   }
 }
 ```
 
-### 2. Add it to a GameScene
-
-The `GameScene` provides the root `GameTicker` and initializes the `InputSystem` and `CollisionTrigger` passes.
+### Mount the Engine
 
 ```dart
 void main() {
   runApp(
     const MaterialApp(
       home: Scaffold(
-        body: GameScene(
-          child: Player(),
+        body: Game(
+          // The Game widget handles the Ticker, Input, and Collision passes
+          child: Player(), 
         ),
       ),
     ),
@@ -77,12 +74,12 @@ void main() {
 }
 ```
 
-## Documentation
+## Try the Example
 
-For full documentation and tutorials, please refer to the `docs/` folder or the generated MkDocs site. It covers:
-- Core Architecture & Events
-- Transform Hierarchy
-- Input and Pointer Systems
-- Collisions and Screen Bounds
-- Coroutines and Lifecycle
-- Step-by-step tutorials for building your first game.
+The repository includes a complete top-down battle example demonstrating movement, rotation, shooting mechanics, HUD layering, and collision handling. 
+
+Run it directly from the `/example` directory:
+```bash
+cd example
+flutter run
+```

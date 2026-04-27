@@ -1,9 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/game.dart'; 
-import 'package:goo2d/src/ticker.dart'; 
-import 'package:goo2d/src/world.dart'; 
+import 'package:goo2d/src/game.dart';
+import 'package:goo2d/src/ticker.dart';
 
 void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
@@ -11,7 +10,7 @@ void main() {
   group('Game', () {
     testWidgets('should provide GameEngine via GameProvider', (tester) async {
       GameEngine? foundEngine;
-      
+
       await tester.pumpWidget(
         Game(
           child: Builder(
@@ -22,17 +21,15 @@ void main() {
           ),
         ),
       );
-      
+
       expect(foundEngine, isNotNull);
     });
 
-    testWidgets('should automatically inject World and GameTicker', (tester) async {
-      await tester.pumpWidget(
-        Game(
-          child: Container(),
-        ),
-      );
-      
+    testWidgets('should automatically inject World and GameTicker', (
+      tester,
+    ) async {
+      await tester.pumpWidget(Game(child: Container()));
+
       expect(find.byType(World), findsOneWidget);
       expect(find.byType(GameTicker), findsOneWidget);
     });
@@ -66,16 +63,20 @@ void main() {
           child: Column(
             children: [
               Game(
-                child: Builder(builder: (c) {
-                  engine1 = GameProvider.of(c);
-                  return Container();
-                }),
+                child: Builder(
+                  builder: (c) {
+                    engine1 = GameProvider.of(c);
+                    return Container();
+                  },
+                ),
               ),
               Game(
-                child: Builder(builder: (c) {
-                  engine2 = GameProvider.of(c);
-                  return Container();
-                }),
+                child: Builder(
+                  builder: (c) {
+                    engine2 = GameProvider.of(c);
+                    return Container();
+                  },
+                ),
               ),
             ],
           ),

@@ -1,0 +1,290 @@
+/**
+ * Goo2D "Sharp" Theme (Dark Rose)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --rose-primary: #e11d48;
+  --rose-primary-foreground: #ffffff;
+  --rose-background: #09090b; /* Zinc 950 */
+  --rose-foreground: #fafafa;
+  --rose-border: #27272a; /* Zinc 800 */
+  --rose-muted: #71717a; /* Zinc 500 */
+  
+  --ifm-font-family-base: 'Space Grotesk', sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono', monospace;
+  
+  --ifm-color-primary: var(--rose-primary);
+  --ifm-color-primary-dark: #be123c;
+  --ifm-color-primary-darker: #9f1239;
+  --ifm-color-primary-darkest: #881337;
+  --ifm-color-primary-light: #fb7185;
+  --ifm-color-primary-lighter: #fda4af;
+  --ifm-color-primary-lightest: #fecdd3;
+
+  --ifm-background-color: var(--rose-background);
+  --ifm-navbar-background-color: var(--rose-background);
+  --ifm-footer-background-color: var(--rose-background);
+  
+  --ifm-link-color: var(--rose-primary);
+  
+  /* SHARP: No rounded corners */
+  --ifm-global-border-radius: 0px;
+  --ifm-button-border-radius: 0px;
+  --ifm-pagination-nav-border-radius: 0px;
+  --ifm-pre-border-radius: 0px;
+  --ifm-code-border-radius: 0px;
+  --ifm-alert-border-radius: 0px;
+  --ifm-card-border-radius: 0px;
+}
+
+[data-theme='dark'] {
+  --ifm-background-color: var(--rose-background);
+  --ifm-text-color: #a1a1aa; /* Zinc 400 */
+  --ifm-heading-color: #ffffff;
+  
+  --ifm-navbar-background-color: var(--rose-background);
+  --ifm-navbar-shadow: none;
+  
+  --ifm-menu-color-active: var(--rose-primary);
+  --ifm-menu-color: #a1a1aa;
+  --ifm-menu-color-background-active: rgba(225, 29, 72, 0.05);
+  
+  --ifm-blockquote-border-color: var(--rose-primary);
+  --ifm-blockquote-background-color: rgba(39, 39, 42, 0.5);
+}
+
+.navbar {
+  border-bottom: 1px solid var(--rose-border);
+  backdrop-filter: blur(8px);
+  background-color: rgba(9, 9, 11, 0.8) !important;
+}
+
+.footer {
+  border-top: 1px solid var(--rose-border);
+  background-color: #000000 !important;
+}
+
+.card {
+  background-color: #18181b; /* Zinc 900 */
+  border: 1px solid var(--rose-border);
+  border-radius: 0;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--rose-primary);
+  background-color: #27272a;
+}
+
+/* Sharp Hero */
+.hero {
+  padding: 14rem 0;
+  background: var(--rose-background);
+  border-bottom: 1px solid var(--rose-border);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Grid Decoration */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(var(--rose-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rose-border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* Sidebar styling - Active highlight on the absolute RIGHT edge */
+.theme-doc-sidebar-container {
+  border-right: 1px solid var(--rose-border);
+}
+
+.menu {
+  padding: 0.5rem 0 !important;
+  scrollbar-gutter: auto !important; /* Eliminate the reserved scrollbar gap */
+}
+
+.menu__list {
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+/* Indentation via padding on the link content, keeping the container full-width */
+.menu__list .menu__list .menu__link {
+  padding-left: 2.5rem !important;
+}
+
+.menu__list .menu__list .menu__list .menu__link {
+  padding-left: 3.5rem !important;
+}
+
+.menu__list-item {
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative;
+}
+
+.menu__link {
+  position: relative;
+  border-radius: 0 !important;
+  padding: 0.75rem 1.5rem !important;
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+  margin: 0 !important;
+}
+
+.menu__list-item-collapsible {
+  border-radius: 0 !important;
+  position: relative;
+  margin: 0 !important;
+}
+
+.menu__link--active {
+  color: var(--rose-primary) !important;
+  background-color: rgba(225, 29, 72, 0.05) !important;
+  border-left: none !important;
+}
+
+.menu__link--active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--rose-primary);
+  z-index: 100;
+  transform: none !important; /* Ensure it stays vertical even if parent rotates */
+}
+
+.menu__caret {
+  position: absolute !important;
+  right: 1.5rem !important;
+  top: 0;
+  bottom: 0;
+  width: 2rem !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 5;
+}
+
+.menu__caret::before {
+  border-radius: 0 !important;
+}
+
+.menu__list-item-collapsible:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.button {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  padding: 0.85rem 2.5rem;
+  font-family: 'Space Grotesk', sans-serif;
+  border-radius: 0 !important;
+}
+
+.button--secondary {
+  background-color: var(--rose-primary) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--rose-primary) !important;
+}
+
+.button--secondary:hover {
+  background-color: #be123c !important;
+}
+
+.button--outline {
+  background-color: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid var(--rose-border) !important;
+}
+
+.button--outline:hover {
+  border-color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Code Blocks - Unified Background */
+div[class*='codeBlockContainer'] {
+  background-color: #000000 !important;
+  border: none !important;
+  margin: 2.5rem 0 !important;
+}
+
+pre[class*='prism-code'] {
+  background-color: #000000 !important;
+  padding: 1.5rem !important;
+  border: none !important;
+  border-left: 2px solid var(--rose-border) !important;
+  margin: 0 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.9rem;
+}
+
+code {
+  background-color: transparent !important;
+  padding: 0;
+  border: none;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+p > code, li > code {
+  background-color: rgba(39, 39, 42, 0.3) !important;
+  padding: 0.1rem 0.35rem !important;
+  border: 1px solid var(--rose-border) !important;
+  color: #fb7185;
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4 {
+  letter-spacing: -0.04em;
+  font-weight: 700;
+}
+
+h1 { color: #ffffff; }
+h2 { border-bottom: 1px solid var(--rose-border); padding-bottom: 0.75rem; margin-top: 4rem; }
+
+/* Sharp Reinforcements */
+.admonition, 
+.pagination-nav__link, 
+.table-of-contents__link,
+.tabs__item,
+.navbar__link {
+  border-radius: 0 !important;
+}
+
+.admonition {
+  border: 1px solid var(--rose-border) !important;
+  border-left: 4px solid var(--rose-primary) !important;
+  background-color: rgba(9, 9, 11, 0.5) !important;
+}
+
+/* Scrollbar styling - Sharp & Subtle */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--rose-background);
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rose-primary);
+}

@@ -84,8 +84,8 @@ class RenderCameraView extends RenderProxyBox {
     // regardless of the main window's aspect ratio.
     final projMatrix = camera.projectionMatrix(size);
     final viewportMatrix = Matrix4.identity()
-      ..translate(size.width / 2, size.height / 2)
-      ..scale(size.width / 2, -size.height / 2);
+      ..translateByDouble(size.width / 2, size.height / 2, 0.0, 1.0)
+      ..scaleByDouble(size.width / 2, -size.height / 2, 1.0, 1.0);
 
     final fullCameraMatrix = viewportMatrix * projMatrix * viewMatrix;
 

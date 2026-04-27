@@ -1,0 +1,20 @@
+.features {
+  padding: 8rem 0;
+  border-top: 1px solid var(--rose-border);
+  background-color: #000000; /* Pure black contrast section */
+}
+
+.features h3 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.features p {
+  color: #a1a1aa;
+  line-height: 1.7;
+  font-size: 1.1rem;
+}
