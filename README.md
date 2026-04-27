@@ -1,3 +1,5 @@
+![GOO2D](header.png)
+
 # GOO2D
 
 [![Documentation](https://img.shields.io/badge/docs-site-rose)](https://sunarya-thito.github.io/goo2d)
@@ -5,7 +7,7 @@
 [![Flutter](https://img.shields.io/badge/Flutter-stable-02569B.svg)](https://flutter.dev)
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
-![GOO2D](header.png)
+
 
 [**Explore the Documentation »**](https://sunarya-thito.github.io/goo2d)
 
