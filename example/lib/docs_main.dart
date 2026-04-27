@@ -22,17 +22,17 @@ class DocsRouterApp extends StatefulWidget {
 }
 
 class _DocsRouterAppState extends State<DocsRouterApp> {
-  String _route = '/';
+  String _route = '/coroutine';
 
   @override
   void initState() {
     super.initState();
     // Parse the URL hash on Web
     // Example: https://goo2d.dev/examples/#/input
-    final path = Uri.base.fragment;
-    if (path.isNotEmpty) {
-      _route = path;
-    }
+    // final path = Uri.base.fragment;
+    // if (path.isNotEmpty) {
+    //   _route = path;
+    // }
   }
 
   Widget _getExampleForRoute() {
@@ -45,7 +45,9 @@ class _DocsRouterAppState extends State<DocsRouterApp> {
             future: app.loadAllGameAssets(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Colors.white));
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                );
               }
               return const Game(child: app.BattleWorld());
             },
@@ -72,7 +74,12 @@ class _DocsRouterAppState extends State<DocsRouterApp> {
           builder: (context) => const Game(child: SpriteExample()),
         );
       default:
-        return const Center(child: Text('Example not found', style: TextStyle(color: Colors.white)));
+        return const Center(
+          child: Text(
+            'Example not found',
+            style: TextStyle(color: Colors.white),
+          ),
+        );
     }
   }
 
@@ -117,7 +124,11 @@ class _PlayableExampleState extends State<PlayableExample> {
             SizedBox(height: 16),
             Text(
               'Click to Play',
-              style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),

@@ -62,27 +62,28 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title={`${siteConfig.title} | ${siteConfig.tagline}`}
-      description="A modular ECS engine for native Flutter game development.">
-      <HomepageHeader />
-      <main>
-        <HomepageFeatures />
+      description="A low level Flutter 2D game engine">
+      <div className={styles.pageContainer}>
+        <HomepageHeader />
+        <main>
+          <HomepageFeatures />
 
-        {/* SCENE GRAPH HIGHLIGHT */}
-        <section className={styles.featureHighlight}>
-          <div className="container">
-            <div className="row" style={{ alignItems: 'center' }}>
-              <div className="col col--5">
-                <Heading as="h2" className={styles.highlightTitle}>Stateful Scene Graph</Heading>
-                <p className={styles.highlightDescription}>
-                  Build complex game worlds by stacking <b>GameWidgets</b>. Goo2D leverages 
-                  standard Flutter <code>build</code> methods and <code>sync*</code> generators to manage 
-                  hierarchical entity trees.
-                </p>
-              </div>
-              <div className="col col--7">
-                <CodeWindow>
-                  <CodeBlock language="dart">
-                    {`@override
+          {/* 1. SCENE GRAPH HIGHLIGHT - Text Left, Code Right */}
+          <section className={styles.featureHighlight}>
+            <div className="container">
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div className={clsx("col col--5", styles.colLeft)}>
+                  <Heading as="h2" className={styles.highlightTitle}>Stateful Scene Graph</Heading>
+                  <p className={styles.highlightDescription}>
+                    Build complex game worlds by stacking <b>GameWidgets</b>. Goo2D leverages
+                    standard Flutter <code>build</code> methods and <code>sync*</code> generators to manage
+                    hierarchical entity trees.
+                  </p>
+                </div>
+                <div className={clsx("col col--7", styles.colRight)}>
+                  <CodeWindow>
+                    <CodeBlock language="dart">
+                      {`@override
 Iterable<Widget> build(BuildContext context) sync* {
   yield GameWidget(
     key: const GameTag('Player'),
@@ -93,21 +94,59 @@ Iterable<Widget> build(BuildContext context) sync* {
     ],
   );
 }`}
-                  </CodeBlock>
-                </CodeWindow>
+                    </CodeBlock>
+                  </CodeWindow>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ASSETS HIGHLIGHT */}
-        <section className={styles.featureHighlight}>
-          <div className="container">
-            <div className="row" style={{ alignItems: 'center' }}>
-              <div className="col col--7">
-                <CodeWindow>
-                  <CodeBlock language="dart">
-                    {`enum MySprites with AssetEnum, TextureAssetEnum {
+          {/* 2. ECS HIGHLIGHT - Code Left, Text Right */}
+          <section className={styles.featureHighlight}>
+            <div className="container">
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div className={clsx("col col--7", styles.colLeft)}>
+                  <CodeWindow>
+                    <CodeBlock language="dart">
+                      {`class Player extends Behavior {
+  @override
+  void update() {
+    // Decouple logic from representation
+    final trans = getComponent<ObjectTransform>();
+    final input = getComponent<PlayerInput>();
+    
+    trans.position += input.dir * 5.0 * game.ticker.deltaTime;
+  }
+}`}
+                    </CodeBlock>
+                  </CodeWindow>
+                </div>
+                <div className={clsx("col col--5", styles.colRight)}>
+                  <Heading as="h2" className={styles.highlightTitle}>ECS</Heading>
+                  <p className={styles.highlightDescription}>
+                    A flexible Entity Component System. Decouple your game logic into 
+                    reusable components that can be attached and queried at runtime with ease.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 3. ASSETS HIGHLIGHT - Text Left, Code Right */}
+          <section className={styles.featureHighlight}>
+            <div className="container">
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div className={clsx("col col--5", styles.colLeft)}>
+                  <Heading as="h2" className={styles.highlightTitle}>Asset Management</Heading>
+                  <p className={styles.highlightDescription}>
+                    Type-safe asset management with Enums. Built-in caching and reactive loading
+                    progress out of the box, ensuring your game assets are always organized.
+                  </p>
+                </div>
+                <div className={clsx("col col--7", styles.colRight)}>
+                  <CodeWindow>
+                    <CodeBlock language="dart">
+                      {`enum MySprites with AssetEnum, TextureAssetEnum {
   ship, boss, explosion;
   @override
   AssetSource get source => 
@@ -118,35 +157,21 @@ Iterable<Widget> build(BuildContext context) sync* {
 await for (final p in GameAsset.loadAll(MySprites.values)) {
   updateProgress(p.assetLoaded / p.assetCount);
 }`}
-                  </CodeBlock>
-                </CodeWindow>
-              </div>
-              <div className="col col--5">
-                <Heading as="h2" className={styles.highlightTitle}>Asset Management</Heading>
-                <p className={styles.highlightDescription}>
-                  Type-safe asset management with Enums. Built-in caching and reactive loading
-                  progress out of the box, ensuring your game assets are always organized.
-                </p>
+                    </CodeBlock>
+                  </CodeWindow>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* SPRITES HIGHLIGHT */}
-        <section className={styles.featureHighlight}>
-          <div className="container">
-            <div className="row" style={{ alignItems: 'center' }}>
-              <div className="col col--5">
-                <Heading as="h2" className={styles.highlightTitle}>Sprite Sheets</Heading>
-                <p className={styles.highlightDescription}>
-                  Efficiently handle complex atlases and grids. Support for PPU (Pixels Per Unit)
-                  scaling and flexible pivot points for accurate rendering.
-                </p>
-              </div>
-              <div className="col col--7">
-                <CodeWindow>
-                  <CodeBlock language="dart">
-                    {`final sheet = SpriteSheet.grid(
+          {/* 4. SPRITES HIGHLIGHT - Code Left, Text Right */}
+          <section className={styles.featureHighlight}>
+            <div className="container">
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div className={clsx("col col--7", styles.colLeft)}>
+                  <CodeWindow>
+                    <CodeBlock language="dart">
+                      {`final sheet = SpriteSheet.grid(
   texture: MySprites.explosion,
   columns: 8, rows: 8,
   ppu: 64.0,
@@ -154,21 +179,35 @@ await for (final p in GameAsset.loadAll(MySprites.values)) {
 
 // Instant frame access via coordinates
 renderer.sprite = sheet[(0, 4)];`}
-                  </CodeBlock>
-                </CodeWindow>
+                    </CodeBlock>
+                  </CodeWindow>
+                </div>
+                <div className={clsx("col col--5", styles.colRight)}>
+                  <Heading as="h2" className={styles.highlightTitle}>Sprite Sheets</Heading>
+                  <p className={styles.highlightDescription}>
+                    Efficiently handle complex atlases and grids. Support for PPU (Pixels Per Unit)
+                    scaling and flexible pivot points for accurate rendering.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* COLLISION HIGHLIGHT */}
-        <section className={styles.featureHighlight}>
-          <div className="container">
-            <div className="row" style={{ alignItems: 'center' }}>
-              <div className="col col--7">
-                <CodeWindow>
-                  <CodeBlock language="dart">
-                    {`class Enemy extends Behavior with Collidable {
+          {/* 5. COLLISION HIGHLIGHT - Text Left, Code Right */}
+          <section className={styles.featureHighlight}>
+            <div className="container">
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div className={clsx("col col--5", styles.colLeft)}>
+                  <Heading as="h2" className={styles.highlightTitle}>Collisions</Heading>
+                  <p className={styles.highlightDescription}>
+                    Manage physical interactions without the widget tree overhead. Robust callbacks
+                    for hits, triggers, and screen-boundary events.
+                  </p>
+                </div>
+                <div className={clsx("col col--7", styles.colRight)}>
+                  <CodeWindow>
+                    <CodeBlock language="dart">
+                      {`class Enemy extends Behavior with Collidable {
   @override
   void onCollision(CollisionEvent event) {
     // Precise filtering with GameTags
@@ -178,35 +217,21 @@ renderer.sprite = sheet[(0, 4)];`}
     }
   }
 }`}
-                  </CodeBlock>
-                </CodeWindow>
-              </div>
-              <div className="col col--5">
-                <Heading as="h2" className={styles.highlightTitle}>Collisions</Heading>
-                <p className={styles.highlightDescription}>
-                  Manage physical interactions without the widget tree overhead. Robust callbacks
-                  for hits, triggers, and screen-boundary events.
-                </p>
+                    </CodeBlock>
+                  </CodeWindow>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* INPUT HIGHLIGHT */}
-        <section className={styles.featureHighlight}>
-          <div className="container">
-            <div className="row" style={{ alignItems: 'center' }}>
-              <div className="col col--5">
-                <Heading as="h2" className={styles.highlightTitle}>Input System</Heading>
-                <p className={styles.highlightDescription}>
-                  Modern, action-based input system. Bind multiple physical controls to a
-                  single logical action for cross-platform support.
-                </p>
-              </div>
-              <div className="col col--7">
-                <CodeWindow>
-                  <CodeBlock language="dart">
-                    {`moveAction = createInputAction(
+          {/* 6. INPUT HIGHLIGHT - Code Left, Text Right */}
+          <section className={styles.featureHighlight}>
+            <div className="container">
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div className={clsx("col col--7", styles.colLeft)}>
+                  <CodeWindow>
+                    <CodeBlock language="dart">
+                      {`moveAction = createInputAction(
   name: 'move',
   type: InputActionType.value,
   bindings: [
@@ -221,13 +246,34 @@ renderer.sprite = sheet[(0, 4)];`}
 
 // Read 2D vector anywhere
 final dir = moveAction.readValue<Offset>();`}
-                  </CodeBlock>
-                </CodeWindow>
+                    </CodeBlock>
+                  </CodeWindow>
+                </div>
+                <div className={clsx("col col--5", styles.colRight)}>
+                  <Heading as="h2" className={styles.highlightTitle}>Input System</Heading>
+                  <p className={styles.highlightDescription}>
+                    Modern, action-based input system. Bind multiple physical controls to a
+                    single logical action for cross-platform support.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      </main>
+          </section>
+
+          {/* INTERACTIVE DEMO */}
+          <section className={styles.gameDemo}>
+            <div className={styles.demoWrapper}>
+              <iframe 
+                src="/goo2d/play/#/" 
+                width="100%" 
+                height="100%" 
+                style={{ border: 'none', background: '#000' }}
+                title="Goo2D Demo"
+              />
+            </div>
+          </section>
+        </main>
+      </div>
     </Layout>
   );
 }

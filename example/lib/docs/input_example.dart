@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:goo2d/goo2d.dart';
 
 enum InputExampleTexture with AssetEnum, TextureAssetEnum {
@@ -8,40 +7,21 @@ enum InputExampleTexture with AssetEnum, TextureAssetEnum {
   AssetSource get source => AssetSource.local("assets/sprites/$name.png");
 }
 
-class InputExample extends StatefulWidget {
+class InputExample extends StatelessWidget {
   const InputExample({super.key});
 
   @override
-  State<InputExample> createState() => _InputExampleState();
-}
-
-class _InputExampleState extends State<InputExample> {
-  Future<void>? _loadFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadFuture = _load();
-  }
-
-  Future<void> _load() async {
-    await for (final p in GameAsset.loadAll(InputExampleTexture.values)) {
-      if (kDebugMode) {
-        print('Loading ${p.loadingAsset.source.name} (${p.assetLoaded}/${p.assetCount})');
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _loadFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return const Game(child: InputExampleWorld());
-      },
+    return MaterialApp(
+      home: FutureBuilder(
+        future: GameAsset.loadAll(InputExampleTexture.values).drain(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return const Game(child: InputExampleWorld());
+        },
+      ),
     );
   }
 }
@@ -69,29 +49,58 @@ class _InputExampleWorldState extends GameState<InputExampleWorld> {
           left: game.input.keyboard.keyA,
           right: game.input.keyboard.keyD,
         ),
+        InputBinding.composite(
+          up: game.input.keyboard.upArrow,
+          down: game.input.keyboard.downArrow,
+          left: game.input.keyboard.leftArrow,
+          right: game.input.keyboard.rightArrow,
+        ),
+      ],
+    );
+  }
+
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {
+    // Player Ship
+    yield GameWidget(
+      components: () => [
+        ObjectTransform()..position = Offset.zero,
+        SpriteRenderer()
+          ..sprite = GameSprite(
+            texture: InputExampleTexture.ship,
+            pixelsPerUnit: 32.0,
+          ),
+        PlayerInputMovement()..moveAction = moveAction,
       ],
     );
 
-    addComponent(
-      ObjectTransform()..position = Offset.zero,
-      SpriteRenderer()
-        ..sprite = GameSprite(
-          texture: InputExampleTexture.ship,
-          pixelsPerUnit: 64.0,
-        ),
-      PlayerInputMovement(moveAction: moveAction),
+    // Camera
+    yield GameWidget(
+      components: () => [
+        ObjectTransform(),
+        Camera()..orthographicSize = 5.0,
+      ],
     );
   }
 }
 
 class PlayerInputMovement extends Behavior with Tickable {
-  final InputAction moveAction;
-  PlayerInputMovement({required this.moveAction});
+  late InputAction moveAction;
 
   @override
   void onUpdate(double dt) {
     final moveVector = moveAction.readValue<Offset>();
     final transform = getComponent<ObjectTransform>();
+    
+    // Smooth movement with speed 5.0 units per second
     transform.position += moveVector * 5.0 * dt;
+
+    // Subtle rotation based on horizontal movement for "tilt" effect
+    final targetRotation = -moveVector.dx * 0.5;
+    transform.angle = lerpDouble(transform.angle, targetRotation, 10.0 * dt);
+  }
+
+  double lerpDouble(double a, double b, double t) {
+    return a + (b - a) * t.clamp(0.0, 1.0);
   }
 }

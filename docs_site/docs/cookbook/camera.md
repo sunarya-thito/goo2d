@@ -2,13 +2,13 @@
 sidebar_position: 1
 ---
 
-# Cookbook: Follow Camera
+# Cookbook: Camera Follow
 
-In a world larger than the screen, you need a camera that tracks the player. This tutorial builds a smooth tracking system and includes a movement controller so you can verify the results in real-time.
+In a world larger than the screen, you need a camera that tracks the player. This tutorial builds a tracking system using interpolation to coordinate the camera position and ensure the view remains steady as the player moves.
 
 ## Live Demo
 
-Click "Play" below to see the result. Use **WASD** to move the ship and watch the camera follow smoothly.
+Click "Play" below to see the result. Use **WASD** or **Arrow Keys** to move the ship and watch the camera follow smoothly.
 
 <iframe 
   src="/goo2d/play/#/camera" 
@@ -30,7 +30,7 @@ This tutorial uses assets from the [Kenney Pixel Shmup](https://kenney-assets.it
 ## Tutorial
 
 ### 0. Asset Setup
-Before writing any code, you must register your assets with Flutter so the engine can access them.
+Before writing any code, you must register your assets with Flutter.
 
 1.  Create a directory named `assets/sprites/` in your project root.
 2.  Place the `ship.png` file into that directory.
@@ -42,275 +42,362 @@ flutter:
     - assets/sprites/
 ```
 
-### 1. Basic Imports
-Every Goo2D project starts with the core engine and material libraries. Define the `main` function to launch your application.
+### 1. Basic Imports & main()
+Start with the necessary imports and the entry point of your application.
+
+```dart
+// Add this: ------
+import 'package:flutter/material.dart';
+import 'package:goo2d/goo2d.dart';
+import 'dart:math' as math;
+
+void main() => runApp(const CameraExample());
+// ----------------
+```
+
+We import the Goo2D package and standard Flutter material library. We also include `dart:math` as `math` to provide the exponential functions needed for framerate-independent interpolation.
+
+### 2. The Root Widget
+Create a `StatefulWidget` that will act as the root of your application.
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+import 'dart:math' as math;
 
 void main() => runApp(const CameraExample());
+
+// Add this: ------
+class CameraExample extends StatefulWidget {
+  const CameraExample({super.key});
+
+  @override
+  State<CameraExample> createState() => _CameraExampleState();
+}
+
+class _CameraExampleState extends State<CameraExample> {
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+}
+// ----------------
 ```
 
-### 2. The Main Widget
-Create the root `StatelessWidget`. We use a simple `MaterialApp` with a loading placeholder that we will replace once our game assets are ready.
+The `CameraExample` widget sets up a standard `MaterialApp`. We use a `StatefulWidget` here because we need to manage the lifecycle of our game assets, ensuring everything is loaded before the engine starts.
+
+### 3. Defining Textures
+Use an `enum` with `AssetEnum` and `TextureAssetEnum` to manage your sprite assets cleanly.
 
 ```dart
-// ... imports ...
+import 'package:flutter/material.dart';
+import 'package:goo2d/goo2d.dart';
+import 'dart:math' as math;
 
-class CameraExample extends StatelessWidget {
-  const CameraExample({super.key});
+void main() => runApp(const CameraExample());
+
+// Add this: ------
+enum CameraExampleTexture with AssetEnum, TextureAssetEnum {
+  ship;
+  @override
+  AssetSource get source => AssetSource.local("assets/sprites/$name.png");
+}
+// ----------------
+
+class CameraExample extends StatefulWidget {
+// ... existing CameraExample implementation ...
+```
+
+This enum acts as a strongly-typed registry for our sprites. The `AssetSource.local` helper automatically maps the enum names to the file paths in your assets folder.
+
+### 4. Loading Assets
+Add a field to track the asset loading progress and initialize it in `initState`.
+
+```dart
+class _CameraExampleState extends State<CameraExample> {
+  // Add this: ------
+  late final Future<void> _loadFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFuture = GameAsset.loadAll(CameraExampleTexture.values).drain();
+  }
+  // ----------------
 
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
       home: Scaffold(
-        body: Center(child: Text('Loading...', style: TextStyle(color: Colors.white))),
         backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
       ),
     );
   }
 }
 ```
 
-### 3. Texture Definitions
-Define your assets using an enum. Mixing in `AssetEnum` and `TextureAssetEnum` allows the engine to recognize these as image resources that can be pre-loaded.
+We call `GameAsset.loadAll` to begin fetching the textures. The `drain()` method is used to convert the stream of loading events into a single future that completes only when every texture is ready in GPU memory.
+
+### 5. Starting the Engine
+Update the build method to use a `FutureBuilder` to launch the game engine once assets are ready.
 
 ```dart
-// ADD THIS ENUM:
-enum GameTextures with AssetEnum, TextureAssetEnum {
-  ship;
+class _CameraExampleState extends State<CameraExample> {
+  late final Future<void> _loadFuture;
+
   @override
-  AssetSource get source => AssetSource.local("assets/sprites/$name.png");
-}
-
-class CameraExample extends StatelessWidget {
-// ...
-```
-
-### 4. Asset Pre-loading
-Update the `CameraExample` to use a `FutureBuilder`. We use `GameAsset.loadAll` to ensure all textures are fully loaded into GPU memory before the game widget is initialized.
-
-```dart
-class CameraExample extends StatelessWidget {
-  const CameraExample({super.key});
+  void initState() {
+    super.initState();
+    _loadFuture = GameAsset.loadAll(CameraExampleTexture.values).drain();
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Add this: ------
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: Colors.black,
         body: FutureBuilder(
-          future: GameAsset.loadAll(GameTextures.values).drain(),
+          future: _loadFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              );
             }
-            return const Game(child: MyGameWidget());
+            return const Game(child: CameraExampleWorld());
           },
         ),
       ),
     );
+    // ----------------
   }
 }
 ```
 
-### 5. The Game Widget Pair
-Define the `StatefulGameWidget` and its corresponding `GameState`. In Goo2D, major game systems and scene logic are managed within these classes.
+The `FutureBuilder` ensures that the `Game` widget is only created once all assets are fully available. We pass `CameraExampleWorld` as the child, which will host our game scene.
 
-```dart
-class MyGameWidget extends StatefulGameWidget {
-  const MyGameWidget({super.key});
-  @override
-  GameState<MyGameWidget> createState() => MyGameState();
-}
-
-class MyGameState extends GameState<MyGameWidget> {
-  @override
-  Iterable<Widget> build(BuildContext context) sync* {
-    // We will yield game entities here in later steps
-  }
-}
-```
-
-### 6. The Behavior Class
-Custom game logic is encapsulated in behaviors. Create a `FollowTarget` class that extends `Behavior`.
-
-```dart
-class FollowTarget extends Behavior {
-}
-```
-
-### 7. Adding Lifecycle Mixins
-Mix in `LifecycleListener` and `LateTickable`. Using `LateTickable` ensures the camera update logic runs after all other objects have moved, preventing visual jitter.
-
-```dart
-// ADD 'with LifecycleListener, LateTickable'
-class FollowTarget extends Behavior with LifecycleListener, LateTickable {
-}
-```
-
-### 8. Defining the Target Reference
-Define a `late` field for the `GameTag`. This allows the behavior to identify which entity it should follow in the scene without needing a direct constructor reference.
-
-```dart
-class FollowTarget extends Behavior with LifecycleListener, LateTickable {
-  late GameTag targetTag;
-}
-```
-
-### 9. Overriding the Late Update Loop
-Override `onLateUpdate`. This method receives the frame delta time (`dt`) and serves as the entry point for our tracking logic every frame.
-
-```dart
-class FollowTarget extends Behavior with LifecycleListener, LateTickable {
-  late GameTag targetTag;
-
-  @override
-  void onLateUpdate(double dt) {
-    // Implementation details follow
-  }
-}
-```
-
-### 10. Accessing the Transform Component
-Inside `onLateUpdate`, use `getComponent` to grab the `ObjectTransform` of the entity this behavior is attached to. This is the position we will be modifying.
-
-```dart
-  @override
-  void onLateUpdate(double dt) {
-    // Find the transform component on the camera entity
-    final transform = getComponent<ObjectTransform>();
-  }
-```
-
-### 11. Resolving the Target Position
-Use the `targetTag` to find the player's `GameObject` in the world, then retrieve its `ObjectTransform`. We use `tryGetComponent` to handle cases where the player might be missing.
-
-```dart
-  @override
-  void onLateUpdate(double dt) {
-    final transform = getComponent<ObjectTransform>();
-
-    // Resolve the player's transform using its tag
-    final target = targetTag.gameObject?.tryGetComponent<ObjectTransform>();
-    if (target == null) return;
-  }
-```
-
-### 12. Implementing Smooth Interpolation
-Use `Offset.lerp` to smoothly move the camera's position toward the target. Moving a fraction (0.1) toward the target each frame creates a natural "smooth follow" effect.
-
-```dart
-  @override
-  void onLateUpdate(double dt) {
-    final transform = getComponent<ObjectTransform>();
-    final target = targetTag.gameObject?.tryGetComponent<ObjectTransform>();
-    if (target == null) return;
-
-    // Linear interpolation for smooth motion
-    transform.position = Offset.lerp(
-      transform.position,
-      target.position,
-      0.1,
-    )!;
-  }
-```
-
-### 13. Making the Player Move
-To verify the camera follow works, define a `MovementBehavior` that reads WASD keys and moves the entity.
-
-```dart
-class MovementBehavior extends Behavior with Tickable {
-  @override
-  void onUpdate(double dt) {
-    final transform = getComponent<ObjectTransform>();
-    
-    // Simple direct keyboard reading
-    double dx = 0, dy = 0;
-    if (keyboard.keyW.isPressed) dy -= 1;
-    if (keyboard.keyS.isPressed) dy += 1;
-    if (keyboard.keyA.isPressed) dx -= 1;
-    if (keyboard.keyD.isPressed) dx += 1;
-    
-    transform.position += Offset(dx, dy) * 5.0 * dt;
-  }
-}
-```
-
-### 14. Spawning the Player Entity
-In the `MyGameState.build` method, define a tag for the player and yield a `GameWidget`. We attach the `MovementBehavior` so the ship can move.
-
-```dart
-class MyGameState extends GameState<MyGameWidget> {
-  @override
-  Iterable<Widget> build(BuildContext context) sync* {
-    const playerTag = GameTag('Player');
-
-    // Yield the player entity widget
-    yield GameWidget(
-      key: playerTag,
-      components: () => [
-        ObjectTransform()..position = Offset.zero,
-        SpriteRenderer()..sprite = GameSprite(texture: GameTextures.ship),
-        MovementBehavior(), // Add movement logic here
-      ],
-    );
-  }
-}
-```
-
-### 15. Spawning the Camera Entity (Final)
-Add the camera entity to the scene. We attach the `FollowTarget` behavior and use a cascade operator (`..`) to set the `targetTag` to our player's tag.
-
-```dart
-class MyGameState extends GameState<MyGameWidget> {
-  @override
-  Iterable<Widget> build(BuildContext context) sync* {
-    const playerTag = GameTag('Player');
-
-    yield GameWidget(
-      key: playerTag,
-      components: () => [
-        ObjectTransform()..position = Offset.zero,
-        SpriteRenderer()..sprite = GameSprite(texture: GameTextures.ship),
-        MovementBehavior(),
-      ],
-    );
-
-    // Yield the camera entity widget
-    yield GameWidget(
-      key: const GameTag('MainCamera'),
-      components: () => [
-        ObjectTransform(),
-        Camera(),
-        // Configure the behavior via cascade
-        FollowTarget()..targetTag = playerTag,
-      ],
-    );
-  }
-}
-```
-
----
-
-## Full Implementation
+### 6. The Empty Game World
+Define the `StatefulGameWidget` and its corresponding `GameState`.
 
 ```dart
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+import 'dart:math' as math;
+
+// ... enum definitions ...
+
+// Add this: ------
+class CameraExampleWorld extends StatefulGameWidget {
+  const CameraExampleWorld({super.key});
+
+  @override
+  GameState<CameraExampleWorld> createState() => _CameraExampleWorldState();
+}
+
+class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {
+  }
+}
+// ----------------
+```
+
+The `CameraExampleWorld` widget is the container for our game simulation. It uses a `GameState` to manage the lifecycle and components of the game world coordinate system.
+
+### 7. Creating the Follow Behavior
+Implement the behavior that makes the camera track a target object.
+
+```dart
+// Add this: ------
+class FollowPlayer extends Behavior with LateTickable {
+  late GameTag targetTag;
+
+  @override
+  void onLateUpdate(double dt) {
+    final target = targetTag.gameObject?.tryGetComponent<ObjectTransform>();
+    if (target != null) {
+      final transform = getComponent<ObjectTransform>();
+      
+      transform.position = Offset.lerp(
+        transform.position,
+        target.position,
+        1.0 - math.exp(-5.0 * dt),
+      )!;
+    }
+  }
+}
+// ----------------
+```
+
+We use `LateTickable` to ensure the camera updates **after** all other objects have moved, preventing visual jitter. The formula `1.0 - math.exp(-5.0 * dt)` provides framerate-independent exponential decay, ensuring the tracking feels the same regardless of performance.
+
+### 8. Implementing Ship Movement
+Create a behavior to handle player input and update the ship's position.
+
+```dart
+// Add this: ------
+class ShipMovement extends Behavior with Tickable {
+  late InputAction moveAction;
+
+  @override
+  void onUpdate(double dt) {
+    final moveVector = moveAction.readValue<Offset>();
+    final transform = getComponent<ObjectTransform>();
+    
+    transform.position += moveVector * 5.0 * dt;
+  }
+}
+// ----------------
+```
+
+This behavior reads a 2D vector from an `InputAction` and applies it to the object's `ObjectTransform`. We multiply by `dt` to ensure the movement speed is consistent across different devices.
+
+### 9. Defining the Player Action
+Update the world state to initialize the movement input action.
+
+```dart
+class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
+  // Add this: ------
+  late final InputAction moveAction;
+
+  @override
+  void initState() {
+    super.initState();
+    moveAction = createInputAction(
+      name: 'move',
+      type: InputActionType.value,
+      bindings: [
+        InputBinding.composite(
+          up: game.input.keyboard.keyW,
+          down: game.input.keyboard.keyS,
+          left: game.input.keyboard.keyA,
+          right: game.input.keyboard.rightArrow,
+        ),
+      ],
+    );
+  }
+  // ----------------
+
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {
+  }
+}
+```
+
+We use `createInputAction` to define a logical movement action. By binding keys to an action rather than checking them directly, we keep our behavior logic clean and reusable.
+
+### 10. The Player Ship Entity
+Create a class for the player ship and initialize its components.
+
+```dart
+// Add this: ------
+class PlayerShip extends StatefulGameWidget {
+  final InputAction moveAction;
+  const PlayerShip({super.key, required this.moveAction});
+  @override
+  GameState<PlayerShip> createState() => _PlayerShipState();
+}
+
+class _PlayerShipState extends GameState<PlayerShip> {
+  @override
+  void initState() {
+    super.initState();
+    addComponent(
+      ObjectTransform()..position = Offset.zero,
+      SpriteRenderer()
+        ..sprite = GameSprite(
+          texture: CameraExampleTexture.ship,
+          pixelsPerUnit: 32,
+        ),
+      ShipMovement()..moveAction = widget.moveAction,
+    );
+  }
+
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {}
+}
+// ----------------
+```
+
+The `PlayerShip` is composed of a transform, a renderer, and our custom movement behavior. Setting `pixelsPerUnit: 32` ensures the sprite size is correctly mapped to our world units.
+
+### 11. Assembling the World
+Yield the background, player, and camera in the world's build method.
+
+```dart
+class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
+  late final InputAction moveAction;
+
+  // ... initState implementation ...
+
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {
+    // Add this: ------
+    const playerTag = GameTag('Player');
+
+    yield PlayerShip(
+      key: playerTag,
+      moveAction: moveAction,
+    );
+
+    yield GameWidget(
+      key: const GameTag('MainCamera'),
+      components: () => [
+        ObjectTransform(),
+        Camera()
+          ..depth = 1.0
+          ..backgroundColor = Colors.black
+          ..orthographicSize = 5.0,
+        FollowPlayer()..targetTag = playerTag,
+      ],
+    );
+    // ----------------
+  }
+}
+```
+
+In the assembly step, we yield the `PlayerShip` and a `GameWidget` for the camera. By setting `depth: 1.0`, we designate this camera as the primary viewport. The `FollowPlayer` behavior is attached to the camera and configured to track the `playerTag`.
+
+---
+
+## Final Full Code
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:goo2d/goo2d.dart';
+import 'dart:math' as math;
 
 void main() => runApp(const CameraExample());
 
-enum GameTextures with AssetEnum, TextureAssetEnum {
+enum CameraExampleTexture with AssetEnum, TextureAssetEnum {
   ship;
   @override
   AssetSource get source => AssetSource.local("assets/sprites/$name.png");
 }
 
-class CameraExample extends StatelessWidget {
+class CameraExample extends StatefulWidget {
   const CameraExample({super.key});
+
+  @override
+  State<CameraExample> createState() => _CameraExampleState();
+}
+
+class _CameraExampleState extends State<CameraExample> {
+  late final Future<void> _loadFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFuture = GameAsset.loadAll(CameraExampleTexture.values).drain();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -319,12 +406,14 @@ class CameraExample extends StatelessWidget {
       home: Scaffold(
         backgroundColor: Colors.black,
         body: FutureBuilder(
-          future: GameAsset.loadAll(GameTextures.values).drain(),
+          future: _loadFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              );
             }
-            return const Game(child: MyGameWidget());
+            return const Game(child: CameraExampleWorld());
           },
         ),
       ),
@@ -332,64 +421,113 @@ class CameraExample extends StatelessWidget {
   }
 }
 
-class MyGameWidget extends StatefulGameWidget {
-  const MyGameWidget({super.key});
+class CameraExampleWorld extends StatefulGameWidget {
+  const CameraExampleWorld({super.key});
+
   @override
-  GameState<MyGameWidget> createState() => MyGameState();
+  GameState<CameraExampleWorld> createState() => _CameraExampleWorldState();
 }
 
-class MyGameState extends GameState<MyGameWidget> {
+class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
+  late final InputAction moveAction;
+
+  @override
+  void initState() {
+    super.initState();
+    moveAction = createInputAction(
+      name: 'move',
+      type: InputActionType.value,
+      bindings: [
+        InputBinding.composite(
+          up: game.input.keyboard.keyW,
+          down: game.input.keyboard.keyS,
+          left: game.input.keyboard.keyA,
+          right: game.input.keyboard.keyD,
+        ),
+        InputBinding.composite(
+          up: game.input.keyboard.upArrow,
+          down: game.input.keyboard.downArrow,
+          left: game.input.keyboard.leftArrow,
+          right: game.input.keyboard.rightArrow,
+        ),
+      ],
+    );
+  }
+
   @override
   Iterable<Widget> build(BuildContext context) sync* {
     const playerTag = GameTag('Player');
 
-    yield GameWidget(
+    yield PlayerShip(
       key: playerTag,
-      components: () => [
-        ObjectTransform()..position = Offset.zero,
-        SpriteRenderer()..sprite = GameSprite(texture: GameTextures.ship),
-        MovementBehavior(),
-      ],
+      moveAction: moveAction,
     );
 
     yield GameWidget(
       key: const GameTag('MainCamera'),
       components: () => [
         ObjectTransform(),
-        Camera(),
-        FollowTarget()..targetTag = playerTag,
+        Camera()
+          ..depth = 1.0
+          ..backgroundColor = Colors.black
+          ..orthographicSize = 5.0,
+        FollowPlayer()..targetTag = playerTag,
       ],
     );
   }
 }
 
-class MovementBehavior extends Behavior with Tickable {
+class PlayerShip extends StatefulGameWidget {
+  final InputAction moveAction;
+  const PlayerShip({super.key, required this.moveAction});
+  @override
+  GameState<PlayerShip> createState() => _PlayerShipState();
+}
+
+class _PlayerShipState extends GameState<PlayerShip> {
+  @override
+  void initState() {
+    super.initState();
+    addComponent(
+      ObjectTransform()..position = Offset.zero,
+      SpriteRenderer()
+        ..sprite = GameSprite(
+          texture: CameraExampleTexture.ship,
+          pixelsPerUnit: 32,
+        ),
+      ShipMovement()..moveAction = widget.moveAction,
+    );
+  }
+
+  @override
+  Iterable<Widget> build(BuildContext context) sync* {}
+}
+
+class ShipMovement extends Behavior with Tickable {
+  late InputAction moveAction;
+
   @override
   void onUpdate(double dt) {
+    final moveVector = moveAction.readValue<Offset>();
     final transform = getComponent<ObjectTransform>();
-    double dx = 0, dy = 0;
-    if (keyboard.keyW.isPressed) dy -= 1;
-    if (keyboard.keyS.isPressed) dy += 1;
-    if (keyboard.keyA.isPressed) dx -= 1;
-    if (keyboard.keyD.isPressed) dx += 1;
-    transform.position += Offset(dx, dy) * 5.0 * dt;
+    transform.position += moveVector * 5.0 * dt;
   }
 }
 
-class FollowTarget extends Behavior with LifecycleListener, LateTickable {
+class FollowPlayer extends Behavior with LateTickable {
   late GameTag targetTag;
 
   @override
   void onLateUpdate(double dt) {
-    final transform = getComponent<ObjectTransform>();
     final target = targetTag.gameObject?.tryGetComponent<ObjectTransform>();
-    if (target == null) return;
-
-    transform.position = Offset.lerp(
-      transform.position,
-      target.position,
-      0.1,
-    )!;
+    if (target != null) {
+      final transform = getComponent<ObjectTransform>();
+      transform.position = Offset.lerp(
+        transform.position,
+        target.position,
+        1.0 - math.exp(-5.0 * dt),
+      )!;
+    }
   }
 }
 ```

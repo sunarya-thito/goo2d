@@ -6,19 +6,19 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Goo2D',
-  tagline: 'A Modular 2D ECS Engine for Flutter',
+  tagline: 'A Low Level Flutter 2D Game Engine',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
-    v4: true, 
+    v4: true,
   },
 
   url: 'https://sunarya-thito.github.io',
   baseUrl: '/goo2d/',
 
-  organizationName: 'sunarya-thito', 
-  projectName: 'goo2d', 
+  organizationName: 'sunarya-thito',
+  projectName: 'goo2d',
 
   onBrokenLinks: 'throw',
 

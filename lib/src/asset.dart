@@ -200,6 +200,7 @@ class GameTexture extends GameAsset {
 
   @override
   Future<void> load() async {
+    if (isLoaded) return;
     final bytes = await source.loadBytes();
     final codec = await ui.instantiateImageCodec(bytes);
     try {
@@ -367,6 +368,7 @@ class GameAudio extends GameAsset {
 
   @override
   Future<void> load() async {
+    if (isLoaded) return;
     final bytes = await source.loadBytes();
     _loadedAudioSource = await soloud.SoLoud.instance.loadMem(
       '$hashCode',

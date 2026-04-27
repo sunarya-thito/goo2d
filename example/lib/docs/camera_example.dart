@@ -1,20 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+import 'dart:math' as math;
 
-class CameraExample extends StatefulGameWidget {
+enum CameraExampleTexture with AssetEnum, TextureAssetEnum {
+  ship;
+  @override
+  AssetSource get source => AssetSource.local("assets/sprites/$name.png");
+}
+
+class CameraExample extends StatefulWidget {
   const CameraExample({super.key});
 
   @override
-  GameState<CameraExample> createState() => _CameraExampleState();
+  State<CameraExample> createState() => _CameraExampleState();
 }
 
-class _CameraExampleState extends GameState<CameraExample> {
+class _CameraExampleState extends State<CameraExample> {
+  late final Future<void> _loadFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFuture = GameAsset.loadAll(CameraExampleTexture.values).drain();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _loadFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        }
+        return const Game(child: CameraExampleWorld());
+      },
+    );
+  }
+}
+
+class CameraExampleWorld extends StatefulGameWidget {
+  const CameraExampleWorld({super.key});
+
+  @override
+  GameState<CameraExampleWorld> createState() => _CameraExampleWorldState();
+}
+
+class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
   late final InputAction moveAction;
 
   @override
   void initState() {
     super.initState();
-    // In Goo2D, createInputAction is a helper on GameState
     moveAction = createInputAction(
       name: 'move',
       type: InputActionType.value,
@@ -24,6 +62,12 @@ class _CameraExampleState extends GameState<CameraExample> {
           down: game.input.keyboard.keyS,
           left: game.input.keyboard.keyA,
           right: game.input.keyboard.keyD,
+        ),
+        InputBinding.composite(
+          up: game.input.keyboard.upArrow,
+          down: game.input.keyboard.downArrow,
+          left: game.input.keyboard.leftArrow,
+          right: game.input.keyboard.rightArrow,
         ),
       ],
     );
@@ -35,7 +79,7 @@ class _CameraExampleState extends GameState<CameraExample> {
 
     yield const WorldBackground();
 
-    yield PlayerHelicopter(
+    yield PlayerShip(
       key: playerTag,
       moveAction: moveAction,
     );
@@ -48,7 +92,7 @@ class _CameraExampleState extends GameState<CameraExample> {
           ..depth = 1.0
           ..backgroundColor = Colors.black
           ..orthographicSize = 5.0,
-        FollowPlayer(targetTag: playerTag),
+        FollowPlayer()..targetTag = playerTag,
       ],
     );
 
@@ -65,65 +109,65 @@ class WorldBackground extends StatefulGameWidget {
 class _WorldBackgroundState extends GameState<WorldBackground> with Renderable {
   @override
   void render(Canvas canvas) {
-    final paint = Paint()..color = Colors.green.withValues(alpha: 0.2);
-    for (int x = -10; x < 10; x++) {
-      for (int y = -10; y < 10; y++) {
-        final pos = Offset(x * 4.0, y * 4.0);
-        canvas.drawCircle(pos, 0.2, paint);
+    final dotPaint = Paint()..color = Colors.green.withValues(alpha: 0.3);
+    for (int x = -10; x <= 10; x++) {
+      for (int y = -10; y <= 10; y++) {
+        canvas.drawCircle(Offset(x * 2.0, y * 2.0), 0.1, dotPaint);
       }
     }
   }
 }
 
-class PlayerHelicopter extends StatefulGameWidget {
+class PlayerShip extends StatefulGameWidget {
   final InputAction moveAction;
-  const PlayerHelicopter({super.key, required this.moveAction});
+  const PlayerShip({super.key, required this.moveAction});
   @override
-  GameState<PlayerHelicopter> createState() => _PlayerHelicopterState();
+  GameState<PlayerShip> createState() => _PlayerShipState();
 }
 
-class _PlayerHelicopterState extends GameState<PlayerHelicopter> {
+class _PlayerShipState extends GameState<PlayerShip> {
   @override
   void initState() {
     super.initState();
     addComponent(
       ObjectTransform()..position = Offset.zero,
-      HelicopterMovement(moveAction: widget.moveAction),
+      SpriteRenderer()
+        ..sprite = GameSprite(
+          texture: CameraExampleTexture.ship,
+          pixelsPerUnit: 32,
+        ),
+      ShipMovement()..moveAction = widget.moveAction,
     );
   }
 
   @override
-  Iterable<Widget> build(BuildContext context) sync* {
-    yield const Text('🚁', style: TextStyle(fontSize: 40));
-  }
+  Iterable<Widget> build(BuildContext context) sync* {}
 }
 
-class HelicopterMovement extends Behavior with Tickable {
-  final InputAction moveAction;
-  HelicopterMovement({required this.moveAction});
+class ShipMovement extends Behavior with Tickable {
+  late InputAction moveAction;
 
   @override
   void onUpdate(double dt) {
-    // readValue<Offset>() is used for vector2/composite bindings
-    final move = moveAction.readValue<Offset>();
+    final moveVector = moveAction.readValue<Offset>();
     final transform = getComponent<ObjectTransform>();
-    transform.position += move * 5.0 * dt;
+    transform.position += moveVector * 5.0 * dt;
   }
 }
 
 class FollowPlayer extends Behavior with LateTickable {
-  final GameTag targetTag;
-  FollowPlayer({required this.targetTag});
+  late GameTag targetTag;
 
   @override
   void onLateUpdate(double dt) {
     final target = targetTag.gameObject?.tryGetComponent<ObjectTransform>();
     if (target != null) {
       final transform = getComponent<ObjectTransform>();
+      // Framerate-independent interpolation
       transform.position = Offset.lerp(
         transform.position,
         target.position,
-        0.1,
+        1.0 - math.exp(-5.0 * dt),
       )!;
     }
   }
@@ -147,7 +191,7 @@ class _SimpleHUDState extends GameState<SimpleHUD> {
             padding: const EdgeInsets.all(10),
             color: Colors.black54,
             child: const Text(
-              'UI is fixed to screen - WASD to Move',
+              'Smooth Camera Follow Example',
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
           ),
