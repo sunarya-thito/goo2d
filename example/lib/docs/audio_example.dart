@@ -61,7 +61,7 @@ class _AudioExampleState extends GameState<AudioExample> {
   }
 }
 
-class _ClickToPlay extends Behavior with PointerListener {
+class _ClickToPlay extends Behavior with PointerReceiver {
   @override
   void onPointerDown(PointerDownEvent event) {
     getComponent<AudioSource>().play();
