@@ -22,17 +22,17 @@ class DocsRouterApp extends StatefulWidget {
 }
 
 class _DocsRouterAppState extends State<DocsRouterApp> {
-  String _route = '/coroutine';
+  String _route = '/';
 
   @override
   void initState() {
     super.initState();
     // Parse the URL hash on Web
     // Example: https://goo2d.dev/examples/#/input
-    // final path = Uri.base.fragment;
-    // if (path.isNotEmpty) {
-    //   _route = path;
-    // }
+    final path = Uri.base.fragment;
+    if (path.isNotEmpty) {
+      _route = path;
+    }
   }
 
   Widget _getExampleForRoute() {

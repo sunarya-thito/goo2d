@@ -1,6 +1,13 @@
 # Goo2D
 
-![Goo2D Battle Example](https://via.placeholder.com/800x400.png?text=[Replace+with+an+Animated+GIF+of+BattleWorld+Here])
+[![Documentation](https://img.shields.io/badge/docs-site-rose)](https://sunarya-thito.github.io/goo2d)
+[![Build Status](https://github.com/sunarya-thito/goo2d/actions/workflows/deploy_docs.yml/badge.svg)](https://github.com/sunarya-thito/goo2d/actions/workflows/deploy_docs.yml)
+[![Flutter](https://img.shields.io/badge/Flutter-stable-02569B.svg)](https://flutter.dev)
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+
+![Goo2D Battle Example](demo_preview.png)
+
+[**Explore the Documentation »**](https://sunarya-thito.github.io/goo2d)
 
 > **⚠️ Under Heavy Development**
 >
