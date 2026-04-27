@@ -17,12 +17,35 @@ flutter build web --wasm
 Using `--wasm` significantly optimizes many low-level engine operations, leading to much higher and more stable frame rates.
 :::
 
-### Running Locally with WASM
-To test your game locally with WASM enabled:
-
 ```bash
 flutter run -d chrome --wasm
 ```
+
+---
+
+## Cross-Origin Isolation (COOP & COEP)
+
+For WASM to run with maximum performance and support multi-threading, your web server **must** provide the following HTTP response headers:
+
+- `Cross-Origin-Opener-Policy: same-origin`
+- `Cross-Origin-Embedder-Policy: require-corp`
+
+### Why is this needed?
+These headers enable **Cross-Origin Isolation**, which is required for browsers to allow the use of `SharedArrayBuffer`. 
+
+Flutter's WASM support relies on `SharedArrayBuffer` to enable multi-threading (for tasks like garbage collection and background processing). Without these headers, the browser restricts the WASM environment to a single thread, which can lead to significant frame drops and stuttering in complex games.
+
+### Workaround for GitHub Pages / Static Hosting
+If you are hosting your game on a platform that does not allow you to set custom HTTP headers (like **GitHub Pages**), you can use a Service Worker workaround.
+
+1.  Download [coi-serviceworker.min.js](https://github.com/gzuidhof/coi-serviceworker) and place it in your `web/` folder.
+2.  Add it to your `index.html` before other scripts:
+
+```html
+<script src="coi-serviceworker.min.js"></script>
+```
+
+This script will automatically reload the page and set the required isolation context via a service worker.
 
 ---
 
