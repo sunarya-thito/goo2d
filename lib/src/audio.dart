@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter_soloud/flutter_soloud.dart' as soloud;
 import 'package:goo2d/goo2d.dart';
 
@@ -140,21 +141,16 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
 
     final listenerTransform = listener.gameObject
         .tryGetComponent<ObjectTransform>();
-    if (listenerTransform == null) {
-      // Listener has no transform, fallback to center
-      soloud.SoLoud.instance.set3dSourceParameters(_handle!, rx, ry, 0, 0, 0, 0);
-      return;
-    }
 
     // Calculate relative position
     final sourceWorldPos = transform.position;
-    final listenerWorldPos = listenerTransform.position;
+    final listenerWorldPos = listenerTransform?.position ?? Offset.zero;
 
     double dx = sourceWorldPos.dx - listenerWorldPos.dx;
     double dy = sourceWorldPos.dy - listenerWorldPos.dy;
 
     // Rotate relative position by inverse of listener rotation
-    final angle = -listenerTransform.angle;
+    final angle = -(listenerTransform?.angle ?? 0.0);
     final cosA = math.cos(angle);
     final sinA = math.sin(angle);
 

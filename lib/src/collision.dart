@@ -81,7 +81,7 @@ abstract class CollisionTrigger extends Component with LifecycleListener {
   /// When no transform is present, returns local [bounds] directly.
   Rect get worldBounds {
     final t = transform;
-    if (t == null) return bounds;
+    if (t == null) return Rect.zero;
     final v = t.version;
     if (_cachedWorldBounds != null && _cachedVersion == v) {
       return _cachedWorldBounds!;

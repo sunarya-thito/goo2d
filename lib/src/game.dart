@@ -291,10 +291,12 @@ class CollisionSystem implements GameSystem {
     // Sweep-and-prune on X axis
     for (int i = 0; i < n; i++) {
       final a = _active[i];
+      if (a.transform == null) continue;
       final aBounds = a.worldBounds;
 
       for (int j = i + 1; j < n; j++) {
         final b = _active[j];
+        if (b.transform == null) continue;
         final bBounds = b.worldBounds;
 
         if (bBounds.left > aBounds.right) break;
