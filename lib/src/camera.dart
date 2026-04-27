@@ -59,15 +59,15 @@ class Camera extends Behavior with LifecycleListener {
 
   /// Matrix that transforms from world to camera space.
   Matrix4 get worldToCameraMatrix {
-    final transform =
-        gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
+    final transform = gameObject.tryGetComponent<ObjectTransform>();
+    if (transform == null) return Matrix4.identity();
     return transform.worldInverse;
   }
 
   /// Matrix that transforms from camera to world space.
   Matrix4 get cameraToWorldMatrix {
-    final transform =
-        gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
+    final transform = gameObject.tryGetComponent<ObjectTransform>();
+    if (transform == null) return Matrix4.identity();
     return transform.worldMatrix;
   }
 
@@ -103,16 +103,19 @@ class Camera extends Behavior with LifecycleListener {
   /// Matrix that transforms from world space to screen space.
   @internal
   Matrix4 getFullMatrix(Size screenSize) {
-    final transform =
-        gameObject.tryGetComponent<ObjectTransform>() ?? ObjectTransform();
+    final transform = gameObject.tryGetComponent<ObjectTransform>();
+    final transformVersion = transform?.version ?? -1;
+
     if (_cachedFullMatrix != null &&
         _cachedFullMatrixSize == screenSize &&
-        _cachedFullMatrixTransformVersion == transform.version &&
+        _cachedFullMatrixTransformVersion == transformVersion &&
         _cachedOrthographicSize == orthographicSize) {
       return _cachedFullMatrix!;
     }
 
-    final viewMatrix = worldToCameraMatrix;
+    final viewMatrix = transform == null
+        ? Matrix4.identity()
+        : transform.worldInverse;
     final projMatrix = projectionMatrix(screenSize);
 
     final viewportMatrix = Matrix4.identity()
@@ -122,7 +125,7 @@ class Camera extends Behavior with LifecycleListener {
     _cachedFullMatrix = viewportMatrix * projMatrix * viewMatrix;
     _cachedFullMatrixInverse = null; // Clear inverse cache
     _cachedFullMatrixSize = screenSize;
-    _cachedFullMatrixTransformVersion = transform.version;
+    _cachedFullMatrixTransformVersion = transformVersion;
 
     return _cachedFullMatrix!;
   }

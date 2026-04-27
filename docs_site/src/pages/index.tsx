@@ -14,37 +14,37 @@ import styles from './index.module.css';
 
 function HomepageHeader() {
   const { siteConfig } = useDocusaurusContext();
-  
+
   // Interactive Simulation State
   const [shipPos, setShipPos] = useState({ x: 70, y: 30 });
   const [collidingZones, setCollidingZones] = useState({ zone04: false, zone12: false, zone07: false });
   const [rotation, setRotation] = useState(0);
-  
+
   const shipRef = useRef<HTMLDivElement>(null);
   const z04Ref = useRef<HTMLDivElement>(null);
   const z12Ref = useRef<HTMLDivElement>(null);
   const z07Ref = useRef<HTMLDivElement>(null);
 
   const checkCollision = (rect1: DOMRect, rect2: DOMRect) => {
-    return !(rect1.right < rect2.left || 
-             rect1.left > rect2.right || 
-             rect1.bottom < rect2.top || 
-             rect1.top > rect2.bottom);
+    return !(rect1.right < rect2.left ||
+      rect1.left > rect2.right ||
+      rect1.bottom < rect2.top ||
+      rect1.top > rect2.bottom);
   };
 
   useEffect(() => {
     let frameId: number;
     const startTime = performance.now();
-    
+
     const update = (time: number) => {
       const elapsed = (time - startTime) / 1000;
-      
+
       const nextX = 50 + Math.cos(elapsed * 0.4) * 35 + Math.sin(elapsed * 0.1) * 5;
       const nextY = 45 + Math.sin(elapsed * 0.5) * 30 + Math.cos(elapsed * 0.1) * 5;
 
       const dx = -0.4 * Math.sin(elapsed * 0.4) * 35 + 0.1 * Math.cos(elapsed * 0.1) * 5;
       const dy = 0.5 * Math.cos(elapsed * 0.5) * 30 - 0.1 * Math.sin(elapsed * 0.1) * 5;
-      
+
       const targetRot = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
       setRotation(prev => {
         let diff = targetRot - prev;
@@ -110,7 +110,7 @@ void _flushBatch() {
   _gl.bufferData(GL.ARRAY_BUFFER, _vertexData, GL.DYNAMIC_DRAW);
 }
   `.repeat(4);
-  
+
   // Create a wide block of code by repeating the snippet horizontally but offset each line
   const wideCodeSnippet = dartCodeSnippet.split('\n').map((line, i) => (line + " ".repeat(20)).repeat(4).substring(i % 12)).join('\n');
 
@@ -121,24 +121,24 @@ void _flushBatch() {
       <div className={styles.noise} />
       <div className={styles.scanlines} />
       <div className={styles.codeBackground}>{wideCodeSnippet}</div>
-      
+
       {/* Frame Time Monitor (Technical & Animated) */}
       <div className={styles.perfGraph}>
         <div style={{ fontSize: '10px', color: 'var(--brand-primary)', marginBottom: '8px', fontFamily: 'monospace', letterSpacing: '0.1em' }}>FRAME_TIME (ms) [ACTIVE]</div>
         <div style={{ display: 'flex', alignItems: 'flex-end', height: '80px', gap: '4px', borderLeft: '1px solid var(--brand-primary)', borderBottom: '1px solid var(--brand-primary)', padding: '4px' }}>
           {[...Array(30)].map((_, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className={styles.perfBar}
-              style={{ 
+              style={{
                 flex: 1,
-                height: `${[16, 17, 16, 18, 16, 16, 32, 16, 17, 16, 16, 19, 16, 16, 16, 24, 16, 16, 16, 17, 16, 16, 16, 16, 16, 18, 16, 16, 20, 16][i]}px`, 
+                height: `${[16, 17, 16, 18, 16, 16, 32, 16, 17, 16, 16, 19, 16, 16, 16, 24, 16, 16, 16, 17, 16, 16, 16, 16, 16, 18, 16, 16, 20, 16][i]}px`,
                 backgroundColor: i === 6 || i === 15 || i === 28 ? '#13b9fd' : 'var(--brand-primary)',
                 opacity: 0.7,
                 animationDelay: `${(i * 0.05) % 0.3}s`,
                 animationDuration: `${0.1 + (i % 3) * 0.05}s`,
                 transformOrigin: 'bottom'
-              }} 
+              }}
             />
           ))}
         </div>
@@ -149,22 +149,22 @@ void _flushBatch() {
       </div>
 
       {/* Technical Sprite: SVG Ship (Animated Movement) */}
-      <div 
+      <div
         ref={shipRef}
-        style={{ 
-          position: 'absolute', 
-          left: `${shipPos.x}%`, 
-          top: `${shipPos.y}%`, 
+        style={{
+          position: 'absolute',
+          left: `${shipPos.x}%`,
+          top: `${shipPos.y}%`,
           width: '80px',
           height: '80px',
-          zIndex: 1, 
-          pointerEvents: 'none', 
+          zIndex: 1,
+          pointerEvents: 'none',
           opacity: 0.8,
           transform: 'translate(-50%, -50%)',
         }}
       >
         {/* Only rotate the ship body, not the label */}
-        <div style={{ 
+        <div style={{
           width: '100%',
           height: '100%',
           transform: `rotate(${rotation}deg)`,
@@ -181,16 +181,16 @@ void _flushBatch() {
             </rect>
           </svg>
         </div>
-        
+
         {/* Upright Label - Perfect Circle Hitbox */}
-        <div style={{ 
-          position: 'absolute', 
-          inset: '-10px', 
-          border: '1px dashed var(--brand-primary)', 
+        <div style={{
+          position: 'absolute',
+          inset: '-10px',
+          border: '1px dashed var(--brand-primary)',
           backgroundColor: isAnyColliding ? 'rgba(1, 117, 194, 0.2)' : 'transparent',
-          borderRadius: '50%', 
+          borderRadius: '50%',
           opacity: 0.8,
-          aspectRatio: '1/1' 
+          aspectRatio: '1/1'
         }}>
           <span style={{ position: 'absolute', bottom: '-20px', left: '50%', transform: 'translateX(-50%)', color: 'var(--brand-primary)', fontSize: '9px', fontFamily: 'monospace', whiteSpace: 'nowrap', fontWeight: 'bold' }}>
             ● {isAnyColliding ? 'COLLISION_DETECTED' : 'CIRCLE_COLLIDER'}
@@ -203,7 +203,7 @@ void _flushBatch() {
         <div className={clsx(collidingZones.zone04 && styles.triggerActiveLabel)} style={{ position: 'absolute', top: '0', left: '0', padding: '2px 6px', background: 'rgba(1, 117, 194, 0.3)', color: 'white', fontSize: '9px', fontFamily: 'monospace' }}>TRIGGER_ZONE_#04</div>
         <div style={{ position: 'absolute', bottom: '6px', right: '6px', color: 'var(--brand-primary)', fontSize: '10px', fontFamily: 'monospace', opacity: 0.6 }}>OnOverlap: notify()</div>
       </div>
-      
+
       <div ref={z12Ref} className={clsx(collidingZones.zone12 && styles.triggerActive)} style={{ position: 'absolute', top: '20%', left: '30%', width: '100px', height: '100px', border: '1px dashed rgba(1, 117, 194, 0.3)', zIndex: 1, pointerEvents: 'none', opacity: 0.5 }}>
         <div className={clsx(collidingZones.zone12 && styles.triggerActiveLabel)} style={{ position: 'absolute', top: '0', left: '0', padding: '1px 4px', background: 'rgba(1, 117, 194, 0.2)', color: 'white', fontSize: '8px', fontFamily: 'monospace' }}>EVENT_TRGR_#12</div>
       </div>
@@ -350,7 +350,7 @@ Iterable<Widget> build(BuildContext context) sync* {
                 <div className={clsx("col col--7", styles.colLeft)}>
                   <CodeWindow>
                     <CodeBlock language="dart">
-                      {`class PlayerController extends Behavior {
+                      {`class PlayerController extends Behavior with Tickable {
   @override
   void onUpdate(double dt) {
     // Decouple logic from representation

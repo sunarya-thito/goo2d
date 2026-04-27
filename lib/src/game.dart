@@ -9,6 +9,7 @@ import 'screen.dart';
 import 'ticker.dart';
 
 import 'world.dart';
+import 'object.dart';
 
 abstract interface class GameSystem {
   GameEngine get game;
@@ -28,6 +29,8 @@ class GameEngine {
   final CameraSystem _cameras;
   final ScreenSystem _screen;
   final AudioSystem _audio;
+
+  final List<GameObject> _rootObjects = [];
 
   /// The currently rendering camera. Only set during the paint pass.
   @internal
@@ -62,6 +65,23 @@ class GameEngine {
   CameraSystem get cameras => _cameras;
   ScreenSystem get screen => _screen;
   AudioSystem get audio => _audio;
+
+  /// Returns the list of root game objects in this game engine.
+  List<GameObject> get rootObjects => List.unmodifiable(_rootObjects);
+
+  /// Registers a game object as a root object.
+  @internal
+  void registerRootObject(GameObject object) {
+    if (!_rootObjects.contains(object)) {
+      _rootObjects.add(object);
+    }
+  }
+
+  /// Unregisters a game object as a root object.
+  @internal
+  void unregisterRootObject(GameObject object) {
+    _rootObjects.remove(object);
+  }
 
   bool isSecondaryPass = false;
 
@@ -117,6 +137,35 @@ class TickerState implements GameSystem {
     deltaTime = dt;
     time += dt;
     frameCount++;
+  }
+
+  double _accumulator = 0.0;
+
+  /// Runs the game loop for the given delta time.
+  void tick(double dt) {
+    update(dt);
+    game.input.update();
+
+    _accumulator += dt;
+    while (_accumulator >= fixedDeltaTime) {
+      for (final obj in game._rootObjects) {
+        obj.broadcastEvent(FixedTickEvent(fixedDeltaTime));
+      }
+      _accumulator -= fixedDeltaTime;
+    }
+
+    for (final obj in game._rootObjects) {
+      obj.broadcastEvent(TickEvent(dt));
+    }
+
+    game.screen.update(screenSize);
+    game.collision.runCollisionPass();
+
+    for (final obj in game._rootObjects) {
+      obj.broadcastEvent(LateTickEvent(dt));
+    }
+
+    signalFrameComplete();
   }
 
   void signalFrameComplete() {
@@ -271,6 +320,7 @@ class CollisionSystem implements GameSystem {
 }
 
 class AudioSystem implements GameSystem {
+  static bool _isInitialized = false;
   static Future<void> initialize({
     PlaybackDevice? device,
     bool automaticCleanup = false,
@@ -278,6 +328,7 @@ class AudioSystem implements GameSystem {
     int bufferSize = 2048,
     Channels channels = Channels.stereo,
   }) async {
+    if (_isInitialized) return;
     await SoLoud.instance.init(
       device: device,
       automaticCleanup: automaticCleanup,
@@ -285,6 +336,7 @@ class AudioSystem implements GameSystem {
       bufferSize: bufferSize,
       channels: channels,
     );
+    _isInitialized = true;
   }
 
   final Set<SoundHandle> _handles = {};
@@ -320,14 +372,14 @@ class AudioSystem implements GameSystem {
   double get globalVolume => _globalVolume;
   set globalVolume(double value) {
     _globalVolume = value.clamp(0.0, 1.0);
-    if (SoLoud.instance.isInitialized) {
+    if (_isInitialized) {
       SoLoud.instance.setGlobalVolume(_globalVolume);
     }
   }
 
   @override
   void dispose() {
-    if (SoLoud.instance.isInitialized) {
+    if (_isInitialized) {
       for (final handle in _handles) {
         if (SoLoud.instance.getIsValidVoiceHandle(handle)) {
           SoLoud.instance.stop(handle);
@@ -395,8 +447,11 @@ class _GameState extends State<Game> {
   Widget build(BuildContext context) {
     return GameProvider(
       game: _game,
-      child: RepaintBoundary(
-        child: GameTicker(child: World(child: widget.child)),
+      child: GameLoop(
+        game: _game,
+        child: RepaintBoundary(
+          child: GameRenderer(child: World(child: widget.child)),
+        ),
       ),
     );
   }

@@ -26,7 +26,7 @@ class MockFixedTickable extends Component with FixedTickable {
 void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('GameTicker', () {
+  group('GameLoop', () {
     testWidgets('should increment frameCount and update deltaTime', (
       tester,
     ) async {

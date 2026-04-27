@@ -3,10 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
 import 'game.dart';
 import 'event.dart';
-import 'object.dart';
 import 'camera.dart';
-
-// Delta time and frame count are now managed by the Game instance.
 
 mixin Tickable implements EventListener {
   void onUpdate(double dt);
@@ -53,38 +50,30 @@ class LateTickEvent extends Event<LateTickable> {
   }
 }
 
-class GameTicker extends StatelessWidget {
-  final Widget child;
-  const GameTicker({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return _InternalGameTicker(game: GameProvider.of(context), child: child);
-  }
-}
-
-class _InternalGameTicker extends SingleChildRenderObjectWidget {
+/// A widget that manages the game loop using a Flutter Ticker.
+class GameLoop extends SingleChildRenderObjectWidget {
   final GameEngine game;
-  const _InternalGameTicker({required this.game, required super.child});
+
+  const GameLoop({super.key, required this.game, required super.child});
 
   @override
-  RenderGameTicker createRenderObject(BuildContext context) {
-    return RenderGameTicker(game);
+  RenderGameLoop createRenderObject(BuildContext context) {
+    return RenderGameLoop(game: game);
   }
 
   @override
-  void updateRenderObject(BuildContext context, RenderGameTicker renderObject) {
+  void updateRenderObject(BuildContext context, RenderGameLoop renderObject) {
     renderObject.game = game;
   }
 }
 
-class RenderGameTicker extends RenderProxyBox {
+/// A render object that manages the game loop using a Flutter Ticker.
+class RenderGameLoop extends RenderProxyBox {
   GameEngine game;
-  RenderGameTicker(this.game);
-
   Ticker? _ticker;
   Duration _lastTick = Duration.zero;
-  double _accumulator = 0.0;
+
+  RenderGameLoop({required this.game});
 
   @override
   void attach(PipelineOwner owner) {
@@ -105,33 +94,42 @@ class RenderGameTicker extends RenderProxyBox {
     final dt = delta.inMicroseconds / 1000000.0;
     _lastTick = elapsed;
 
-    game.ticker.update(dt);
-    game.input.update();
+    game.ticker.tick(dt);
 
-    _accumulator += dt;
-
-    while (_accumulator >= game.ticker.fixedDeltaTime) {
-      _propagateFixedTick(this, game.ticker.fixedDeltaTime);
-      _accumulator -= game.ticker.fixedDeltaTime;
-    }
-
-    _propagateTick(this, dt);
-
-    if (hasSize) {
-      game.screen.update(size);
-    }
-
-    game.collision.runCollisionPass();
-
-    _propagateLateTick(this, dt);
-
+    // After updating the game state, we need to ensure the renderer repaints.
     markNeedsPaint();
+  }
+}
 
-    game.ticker.signalFrameComplete();
+/// A widget that provides the root rendering for the game, including camera background clearing.
+class GameRenderer extends SingleChildRenderObjectWidget {
+  const GameRenderer({super.key, required super.child});
+
+  @override
+  RenderGameRenderer createRenderObject(BuildContext context) {
+    return RenderGameRenderer(game: GameProvider.of(context));
   }
 
   @override
+  void updateRenderObject(
+    BuildContext context,
+    RenderGameRenderer renderObject,
+  ) {
+    renderObject.game = GameProvider.of(context);
+  }
+}
+
+/// A render object that provides the root rendering for the game.
+class RenderGameRenderer extends RenderProxyBox {
+  GameEngine game;
+  RenderGameRenderer({required this.game});
+
+  @override
   void paint(PaintingContext context, Offset offset) {
+    if (hasSize) {
+      game.ticker.screenSize = size;
+    }
+
     if (!game.cameras.isReady) {
       super.paint(context, offset);
       return;
@@ -144,7 +142,6 @@ class RenderGameTicker extends RenderProxyBox {
     }
 
     final screenSize = size;
-    game.ticker.screenSize = screenSize;
 
     if (camera.clearFlags == CameraClearFlags.solidColor) {
       final paint = Paint()..color = camera.backgroundColor;
@@ -158,29 +155,5 @@ class RenderGameTicker extends RenderProxyBox {
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
     // Default hit testing for children in screen space
     return super.hitTestChildren(result, position: position);
-  }
-
-  void _propagateTick(RenderObject root, double dt) {
-    if (root is GameRenderObject) {
-      root.object.broadcastEvent(TickEvent(dt));
-      return;
-    }
-    root.visitChildren((child) => _propagateTick(child, dt));
-  }
-
-  void _propagateFixedTick(RenderObject root, double dt) {
-    if (root is GameRenderObject) {
-      root.object.broadcastEvent(FixedTickEvent(dt));
-      return;
-    }
-    root.visitChildren((child) => _propagateFixedTick(child, dt));
-  }
-
-  void _propagateLateTick(RenderObject root, double dt) {
-    if (root is GameRenderObject) {
-      root.object.broadcastEvent(LateTickEvent(dt));
-      return;
-    }
-    root.visitChildren((child) => _propagateLateTick(child, dt));
   }
 }

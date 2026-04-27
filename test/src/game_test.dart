@@ -25,13 +25,14 @@ void main() {
       expect(foundEngine, isNotNull);
     });
 
-    testWidgets('should automatically inject World and GameTicker', (
+    testWidgets('should automatically inject World, GameLoop, and GameRenderer', (
       tester,
     ) async {
       await tester.pumpWidget(Game(child: Container()));
 
       expect(find.byType(World), findsOneWidget);
-      expect(find.byType(GameTicker), findsOneWidget);
+      expect(find.byType(GameLoop), findsOneWidget);
+      expect(find.byType(GameRenderer), findsOneWidget);
     });
 
     testWidgets('should support custom GameEngine instance', (tester) async {

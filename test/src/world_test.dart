@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:flutter/widgets.dart';
+import 'package:goo2d/src/world.dart';
 
 class _MockPointerReceiver extends Component with PointerReceiver {
   final void Function() onDown;

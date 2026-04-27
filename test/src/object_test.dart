@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/object.dart';
 
 class MockComponent extends Component with LifecycleListener {
   bool mountedCalled = false;
@@ -48,10 +49,7 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            key: GlobalKey(),
-            components: () => [component],
-          ),
+          child: GameWidget(key: GlobalKey(), components: () => [component]),
         ),
       );
       await tester.pump();
@@ -69,21 +67,17 @@ void main() {
 
     testWidgets('should broadcast events to components', (tester) async {
       final eventComponent = EventComponent();
-      
+
       await tester.pumpWidget(
-        Game(
-          child: GameWidget(
-            components: () => [eventComponent],
-          ),
-        ),
+        Game(child: GameWidget(components: () => [eventComponent])),
       );
       await tester.pump();
 
       final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
       final event = TestEvent();
-      
+
       gameObject.broadcastEvent(event);
-      
+
       expect(event.dispatched, isTrue);
       expect(eventComponent.eventReceived, isTrue);
     });
@@ -97,54 +91,48 @@ void main() {
           child: GameWidget(
             components: () => [parentEventComponent],
             children: [
-              GameWidget(
-                components: () => [childEventComponent],
-              ),
+              GameWidget(components: () => [childEventComponent]),
             ],
           ),
         ),
       );
       await tester.pump();
 
-      final parentObject = tester.element(find.byWidgetPredicate((w) => w is GameWidget && w.children.isNotEmpty)) as GameObject;
-      
+      final parentObject =
+          tester.element(
+                find.byWidgetPredicate(
+                  (w) => w is GameWidget && w.children.isNotEmpty,
+                ),
+              )
+              as GameObject;
+
       parentObject.broadcastEvent(TestEvent());
-      
+
       expect(parentEventComponent.eventReceived, isTrue);
       expect(childEventComponent.eventReceived, isTrue);
     });
 
     testWidgets('should retrieve components correctly', (tester) async {
       final component = MockComponent();
-      
+
       await tester.pumpWidget(
-        Game(
-          child: GameWidget(
-            components: () => [component],
-          ),
-        ),
+        Game(child: GameWidget(components: () => [component])),
       );
       await tester.pump();
 
       final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
-      
+
       expect(gameObject.getComponent<MockComponent>(), equals(component));
       expect(gameObject.tryGetComponent<MockComponent>(), equals(component));
       expect(gameObject.getComponents<MockComponent>(), contains(component));
     });
 
     testWidgets('should throw error when getComponent fails', (tester) async {
-      await tester.pumpWidget(
-        Game(
-          child: GameWidget(
-            components: () => [],
-          ),
-        ),
-      );
+      await tester.pumpWidget(Game(child: GameWidget(components: () => [])));
       await tester.pump();
 
       final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
-      
+
       expect(() => gameObject.getComponent<MockComponent>(), throwsStateError);
     });
   });

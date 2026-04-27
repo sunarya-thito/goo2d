@@ -313,8 +313,8 @@ abstract class GameObjectElement extends RenderObjectElement
   @override
   void mount(Element? parent, Object? newSlot) {
     super.mount(parent, newSlot);
-    _attachToParent();
     _game = parent?.dependOnInheritedWidgetOfExactType<GameProvider>()?.game;
+    _attachToParent();
   }
 
   @override
@@ -387,11 +387,19 @@ abstract class GameObjectElement extends RenderObjectElement
   void _attachToParent() {
     _detachFromParent();
     _parentObject = _findParentGameObject(this);
-    _parentObject?.internalChildrenObjects.add(this);
+    if (_parentObject != null) {
+      _parentObject?.internalChildrenObjects.add(this);
+    } else {
+      _game?.registerRootObject(this);
+    }
   }
 
   void _detachFromParent() {
-    _parentObject?.internalChildrenObjects.remove(this);
+    if (_parentObject != null) {
+      _parentObject?.internalChildrenObjects.remove(this);
+    } else {
+      _game?.unregisterRootObject(this);
+    }
     _parentObject = null;
   }
 
@@ -603,11 +611,14 @@ class GameRenderObject extends RenderBox
         );
       }
     } else {
-      context.canvas.save();
-      context.canvas.translate(offset.dx, offset.dy);
-      RenderEvent(context.canvas).dispatchTo(object);
-      context.canvas.restore();
-      defaultPaint(context, offset);
+      // No transform. Only render if it's on the UI layer.
+      if ((object.layer & RenderLayer.ui) != 0) {
+        context.canvas.save();
+        context.canvas.translate(offset.dx, offset.dy);
+        RenderEvent(context.canvas).dispatchTo(object);
+        context.canvas.restore();
+        defaultPaint(context, offset);
+      }
     }
   }
 
@@ -624,7 +635,12 @@ class GameRenderObject extends RenderBox
         },
       );
     }
-    return defaultHitTestChildren(result, position: position);
+    
+    // No transform. Only hit-test children if it's on the UI layer.
+    if ((object.layer & RenderLayer.ui) != 0) {
+      return defaultHitTestChildren(result, position: position);
+    }
+    return false;
   }
 
   @override
@@ -646,9 +662,12 @@ class GameRenderObject extends RenderBox
       );
     }
 
-    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
-      result.add(BoxHitTestEntry(this, position));
-      return true;
+    // No transform. Only hit-test if it's on the UI layer.
+    if ((object.layer & RenderLayer.ui) != 0) {
+      if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
+        result.add(BoxHitTestEntry(this, position));
+        return true;
+      }
     }
     return false;
   }

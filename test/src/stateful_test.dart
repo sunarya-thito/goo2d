@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/stateful.dart';
 
 class MockStatefulWidget extends StatefulGameWidget {
   final VoidCallback? onInit;
@@ -60,9 +61,7 @@ void main() {
               child: MockStatefulWidget(
                 onInit: () => initCalled++,
                 onDispose: () => disposeCalled++,
-                children: [
-                  const GameWidget(key: ValueKey('child')),
-                ],
+                children: [const GameWidget(key: ValueKey('child'))],
               ),
             ),
           ),
@@ -71,7 +70,8 @@ void main() {
     );
     await tester.pump();
 
-    final element = tester.element(find.byType(MockStatefulWidget)) as StatefulGameElement;
+    final element =
+        tester.element(find.byType(MockStatefulWidget)) as StatefulGameElement;
     final state = element.state as _MockState;
 
     expect(state.initCount, equals(1));
@@ -91,9 +91,7 @@ void main() {
               child: MockStatefulWidget(
                 onInit: () => initCalled++,
                 onDispose: () => disposeCalled++,
-                children: [
-                  const GameWidget(key: ValueKey('child2')),
-                ],
+                children: [const GameWidget(key: ValueKey('child2'))],
               ),
             ),
           ),
@@ -130,7 +128,8 @@ void main() {
     );
     await tester.pump();
 
-    final element = tester.element(find.byType(MockStatefulWidget)) as StatefulGameElement;
+    final element =
+        tester.element(find.byType(MockStatefulWidget)) as StatefulGameElement;
     final state = element.state as _MockState;
     expect(state.buildCount, equals(1));
 

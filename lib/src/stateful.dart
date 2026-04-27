@@ -1,13 +1,11 @@
 import 'package:flutter/widgets.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/object.dart';
 
 abstract class StatefulGameWidget extends RenderObjectWidget {
   final int layer;
 
-  const StatefulGameWidget({
-    super.key,
-    this.layer = RenderLayer.defaultLayer,
-  });
+  const StatefulGameWidget({super.key, this.layer = RenderLayer.defaultLayer});
 
   @override
   StatefulGameElement createElement() => StatefulGameElement(this);

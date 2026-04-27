@@ -139,7 +139,12 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
     }
 
     final listenerTransform = listener.gameObject
-        .getComponent<ObjectTransform>();
+        .tryGetComponent<ObjectTransform>();
+    if (listenerTransform == null) {
+      // Listener has no transform, fallback to center
+      soloud.SoLoud.instance.set3dSourceParameters(_handle!, rx, ry, 0, 0, 0, 0);
+      return;
+    }
 
     // Calculate relative position
     final sourceWorldPos = transform.position;

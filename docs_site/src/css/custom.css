@@ -7,14 +7,17 @@
 :root {
   --brand-primary: #0175c2;
   --brand-primary-foreground: #ffffff;
-  --brand-background: #09090b; /* Zinc 950 */
+  --brand-background: #09090b;
+  /* Zinc 950 */
   --brand-foreground: #fafafa;
-  --brand-border: #27272a; /* Zinc 800 */
-  --brand-muted: #71717a; /* Zinc 500 */
-  
+  --brand-border: #27272a;
+  /* Zinc 800 */
+  --brand-muted: #71717a;
+  /* Zinc 500 */
+
   --ifm-font-family-base: 'Space Grotesk', sans-serif;
   --ifm-font-family-monospace: 'JetBrains Mono', monospace;
-  
+
   --ifm-color-primary: var(--brand-primary);
   --ifm-color-primary-dark: #0169ae;
   --ifm-color-primary-darker: #015e9b;
@@ -26,9 +29,9 @@
   --ifm-background-color: var(--brand-background);
   --ifm-navbar-background-color: var(--brand-background);
   --ifm-footer-background-color: var(--brand-background);
-  
+
   --ifm-link-color: var(--brand-primary);
-  
+
   /* SHARP: No rounded corners */
   --ifm-global-border-radius: 0px;
   --ifm-button-border-radius: 0px;
@@ -41,16 +44,17 @@
 
 [data-theme='dark'] {
   --ifm-background-color: var(--brand-background);
-  --ifm-text-color: #a1a1aa; /* Zinc 400 */
+  --ifm-text-color: #a1a1aa;
+  /* Zinc 400 */
   --ifm-heading-color: #ffffff;
-  
+
   --ifm-navbar-background-color: var(--brand-background);
   --ifm-navbar-shadow: none;
-  
+
   --ifm-menu-color-active: var(--brand-primary);
   --ifm-menu-color: #a1a1aa;
   --ifm-menu-color-background-active: rgba(1, 117, 194, 0.05);
-  
+
   --ifm-blockquote-border-color: var(--brand-primary);
   --ifm-blockquote-background-color: rgba(39, 39, 42, 0.5);
 }
@@ -64,6 +68,7 @@
 .navbar__title {
   font-weight: 700;
   background: linear-gradient(to right, #ffffff 60%, var(--brand-primary) 60%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
@@ -75,7 +80,8 @@
 }
 
 .card {
-  background-color: #18181b; /* Zinc 900 */
+  background-color: #18181b;
+  /* Zinc 900 */
   border: 1px solid var(--brand-border);
   border-radius: 0;
   transition: all 0.2s ease;
@@ -103,7 +109,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: 
+  background-image:
     linear-gradient(var(--brand-border) 1px, transparent 1px),
     linear-gradient(90deg, var(--brand-border) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -119,7 +125,8 @@
 
 .menu {
   padding: 0.5rem 0 !important;
-  scrollbar-gutter: auto !important; /* Eliminate the reserved scrollbar gap */
+  scrollbar-gutter: auto !important;
+  /* Eliminate the reserved scrollbar gap */
 }
 
 .menu__list {
@@ -173,7 +180,8 @@
   width: 3px;
   background-color: var(--brand-primary);
   z-index: 100;
-  transform: none !important; /* Ensure it stays vertical even if parent rotates */
+  transform: none !important;
+  /* Ensure it stays vertical even if parent rotates */
 }
 
 .menu__caret {
@@ -252,7 +260,8 @@ code {
   font-family: 'JetBrains Mono', monospace !important;
 }
 
-p > code, li > code {
+p>code,
+li>code {
   background-color: rgba(39, 39, 42, 0.3) !important;
   padding: 0.1rem 0.35rem !important;
   border: 1px solid var(--brand-border) !important;
@@ -260,17 +269,27 @@ p > code, li > code {
 }
 
 /* Typography Enhancements */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   letter-spacing: -0.04em;
   font-weight: 700;
 }
 
-h1 { color: #ffffff; }
-h2 { border-bottom: 1px solid var(--brand-border); padding-bottom: 0.75rem; margin-top: 4rem; }
+h1 {
+  color: #ffffff;
+}
+
+h2 {
+  border-bottom: 1px solid var(--brand-border);
+  padding-bottom: 0.75rem;
+  margin-top: 4rem;
+}
 
 /* Sharp Reinforcements */
-.admonition, 
-.pagination-nav__link, 
+.admonition,
+.pagination-nav__link,
 .table-of-contents__link,
 .tabs__item,
 .navbar__link {
@@ -287,12 +306,15 @@ h2 { border-bottom: 1px solid var(--brand-border); padding-bottom: 0.75rem; marg
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--brand-background);
 }
+
 ::-webkit-scrollbar-thumb {
   background: #27272a;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--brand-primary);
 }
