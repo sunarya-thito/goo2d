@@ -6,6 +6,7 @@ import 'package:example/docs/collision_example.dart';
 import 'package:example/docs/camera_example.dart';
 import 'package:example/docs/coroutine_example.dart';
 import 'package:example/docs/sprites_example.dart';
+import 'package:example/docs/audio_example.dart';
 
 /// This is the entry point used exclusively for the GitHub Pages documentation site.
 /// It acts as a router to load specific "Cookbook" examples based on the URL hash,
@@ -72,6 +73,10 @@ class _DocsRouterAppState extends State<DocsRouterApp> {
       case '/sprites':
         return PlayableExample(
           builder: (context) => const Game(child: SpriteExample()),
+        );
+      case '/audio':
+        return PlayableExample(
+          builder: (context) => const Game(child: AudioExample()),
         );
       default:
         return const Center(
