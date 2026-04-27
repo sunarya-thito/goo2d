@@ -37,7 +37,7 @@ jobs:
         working-directory: ./example
         run: |
           flutter pub get
-          flutter build web -t lib/docs_main.dart --base-href /goo2d/play/
+          flutter build web -t lib/docs_main.dart --base-href /goo2d/play/ --wasm
 
       - name: Copy Flutter Web Build to Docusaurus Static Folder
         run: |

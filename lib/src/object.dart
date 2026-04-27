@@ -522,7 +522,7 @@ class GameRenderObject extends RenderBox
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
 
     if (optionalTransform != null) {
-      if (object.game.isSecondaryPass) {
+      if (object.game.isSecondaryPass || !needsCompositing) {
         context.canvas.save();
         context.canvas.translate(offset.dx, offset.dy);
         context.canvas.transform(optionalTransform.localMatrix.storage);

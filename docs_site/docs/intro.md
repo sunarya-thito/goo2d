@@ -73,3 +73,9 @@ void main() {
   );
 }
 ```
+
+## Platform Support
+
+Goo2D is a cross-platform engine. While it works seamlessly on mobile and desktop, the Web platform requires a few extra steps for audio and optimal performance.
+
+Check out the **[Web Platform Guide](./web)** for instructions on using **WASM** and setting up **Audio**.

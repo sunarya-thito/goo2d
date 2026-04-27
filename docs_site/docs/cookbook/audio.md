@@ -33,12 +33,22 @@ This tutorial uses placeholder sound files. In a real project, you would use `.w
 ### 0. Web Setup (Crucial)
 The underlying `flutter_soloud` engine requires specific JavaScript files to be initialized when running on the Web. If you skip this, you will see obfuscated console errors and hear no sound.
 
-Open `web/index.html` and add the following scripts inside the `<body>` tag, before the `flutter.js` script:
+For more information on Web performance and setup, see the **[Web Platform Guide](../web)**.
+
+#### Add Scripts to `index.html`
+Open `web/index.html` and add the following scripts inside the `<body>` tag, **before** the `flutter.js` script:
 
 ```html
 <!-- Add these lines for Goo2D Audio support -->
 <script src="assets/packages/flutter_soloud/web/libflutter_soloud_plugin.js" defer></script>
 <script src="assets/packages/flutter_soloud/web/init_module.dart.js" defer></script>
+```
+
+#### WASM for Performance
+When deploying to web, always use the `--wasm` flag for the best performance and audio synchronization:
+
+```bash
+flutter build web --wasm
 ```
 
 ### 1. Asset Setup

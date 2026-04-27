@@ -61,7 +61,10 @@ class RenderWorld extends RenderProxyBox {
       context.paintChild(child!, Offset.zero);
       context.canvas.restore();
     } else {
-      context.pushTransform(true, offset, transform, (context, offset) {
+      context.pushTransform(needsCompositing, offset, transform, (
+        context,
+        offset,
+      ) {
         context.paintChild(child!, offset);
       });
     }

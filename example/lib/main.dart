@@ -555,42 +555,70 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
     return (h ^ (h >> 13)) * 12741261 & 0x7FFFFFFF;
   }
 
+  final _paint = ui.Paint()
+    ..filterQuality = ui.FilterQuality.none
+    ..isAntiAlias = false;
+
   @override
   void render(ui.Canvas canvas) {
     final grass = _sheet[(2, 4)];
     final double size = grass.rect.width / grass.pixelsPerUnit;
-    final pos =
-        const GameTag(
-          'MainCamera',
-        ).gameObject?.tryGetComponent<ObjectTransform>()?.position ??
-        Offset.zero;
-    final int camX = (pos.dx / size).floor(), camY = (pos.dy / size).floor();
-    for (int y = camY - 25; y <= camY + 25; y++) {
-      for (int x = camX - 25; x <= camX + 25; x++) {
-        final worldPos = Offset(x.toDouble() * size, y.toDouble() * size);
-        _drawTile(canvas, grass, worldPos, size);
+
+    // Get the visible area in world space.
+    ui.Rect bounds = canvas.getLocalClipBounds();
+
+    // Fallback if the clip bounds are missing or practically infinite (no clip).
+    if (bounds.width > 10000 || bounds.isEmpty) {
+      final camera = game.cameras.main;
+      final camPos =
+          camera.gameObject.tryGetComponent<ObjectTransform>()?.position ??
+          ui.Offset.zero;
+      final halfHeight = camera.orthographicSize;
+      final screenSize = game.ticker.screenSize;
+      final aspect =
+          screenSize.height > 0 ? screenSize.width / screenSize.height : 1.0;
+      final halfWidth = halfHeight * aspect;
+
+      bounds = ui.Rect.fromLTWH(
+        camPos.dx - halfWidth,
+        camPos.dy - halfHeight,
+        halfWidth * 2,
+        halfHeight * 2,
+      );
+    }
+
+    final int startX = (bounds.left / size).floor() - 2;
+    final int endX = (bounds.right / size).ceil() + 2;
+    final int startY = (bounds.top / size).floor() - 2;
+    final int endY = (bounds.bottom / size).ceil() + 2;
+
+    // Iterate only over visible tiles.
+    for (int y = startY; y <= endY; y++) {
+      // Optimize by translating/scaling once per row instead of per tile
+      canvas.save();
+      canvas.translate(startX * size, y * size + size);
+      canvas.scale(1, -1);
+      for (int x = startX; x <= endX; x++) {
+        canvas.drawImageRect(
+          grass.texture.image,
+          grass.rect,
+          ui.Rect.fromLTWH(0, 0, size + 0.01, size + 0.01),
+          _paint,
+        );
         final h = _hash(x, y);
         if (h % 10 == 0) {
-          _drawTile(canvas, _sheet[(0, 3 + (h % 6))], worldPos, size);
+          final deco = _sheet[(0, 3 + (h % 6))];
+          canvas.drawImageRect(
+            deco.texture.image,
+            deco.rect,
+            ui.Rect.fromLTWH(0, 0, size + 0.01, size + 0.01),
+            _paint,
+          );
         }
+        canvas.translate(size, 0);
       }
+      canvas.restore();
     }
-  }
-
-  void _drawTile(ui.Canvas canvas, GameSprite sprite, Offset pos, double size) {
-    final paint = ui.Paint()
-      ..filterQuality = ui.FilterQuality.none
-      ..isAntiAlias = false;
-    canvas.save();
-    canvas.translate(pos.dx, pos.dy + size);
-    canvas.scale(1, -1);
-    canvas.drawImageRect(
-      sprite.texture.image,
-      sprite.rect,
-      ui.Rect.fromLTWH(0, 0, size + 0.01, size + 0.01),
-      paint,
-    );
-    canvas.restore();
   }
 }
 
@@ -675,13 +703,19 @@ class FPSUI extends StatefulGameWidget {
 
 class FPSState extends GameState<FPSUI> with Tickable {
   double _fps = 0;
+  double _timer = 0;
 
   @override
   void onUpdate(double dt) {
+    _timer += dt;
     if (dt > 0) {
-      setState(() {
-        _fps = _fps * 0.9 + (1.0 / dt) * 0.1;
-      });
+      _fps = _fps * 0.9 + (1.0 / dt) * 0.1;
+    }
+
+    // Only rebuild the FPS UI twice per second to save performance.
+    if (_timer >= 0.5) {
+      _timer = 0;
+      if (mounted) setState(() {});
     }
   }
 
