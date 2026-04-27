@@ -427,6 +427,7 @@ class CompiledApp {
       _1321: x0 => globalThis.Module_soloud._disposeSound(x0),
       _1322: () => globalThis.Module_soloud._disposeAllSound(),
       _1328: () => globalThis.Module_soloud._getVisualizationEnabled(),
+      _1338: x0 => globalThis.Module_soloud._setGlobalVolume(x0),
       _1340: (x0,x1) => globalThis.Module_soloud._setVolume(x0,x1),
       _1342: (x0,x1) => globalThis.Module_soloud._setPan(x0,x1),
       _1344: x0 => globalThis.Module_soloud._getIsValidVoiceHandle(x0),
