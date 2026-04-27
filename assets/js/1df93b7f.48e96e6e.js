@@ -47,7 +47,7 @@ Iterable<Widget> build(BuildContext context) sync* {
       PlayerController(),
     ],
   );
-}`})})})]})})}),(0,a.jsx)("section",{className:y,children:(0,a.jsx)("div",{className:"container",children:(0,a.jsxs)("div",{className:"row",style:{alignItems:"center"},children:[(0,a.jsx)("div",{className:(0,n.A)("col col--7",v),children:(0,a.jsx)(S,{children:(0,a.jsx)(x.A,{language:"dart",children:`class PlayerController extends Behavior {
+}`})})})]})})}),(0,a.jsx)("section",{className:y,children:(0,a.jsx)("div",{className:"container",children:(0,a.jsxs)("div",{className:"row",style:{alignItems:"center"},children:[(0,a.jsx)("div",{className:(0,n.A)("col col--7",v),children:(0,a.jsx)(S,{children:(0,a.jsx)(x.A,{language:"dart",children:`class PlayerController extends Behavior with Tickable {
   @override
   void onUpdate(double dt) {
     // Decouple logic from representation
