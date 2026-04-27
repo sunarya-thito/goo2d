@@ -96,7 +96,9 @@ abstract class GameObjectElement extends RenderObjectElement
   set layer(int value) {
     if (_layer == value) return;
     _layer = value;
-    renderObject.markNeedsPaint();
+    if (mounted) {
+      renderObject.markNeedsPaint();
+    }
   }
 
   @override
@@ -449,8 +451,8 @@ class GameElement extends GameObjectElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    layer = widget.layer;
     super.mount(parent, newSlot);
+    layer = widget.layer;
     final components = widget.components();
     for (var component in components) {
       addComponent(component);
@@ -553,7 +555,7 @@ class GameRenderObject extends RenderBox
 
         // Frustum culling
         final optionalSize = object.tryGetComponent<ObjectSize>();
-        if (optionalSize != null) {
+        if (optionalSize != null && !object.game.isSecondaryPass) {
           final clip = context.canvas.getLocalClipBounds();
           if (!clip.isInfinite) {
             final objRect = Rect.fromLTWH(
@@ -580,7 +582,7 @@ class GameRenderObject extends RenderBox
           (context, offset) {
             // Frustum culling in composited layer
             final optionalSize = object.tryGetComponent<ObjectSize>();
-            if (optionalSize != null) {
+            if (optionalSize != null && !object.game.isSecondaryPass) {
               final clip = context.canvas.getLocalClipBounds();
               if (!clip.isInfinite) {
                 final objRect = Rect.fromLTWH(

@@ -21,13 +21,11 @@ enum MyGameTexture with AssetEnum, TextureAssetEnum {
 enum MyGameSound with AssetEnum, AudioAssetEnum {
   shoot,
   explosion,
-  bgm(type: 'wav')
+  bgm
   ;
 
-  final String type;
-  const MyGameSound({this.type = 'ogg'});
   @override
-  AssetSource get source => AssetSource.local("assets/audios/$name.$type");
+  AssetSource get source => AssetSource.local("assets/audios/$name.ogg");
 }
 
 Future<void> loadAllGameAssets() async {
@@ -579,8 +577,9 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
           ui.Offset.zero;
       final halfHeight = camera.orthographicSize;
       final screenSize = game.ticker.screenSize;
-      final aspect =
-          screenSize.height > 0 ? screenSize.width / screenSize.height : 1.0;
+      final aspect = screenSize.height > 0
+          ? screenSize.width / screenSize.height
+          : 1.0;
       final halfWidth = halfHeight * aspect;
 
       bounds = ui.Rect.fromLTWH(

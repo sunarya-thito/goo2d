@@ -22,9 +22,6 @@ class RenderWorld extends RenderProxyBox {
   GameEngine game;
 
   RenderWorld({required this.game});
-  
-  @override
-  bool get isRepaintBoundary => true;
 
   Matrix4? _getTransform() {
     if (!game.cameras.isReady) return null;

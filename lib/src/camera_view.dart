@@ -31,9 +31,6 @@ class RenderCameraView extends RenderProxyBox {
   GameTag cameraTag;
 
   RenderCameraView({required this.game, required this.cameraTag});
-  
-  @override
-  bool get isRepaintBoundary => true;
 
   @override
   bool get alwaysNeedsCompositing => false;

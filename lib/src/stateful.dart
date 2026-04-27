@@ -89,10 +89,10 @@ class StatefulGameElement extends GameObjectElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    super.mount(parent, newSlot);
     layer = (widget as StatefulGameWidget).layer;
     state = (widget as StatefulGameWidget).createState();
     state._element = this;
-    super.mount(parent, newSlot);
 
     addComponent(state);
     state.initState();
