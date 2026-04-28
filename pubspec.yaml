@@ -4,7 +4,6 @@ version: 0.0.1
 homepage: https://sunarya-thito.github.io/goo2d/
 repository: https://github.com/sunarya-thito/goo2d
 issues: https://github.com/sunarya-thito/goo2d/issues
-publish_to: 'pub.dev'
 
 environment:
   sdk: ^3.11.4
