@@ -4,15 +4,13 @@ import 'package:flutter/painting.dart';
 import 'physics_world.dart';
 import 'physics_protocol.dart';
 
-void physicsWorkerEntry(SendPort mainSendPort) {
-  final workerReceivePort = ReceivePort();
-  mainSendPort.send(workerReceivePort.sendPort);
-
+class PhysicsWorkerManager {
   final Map<int, PhysicsWorld> worlds = {};
+  final void Function(ByteData) onResponse;
 
-  workerReceivePort.listen((message) {
-    if (message is! ByteData) return;
+  PhysicsWorkerManager({required this.onResponse});
 
+  void handleMessage(ByteData message) {
     final buffer = PhysicsBuffer(message);
     final packetId = buffer.readUint8();
     final worldId = buffer.readInt32();
@@ -60,22 +58,6 @@ void physicsWorkerEntry(SendPort mainSendPort) {
         }
         break;
 
-      case PhysicsPacket.syncVelocity:
-        final id = buffer.readInt32();
-        final body = world.bodies[id];
-        if (body != null) {
-          body.velocity = Offset(buffer.readFloat32(), buffer.readFloat32());
-        }
-        break;
-
-      case PhysicsPacket.syncAngularVelocity:
-        final id = buffer.readInt32();
-        final body = world.bodies[id];
-        if (body != null) {
-          body.angularVelocity = buffer.readFloat32();
-        }
-        break;
-
       case PhysicsPacket.addShape:
         final shapeId = buffer.readInt32();
         final bodyId = buffer.readInt32();
@@ -99,7 +81,8 @@ void physicsWorkerEntry(SendPort mainSendPort) {
           }
           shape = PhysicsPolygon(verts);
         } else { // Capsule
-          shape = PhysicsCapsule(buffer.readFloat32(), buffer.readFloat32(), buffer.readUint8() == 0);
+          shape = PhysicsCapsule(
+              buffer.readFloat32(), buffer.readFloat32(), buffer.readUint8() == 1);
         }
 
         shape.id = shapeId;
@@ -115,58 +98,59 @@ void physicsWorkerEntry(SendPort mainSendPort) {
         break;
 
       case PhysicsPacket.removeShape:
-        final shapeId = buffer.readInt32();
+        final id = buffer.readInt32();
         for (final body in world.bodies.values) {
-          body.shapes.removeWhere((s) => s.id == shapeId);
+          body.shapes.removeWhere((s) => s.id == id);
         }
         break;
 
       case PhysicsPacket.applyForce:
-        final id = buffer.readInt32();
-        final body = world.bodies[id];
-        if (body != null) {
-          body.applyForce(Offset(buffer.readFloat32(), buffer.readFloat32()));
-        }
+        final body = world.bodies[buffer.readInt32()];
+        body?.applyForce(Offset(buffer.readFloat32(), buffer.readFloat32()));
         break;
 
       case PhysicsPacket.applyImpulse:
-        final id = buffer.readInt32();
-        final body = world.bodies[id];
-        if (body != null) {
-          body.applyImpulse(Offset(buffer.readFloat32(), buffer.readFloat32()));
-        }
+        final body = world.bodies[buffer.readInt32()];
+        body?.applyImpulse(Offset(buffer.readFloat32(), buffer.readFloat32()));
         break;
 
       case PhysicsPacket.applyTorque:
-        final id = buffer.readInt32();
-        final body = world.bodies[id];
-        if (body != null) {
-          body.applyTorque(buffer.readFloat32());
-        }
+        final body = world.bodies[buffer.readInt32()];
+        body?.applyTorque(buffer.readFloat32());
         break;
 
       case PhysicsPacket.applyAngularImpulse:
-        final id = buffer.readInt32();
-        final body = world.bodies[id];
-        if (body != null) {
-          body.applyAngularImpulse(buffer.readFloat32());
-        }
+        final body = world.bodies[buffer.readInt32()];
+        body?.applyAngularImpulse(buffer.readFloat32());
         break;
 
       case PhysicsPacket.setGravity:
         world.gravity = Offset(buffer.readFloat32(), buffer.readFloat32());
         break;
 
+      case PhysicsPacket.syncVelocity:
+        final body = world.bodies[buffer.readInt32()];
+        if (body != null) {
+          body.velocity = Offset(buffer.readFloat32(), buffer.readFloat32());
+        }
+        break;
+
+      case PhysicsPacket.syncAngularVelocity:
+        final body = world.bodies[buffer.readInt32()];
+        if (body != null) {
+          body.angularVelocity = buffer.readFloat32();
+        }
+        break;
+
       case PhysicsPacket.raycast:
         final requestId = buffer.readInt32();
         final origin = Offset(buffer.readFloat32(), buffer.readFloat32());
-        final dir = Offset(buffer.readFloat32(), buffer.readFloat32());
-        final maxDist = buffer.readFloat32();
-        
-        final hit = world.raycast(origin, dir, maxDist);
-        
-        final respSize = 1 + 4 + 4 + 1 + (hit != null ? (4 + 4 + 4 + 4 + 4 + 4 + 4) : 0);
-        final respBuf = PhysicsBuffer.fixed(respSize);
+        final direction = Offset(buffer.readFloat32(), buffer.readFloat32());
+        final maxDistance = buffer.readFloat32();
+
+        final hit = world.raycast(origin, direction, maxDistance);
+
+        final respBuf = PhysicsBuffer.fixed(37);
         respBuf.writeUint8(PhysicsPacket.raycastResult);
         respBuf.writeInt32(worldId);
         respBuf.writeInt32(requestId);
@@ -180,7 +164,7 @@ void physicsWorkerEntry(SendPort mainSendPort) {
           respBuf.writeFloat32(hit.distance);
           respBuf.writeFloat32(hit.fraction);
         }
-        mainSendPort.send(respBuf.data);
+        onResponse(respBuf.data);
         break;
 
       case PhysicsPacket.step:
@@ -197,12 +181,19 @@ void physicsWorkerEntry(SendPort mainSendPort) {
             body.rotation = rot;
           }
         }
-        
+
         final result = world.step(dt);
-        
+
         // Encode step result
-        final dynamicBodies = world.bodies.values.where((b) => b.type == 0).toList(); // dynamic
-        final respSize = 1 + 4 + 4 + (dynamicBodies.length * 28) + 4 + (result.contacts.length * 32);
+        final dynamicBodies =
+            world.bodies.values.where((b) => b.type == 0).toList(); // dynamic
+        final respSize =
+            1 +
+            4 +
+            4 +
+            (dynamicBodies.length * 28) +
+            4 +
+            (result.contacts.length * 32);
         final respBuf = PhysicsBuffer.fixed(respSize);
         respBuf.writeUint8(PhysicsPacket.stepResult);
         respBuf.writeInt32(worldId);
@@ -227,9 +218,24 @@ void physicsWorkerEntry(SendPort mainSendPort) {
           respBuf.writeFloat32(c.manifold.normal.dy);
           respBuf.writeFloat32(c.impulse);
         }
-        
-        mainSendPort.send(respBuf.data);
+
+        onResponse(respBuf.data);
         break;
+    }
+  }
+}
+
+void physicsWorkerEntry(SendPort mainSendPort) {
+  final workerReceivePort = ReceivePort();
+  mainSendPort.send(workerReceivePort.sendPort);
+
+  final manager = PhysicsWorkerManager(
+    onResponse: (data) => mainSendPort.send(data),
+  );
+
+  workerReceivePort.listen((message) {
+    if (message is ByteData) {
+      manager.handleMessage(message);
     }
   });
 }

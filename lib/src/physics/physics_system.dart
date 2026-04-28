@@ -1,25 +1,19 @@
 import 'dart:async';
-import 'dart:isolate';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
-import 'physics_worker.dart';
+import 'physics_bridge.dart';
 import 'physics_protocol.dart';
 
 class PhysicsSystem implements GameSystem {
-  static final _workerReceivePort = ReceivePort();
-  static SendPort? _workerSendPort;
-  static bool _workerInitializing = false;
-  static bool _isListening = false;
+  late final PhysicsBridge _bridge;
   static int _nextWorldId = 1;
-  static final Map<int, PhysicsSystem> _instances = {};
 
   final Map<int, Rigidbody> _rigidbodies = {};
   final Map<int, Collider> _colliders = {};
   final Map<GameObject, int> _standaloneBodyIds = {};
   final Map<int, int> _bodyColliderCount = {};
   final Map<int, Completer<RaycastHit?>> _raycastCompleters = {};
-  final List<ByteData> _pendingMessages = [];
 
   /// Set of shape ID pairs that were contacting in the last frame.
   final Set<String> _previousContacts = {};
@@ -38,12 +32,7 @@ class PhysicsSystem implements GameSystem {
   set gravity(Offset value) {
     if (_gravity == value) return;
     _gravity = value;
-    final buf = PhysicsBuffer.fixed(13);
-    buf.writeUint8(PhysicsPacket.setGravity);
-    buf.writeInt32(worldId);
-    buf.writeFloat32(value.dx);
-    buf.writeFloat32(value.dy);
-    _sendToWorker(buf.data);
+    _bridge.setGravity(value);
   }
 
   GameEngine? _game;
@@ -56,105 +45,36 @@ class PhysicsSystem implements GameSystem {
   void attach(GameEngine game) {
     _game = game;
     worldId = _nextWorldId++;
-    _instances[worldId] = this;
-    _ensureWorkerStarted();
+    _bridge = kIsWeb ? DirectPhysicsBridge() : WorkerPhysicsBridge();
+    _bridge.init(worldId, _handleStepResult, _handleRaycastResult);
+    _bridge.createWorld();
+    _bridge.setGravity(_gravity);
   }
 
-  Future<void> _ensureWorkerStarted() async {
-    if (_workerSendPort != null) {
-      _sendCreateWorld();
-      return;
-    }
-
-    if (_workerInitializing) {
-      // Worker is already starting, just send createWorld (it will be buffered)
-      _sendCreateWorld();
-      return;
-    }
-
-    _workerInitializing = true;
-    _sendCreateWorld(); // Buffer it
-
-    if (!_isListening) {
-      _isListening = true;
-      _workerReceivePort.listen((message) {
-        if (message is SendPort) {
-          _workerSendPort = message;
-          _workerInitializing = false;
-          // Flush pending messages for all instances
-          for (final system in _instances.values) {
-            system._flushPendingMessages();
-          }
-          return;
-        }
-
-        if (message is ByteData) {
-          final buffer = PhysicsBuffer(message);
-          final packetId = buffer.readUint8();
-          final wId = buffer.readInt32();
-
-          final system = _instances[wId];
-          if (system != null) {
-            if (packetId == PhysicsPacket.stepResult) {
-              system._handleBinaryStepResult(buffer);
-            } else if (packetId == PhysicsPacket.raycastResult) {
-              system._handleBinaryRaycastResult(buffer);
-            }
-          }
-        }
-      });
-    }
-
-    await Isolate.spawn(physicsWorkerEntry, _workerReceivePort.sendPort);
-  }
-
-  void _sendCreateWorld() {
-    final buf = PhysicsBuffer.fixed(5);
-    buf.writeUint8(PhysicsPacket.createWorld);
-    buf.writeInt32(worldId);
-    _sendToWorker(buf.data);
-  }
-
-  void _flushPendingMessages() {
-    if (_workerSendPort == null) return;
-    for (final data in _pendingMessages) {
-      _workerSendPort!.send(data);
-    }
-    _pendingMessages.clear();
-  }
-
-  void _handleBinaryStepResult(PhysicsBuffer buffer) {
-    final bodyCount = buffer.readInt32();
-    for (int i = 0; i < bodyCount; i++) {
-      final id = buffer.readInt32();
-      final px = buffer.readFloat32();
-      final py = buffer.readFloat32();
-      final rot = buffer.readFloat32();
-      final vx = buffer.readFloat32();
-      final vy = buffer.readFloat32();
-      final av = buffer.readFloat32();
-      final body = _rigidbodies[id];
+  void _handleStepResult(PhysicsStepResult result) {
+    for (final entry in result.dynamicBodies.entries) {
+      final body = _rigidbodies[entry.key];
       if (body != null) {
-        body.internalSetVelocity(Offset(vx, vy), av);
+        final state = entry.value;
+        body.internalSetVelocity(state.velocity, state.angularVelocity);
         final t = body.tryTransform;
         if (t != null) {
-          t.position = Offset(px, py);
-          t.angle = rot;
+          t.position = state.position;
+          t.angle = state.rotation;
         }
       }
     }
 
-    final contactCount = buffer.readInt32();
     final Set<String> currentContactKeys = {};
 
-    for (int i = 0; i < contactCount; i++) {
-      final sAId = buffer.readInt32();
-      final sBId = buffer.readInt32();
-      final px = buffer.readFloat32();
-      final py = buffer.readFloat32();
-      final nx = buffer.readFloat32();
-      final ny = buffer.readFloat32();
-      final impulse = buffer.readFloat32();
+    for (final contact in result.contacts) {
+      final sAId = contact.shapeAId;
+      final sBId = contact.shapeBId;
+      final px = contact.contactPoint.dx;
+      final py = contact.contactPoint.dy;
+      final nx = contact.normal.dx;
+      final ny = contact.normal.dy;
+      final impulse = contact.impulse;
 
       final key = sAId < sBId ? '$sAId:$sBId' : '$sBId:$sAId';
       currentContactKeys.add(key);
@@ -245,34 +165,22 @@ class PhysicsSystem implements GameSystem {
     _previousContacts.addAll(currentContactKeys);
   }
 
-  void _handleBinaryRaycastResult(PhysicsBuffer buffer) {
-    final requestId = buffer.readInt32();
-    final hasHit = buffer.readBool();
+  void _handleRaycastResult(int requestId, bool hasHit, PhysicsRaycastHitData? data) {
     final completer = _raycastCompleters.remove(requestId);
-    if (completer == null) return;
-
-    if (!hasHit) {
-      completer.complete(null);
-    } else {
-      final colliderId = buffer.readInt32();
-      final px = buffer.readFloat32();
-      final py = buffer.readFloat32();
-      final nx = buffer.readFloat32();
-      final ny = buffer.readFloat32();
-      final dist = buffer.readFloat32();
-      final frac = buffer.readFloat32();
-
-      final collider = _colliders[colliderId];
-      if (collider != null) {
-        completer.complete(
-          RaycastHit(
+    if (completer != null) {
+      if (hasHit && data != null) {
+        final collider = _colliders[data.shapeId];
+        if (collider != null) {
+          completer.complete(RaycastHit(
             collider: collider,
-            point: Offset(px, py),
-            normal: Offset(nx, ny),
-            distance: dist,
-            fraction: frac,
-          ),
-        );
+            point: data.point,
+            normal: data.normal,
+            distance: data.distance,
+            fraction: data.fraction,
+          ));
+        } else {
+          completer.complete(null);
+        }
       } else {
         completer.complete(null);
       }
@@ -286,20 +194,17 @@ class PhysicsSystem implements GameSystem {
     final id = _nextId++;
     _rigidbodies[id] = body;
 
-    final buf = PhysicsBuffer.fixed(42);
-    buf.writeUint8(PhysicsPacket.addBody);
-    buf.writeInt32(worldId);
-    buf.writeInt32(id);
-    buf.writeUint8(body.type.index);
-    buf.writeFloat32(body.mass);
-    buf.writeFloat32(body.drag);
-    buf.writeFloat32(body.angularDrag);
-    buf.writeBool(body.freezeRotation);
-    buf.writeFloat32(body.gravityScale);
-    buf.writeFloat32(t.position.dx);
-    buf.writeFloat32(t.position.dy);
-    buf.writeFloat32(t.angle);
-    _sendToWorker(buf.data);
+    _bridge.addBody(
+      id,
+      body.type,
+      mass: body.mass,
+      drag: body.drag,
+      angularDrag: body.angularDrag,
+      freezeRotation: body.freezeRotation,
+      gravityScale: body.gravityScale,
+      position: t.position,
+      rotation: t.angle,
+    );
   }
 
   void unregisterRigidbody(Rigidbody body) {
@@ -309,11 +214,7 @@ class PhysicsSystem implements GameSystem {
     );
     if (id != -1) {
       _rigidbodies.remove(id);
-      final buf = PhysicsBuffer.fixed(9);
-      buf.writeUint8(PhysicsPacket.removeBody);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      _sendToWorker(buf.data);
+      _bridge.removeBody(id);
     }
   }
 
@@ -323,16 +224,14 @@ class PhysicsSystem implements GameSystem {
       orElse: () => -1,
     );
     if (id != -1) {
-      final buf = PhysicsBuffer.fixed(30);
-      buf.writeUint8(PhysicsPacket.updateBody);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      buf.writeFloat32(body.mass);
-      buf.writeFloat32(body.drag);
-      buf.writeFloat32(body.angularDrag);
-      buf.writeBool(body.freezeRotation);
-      buf.writeFloat32(body.gravityScale);
-      _sendToWorker(buf.data);
+      _bridge.updateBody(
+        id,
+        mass: body.mass,
+        drag: body.drag,
+        angularDrag: body.angularDrag,
+        freezeRotation: body.freezeRotation,
+        gravityScale: body.gravityScale,
+      );
     }
   }
 
@@ -342,13 +241,7 @@ class PhysicsSystem implements GameSystem {
       orElse: () => -1,
     );
     if (id != -1) {
-      final buf = PhysicsBuffer.fixed(17);
-      buf.writeUint8(PhysicsPacket.syncVelocity);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      buf.writeFloat32(velocity.dx);
-      buf.writeFloat32(velocity.dy);
-      _sendToWorker(buf.data);
+      _bridge.syncVelocity(id, velocity);
     }
   }
 
@@ -358,12 +251,7 @@ class PhysicsSystem implements GameSystem {
       orElse: () => -1,
     );
     if (id != -1) {
-      final buf = PhysicsBuffer.fixed(13);
-      buf.writeUint8(PhysicsPacket.syncAngularVelocity);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      buf.writeFloat32(angularVelocity);
-      _sendToWorker(buf.data);
+      _bridge.syncAngularVelocity(id, angularVelocity);
     }
   }
 
@@ -371,30 +259,23 @@ class PhysicsSystem implements GameSystem {
     final id = _nextId++;
     final t = go.tryGetComponent<ObjectTransform>();
 
-    final buf = PhysicsBuffer.fixed(42);
-    buf.writeUint8(PhysicsPacket.addBody);
-    buf.writeInt32(worldId);
-    buf.writeInt32(id);
-    buf.writeUint8(2); // Static type
-    buf.writeFloat32(1.0); // Mass
-    buf.writeFloat32(0.0); // Drag
-    buf.writeFloat32(0.05); // Angular drag
-    buf.writeBool(false); // Freeze rotation
-    buf.writeFloat32(1.0); // Gravity scale
-    buf.writeFloat32(t?.position.dx ?? 0.0);
-    buf.writeFloat32(t?.position.dy ?? 0.0);
-    buf.writeFloat32(t?.angle ?? 0.0);
-    _sendToWorker(buf.data);
+    _bridge.addBody(
+      id,
+      RigidbodyType.static,
+      mass: 1.0,
+      drag: 0.0,
+      angularDrag: 0.05,
+      freezeRotation: false,
+      gravityScale: 1.0,
+      position: t?.position ?? Offset.zero,
+      rotation: t?.angle ?? 0.0,
+    );
 
     return id;
   }
 
   void _removeStandaloneBody(int bodyId) {
-    final buf = PhysicsBuffer.fixed(9);
-    buf.writeUint8(PhysicsPacket.removeBody);
-    buf.writeInt32(worldId);
-    buf.writeInt32(bodyId);
-    _sendToWorker(buf.data);
+    _bridge.removeBody(bodyId);
   }
 
   void registerCollider(Collider collider) {
@@ -417,45 +298,7 @@ class PhysicsSystem implements GameSystem {
       _bodyColliderCount[rbId] = (_bodyColliderCount[rbId] ?? 0) + 1;
     }
 
-    // Use a larger buffer for polygons
-    int bufferSize = 100;
-    if (collider is PolygonCollider) {
-      bufferSize += collider.vertices.length * 8;
-    }
-
-    final buf = PhysicsBuffer.fixed(bufferSize);
-    buf.writeUint8(PhysicsPacket.addShape);
-    buf.writeInt32(worldId);
-    buf.writeInt32(id);
-    buf.writeInt32(rbId);
-    buf.writeBool(collider.isTrigger);
-    buf.writeFloat32(collider.offset.dx);
-    buf.writeFloat32(collider.offset.dy);
-    buf.writeFloat32(collider.material.bounciness);
-    buf.writeFloat32(collider.material.friction);
-
-    if (collider is BoxCollider) {
-      buf.writeUint8(0);
-      buf.writeFloat32(collider.size.width);
-      buf.writeFloat32(collider.size.height);
-    } else if (collider is CircleCollider) {
-      buf.writeUint8(1);
-      buf.writeFloat32(collider.radius);
-    } else if (collider is PolygonCollider) {
-      buf.writeUint8(2);
-      buf.writeInt32(collider.vertices.length);
-      for (final v in collider.vertices) {
-        buf.writeFloat32(v.dx);
-        buf.writeFloat32(v.dy);
-      }
-    } else if (collider is CapsuleCollider) {
-      buf.writeUint8(3);
-      buf.writeFloat32(collider.radius);
-      buf.writeFloat32(collider.height);
-      buf.writeUint8(collider.direction.index);
-    }
-
-    _sendToWorker(buf.data);
+    _bridge.addShape(id, rbId, collider);
   }
 
   void unregisterCollider(Collider collider) {
@@ -479,11 +322,7 @@ class PhysicsSystem implements GameSystem {
         }
       }
 
-      final buf = PhysicsBuffer.fixed(9);
-      buf.writeUint8(PhysicsPacket.removeShape);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      _sendToWorker(buf.data);
+      _bridge.removeShape(id);
     }
   }
 
@@ -496,46 +335,25 @@ class PhysicsSystem implements GameSystem {
   }
 
   void _internalStep(double dt) {
-    final kinematics = _rigidbodies.entries.where((e) {
-      if (!e.value.isKinematic) return false;
-      return e.value.tryTransform != null;
-    }).toList();
+    final Map<int, PhysicsTransformSync> sync = {};
 
-    final standalones = _standaloneBodyIds.entries.toList();
-
-    final buf = PhysicsBuffer.fixed(
-      13 + (kinematics.length + standalones.length) * 16,
-    );
-    buf.writeUint8(PhysicsPacket.step);
-    buf.writeInt32(worldId);
-    buf.writeFloat32(dt);
-    buf.writeInt32(kinematics.length + standalones.length);
-
-    for (final e in kinematics) {
-      final t = e.value.transform;
-      buf.writeInt32(e.key);
-      buf.writeFloat32(t.position.dx);
-      buf.writeFloat32(t.position.dy);
-      buf.writeFloat32(t.angle);
+    for (final entry in _rigidbodies.entries) {
+      if (entry.value.type != RigidbodyType.dynamic) {
+        final t = entry.value.tryTransform;
+        if (t != null) {
+          sync[entry.key] = PhysicsTransformSync(t.position, t.angle);
+        }
+      }
     }
 
-    for (final e in standalones) {
-      final t = e.key.tryGetComponent<ObjectTransform>();
-      buf.writeInt32(e.value);
-      buf.writeFloat32(t?.position.dx ?? 0.0);
-      buf.writeFloat32(t?.position.dy ?? 0.0);
-      buf.writeFloat32(t?.angle ?? 0.0);
+    for (final entry in _standaloneBodyIds.entries) {
+      final t = entry.key.tryGetComponent<ObjectTransform>();
+      if (t != null) {
+        sync[entry.value] = PhysicsTransformSync(t.position, t.angle);
+      }
     }
 
-    _sendToWorker(buf.data);
-  }
-
-  void _sendToWorker(ByteData data) {
-    if (_workerSendPort != null) {
-      _workerSendPort!.send(data);
-    } else {
-      _pendingMessages.add(data);
-    }
+    _bridge.step(dt, sync);
   }
 
   void internalQueueForce(Rigidbody body, Offset force) {
@@ -544,13 +362,7 @@ class PhysicsSystem implements GameSystem {
       orElse: () => -1,
     );
     if (id != -1) {
-      final buf = PhysicsBuffer.fixed(17);
-      buf.writeUint8(PhysicsPacket.applyForce);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      buf.writeFloat32(force.dx);
-      buf.writeFloat32(force.dy);
-      _sendToWorker(buf.data);
+      _bridge.applyForce(id, force);
     }
   }
 
@@ -560,13 +372,7 @@ class PhysicsSystem implements GameSystem {
       orElse: () => -1,
     );
     if (id != -1) {
-      final buf = PhysicsBuffer.fixed(17);
-      buf.writeUint8(PhysicsPacket.applyImpulse);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      buf.writeFloat32(impulse.dx);
-      buf.writeFloat32(impulse.dy);
-      _sendToWorker(buf.data);
+      _bridge.applyImpulse(id, impulse);
     }
   }
 
@@ -576,12 +382,7 @@ class PhysicsSystem implements GameSystem {
       orElse: () => -1,
     );
     if (id != -1) {
-      final buf = PhysicsBuffer.fixed(13);
-      buf.writeUint8(PhysicsPacket.applyTorque);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      buf.writeFloat32(torque);
-      _sendToWorker(buf.data);
+      _bridge.applyTorque(id, torque);
     }
   }
 
@@ -591,12 +392,7 @@ class PhysicsSystem implements GameSystem {
       orElse: () => -1,
     );
     if (id != -1) {
-      final buf = PhysicsBuffer.fixed(13);
-      buf.writeUint8(PhysicsPacket.applyAngularImpulse);
-      buf.writeInt32(worldId);
-      buf.writeInt32(id);
-      buf.writeFloat32(impulse);
-      _sendToWorker(buf.data);
+      _bridge.applyAngularImpulse(id, impulse);
     }
   }
 
@@ -609,30 +405,16 @@ class PhysicsSystem implements GameSystem {
     final completer = Completer<RaycastHit?>();
     _raycastCompleters[requestId] = completer;
 
-    final buf = PhysicsBuffer.fixed(29);
-    buf.writeUint8(PhysicsPacket.raycast);
-    buf.writeInt32(worldId);
-    buf.writeInt32(requestId);
-    buf.writeFloat32(origin.dx);
-    buf.writeFloat32(origin.dy);
-    buf.writeFloat32(direction.dx);
-    buf.writeFloat32(direction.dy);
-    buf.writeFloat32(maxDistance);
-    _sendToWorker(buf.data);
+    _bridge.raycast(requestId, origin, direction, maxDistance);
 
     return completer.future;
   }
 
   @override
   void dispose() {
-    _instances.remove(worldId);
-    final buf = PhysicsBuffer.fixed(5);
-    buf.writeUint8(PhysicsPacket.destroyWorld);
-    buf.writeInt32(worldId);
-    _sendToWorker(buf.data);
+    _bridge.destroyWorld();
     _rigidbodies.clear();
     _colliders.clear();
     _raycastCompleters.clear();
-    _pendingMessages.clear();
   }
 }
