@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
 import 'physics_bridge.dart';
-import 'physics_protocol.dart';
 
 class PhysicsSystem implements GameSystem {
   late final PhysicsBridge _bridge;
@@ -165,19 +164,25 @@ class PhysicsSystem implements GameSystem {
     _previousContacts.addAll(currentContactKeys);
   }
 
-  void _handleRaycastResult(int requestId, bool hasHit, PhysicsRaycastHitData? data) {
+  void _handleRaycastResult(
+    int requestId,
+    bool hasHit,
+    PhysicsRaycastHitData? data,
+  ) {
     final completer = _raycastCompleters.remove(requestId);
     if (completer != null) {
       if (hasHit && data != null) {
         final collider = _colliders[data.shapeId];
         if (collider != null) {
-          completer.complete(RaycastHit(
-            collider: collider,
-            point: data.point,
-            normal: data.normal,
-            distance: data.distance,
-            fraction: data.fraction,
-          ));
+          completer.complete(
+            RaycastHit(
+              collider: collider,
+              point: data.point,
+              normal: data.normal,
+              distance: data.distance,
+              fraction: data.fraction,
+            ),
+          );
         } else {
           completer.complete(null);
         }
@@ -293,8 +298,9 @@ class PhysicsSystem implements GameSystem {
 
     if (rbId == -1) {
       // Use or create a standalone static body for this GameObject
-      rbId = _standaloneBodyIds[collider.gameObject] ??=
-          _createStandaloneBody(collider.gameObject);
+      rbId = _standaloneBodyIds[collider.gameObject] ??= _createStandaloneBody(
+        collider.gameObject,
+      );
       _bodyColliderCount[rbId] = (_bodyColliderCount[rbId] ?? 0) + 1;
     }
 
