@@ -35,6 +35,6 @@ flutter:
 
 topics:
   - game-engine
-  - 2d
+  - game-2d
   - game
   - ecs

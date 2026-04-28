@@ -1,0 +1,28 @@
+# Documentation
+/docs_site/
+/mkdocs.yml
+/demo_preview.png
+/header.png
+/CONTRIBUTING.md
+
+# CI/CD and Tooling
+/.github/
+/.gemini/
+/.guides/
+/.guides.config.json
+/DOTGUIDES.md
+/goo2d.iml
+/.idea/
+
+# Flutter/Dart build artifacts
+/.dart_tool/
+/build/
+.flutter-plugins-dependencies
+
+# Example platform folders
+/example/android/
+/example/ios/
+/example/macos/
+/example/windows/
+/example/linux/
+/example/web/
