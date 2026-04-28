@@ -55,7 +55,6 @@ class PhysicsStressScene extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vertices = List.generate(vertexCount, (i) {
-      final angle = i * (2 * 3.14159 / vertexCount);
       final r = i % 2 == 0 ? 100.0 : 50.0;
       return Offset(r * (i.isEven ? 1 : -1), r * (i.isOdd ? 1 : -1));
     });
