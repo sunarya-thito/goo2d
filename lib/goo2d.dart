@@ -12,6 +12,7 @@ export 'src/pointer.dart';
 export 'src/transform.dart';
 export 'src/physics/common.dart';
 export 'src/physics/collider.dart';
+export 'src/physics/polygon_generator.dart';
 export 'src/physics/rigidbody.dart';
 export 'src/physics/physics_system.dart';
 export 'src/camera.dart';

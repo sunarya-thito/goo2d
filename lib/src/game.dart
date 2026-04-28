@@ -372,6 +372,12 @@ class _GameState extends State<Game> {
   }
 
   @override
+  void reassemble() {
+    super.reassemble();
+    _game.ticker.signalFrameComplete(); // Wake up any listeners
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GameProvider(
       game: _game,

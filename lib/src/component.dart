@@ -134,6 +134,9 @@ abstract class Component {
   void stopAllCoroutines([Function? coroutine]) {
     gameObject.stopAllCoroutines(coroutine);
   }
+
+  @mustCallSuper
+  void onHotReload() {}
 }
 
 abstract class Behavior extends Component {

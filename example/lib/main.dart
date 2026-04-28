@@ -53,8 +53,21 @@ Future<void> loadAllGameAssets() async {
 
 void main() => runApp(const MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late Future<void> _loadFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFuture = loadAllGameAssets();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +75,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: FutureBuilder(
-          future: loadAllGameAssets(),
+          future: _loadFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -203,8 +216,7 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
               )
               ..filterQuality = ui.FilterQuality.none,
             EnemyController(),
-            CircleCollider()
-              ..radius = 0.2,
+            CircleCollider()..radius = 0.2,
           ],
         ),
       );
@@ -290,8 +302,7 @@ class PlayerState extends GameState<Player> with Tickable {
           pixelsPerUnit: 64.0,
         )
         ..filterQuality = ui.FilterQuality.none,
-      CircleCollider()
-        ..radius = 0.2,
+      CircleCollider()..radius = 0.2,
       BlinkEffect(),
       _audioSource = AudioSource()
         ..clip = MyGameSound.shoot
@@ -357,8 +368,7 @@ class PlayerState extends GameState<Player> with Tickable {
             BulletController()..direction = facing,
             Rigidbody()..type = RigidbodyType.kinematic,
             BulletOutOfScreenDestroyer(),
-            CircleCollider()
-              ..radius = 0.2,
+            CircleCollider()..radius = 0.2,
           ],
         ),
       );
@@ -388,7 +398,8 @@ class BulletController extends Behavior
 
   @override
   void onCollisionEnter(Collision collision) {
-    if (collision.otherCollider.gameObject.tryGetComponent<EnemyController>() != null) {
+    if (collision.otherCollider.gameObject.tryGetComponent<EnemyController>() !=
+        null) {
       world._destroyObject(gameObject);
     }
   }

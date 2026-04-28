@@ -72,8 +72,15 @@ class RenderGameLoop extends RenderProxyBox {
   GameEngine game;
   Ticker? _ticker;
   Duration _lastTick = Duration.zero;
+  bool _skipNextDelta = false;
 
   RenderGameLoop({required this.game});
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    _skipNextDelta = true;
+  }
 
   @override
   void attach(PipelineOwner owner) {
@@ -90,6 +97,12 @@ class RenderGameLoop extends RenderProxyBox {
   }
 
   void _onTick(Duration elapsed) {
+    if (_skipNextDelta) {
+      _lastTick = elapsed;
+      _skipNextDelta = false;
+      return;
+    }
+
     final delta = elapsed - _lastTick;
     final dt = delta.inMicroseconds / 1000000.0;
     _lastTick = elapsed;

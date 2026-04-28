@@ -1,6 +1,7 @@
 import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/goo2d.dart';
+import 'polygon_generator.dart';
 
 abstract class Collider extends Component with LifecycleListener {
   /// Local offset of the collider relative to the GameObject.
@@ -240,6 +241,86 @@ class PolygonCollider extends Collider {
 }
 
 class SpriteCollider extends PolygonCollider {
-  // TODO: Implement auto-polygon generation from Sprite alpha.
-  // For now, it just acts as a manual PolygonCollider.
+  static final Map<GameSprite, List<Offset>> _cache = {};
+
+  /// Minimum alpha (0.0 to 1.0) to consider a pixel solid.
+  double alphaThreshold = 0.1;
+
+  /// Tolerance for polygon simplification (higher = fewer vertices).
+  double tolerance = 1.0;
+
+  /// Whether to automatically generate the polygon when the sprite is loaded.
+  bool autoGenerate = true;
+
+  bool _isGenerating = false;
+
+  /// Pre-calculates the collision vertices for a sprite and caches them.
+  static Future<List<Offset>> bake(
+    GameSprite sprite, {
+    double alphaThreshold = 0.1,
+    double tolerance = 1.0,
+  }) async {
+    if (_cache.containsKey(sprite)) return _cache[sprite]!;
+
+    if (!sprite.texture.isLoaded) {
+      await sprite.texture.load();
+    }
+
+    final pixels = sprite.texture.getPixels32();
+    final rect = sprite.rect;
+    final ppu = sprite.pixelsPerUnit;
+    final pivot = sprite.pivotOffset;
+
+    // Generate vertices from the sprite's alpha channel.
+    final vertices = SpritePolygonGenerator.generate(
+      pixels: pixels,
+      width: sprite.texture.width,
+      height: sprite.texture.height,
+      sourceRect: rect,
+      alphaThreshold: alphaThreshold,
+      tolerance: tolerance,
+    );
+
+    // Convert pixel coordinates to local world units relative to pivot
+    final worldVertices = vertices.map((v) {
+      return Offset(
+        (v.dx - rect.left - pivot.dx) / ppu,
+        (v.dy - rect.top - pivot.dy) / ppu,
+      );
+    }).toList();
+
+    _cache[sprite] = worldVertices;
+    return worldVertices;
+  }
+
+  @override
+  void onMounted() {
+    super.onMounted();
+    if (autoGenerate) {
+      _tryGenerate();
+    }
+  }
+
+  void _tryGenerate() async {
+    if (_isGenerating) return;
+    final renderer = gameObject.getComponent<SpriteRenderer>();
+    final sprite = renderer.sprite;
+    if (sprite == null) return;
+
+    _isGenerating = true;
+    try {
+      vertices = await bake(
+        sprite,
+        alphaThreshold: alphaThreshold,
+        tolerance: tolerance,
+      );
+      // Trigger a physics update if needed
+      // (The registration happened in onMounted, but vertices were empty)
+      // Most physics bridges will need to be notified of the shape change.
+      game.physics.unregisterCollider(this);
+      game.physics.registerCollider(this);
+    } finally {
+      _isGenerating = false;
+    }
+  }
 }

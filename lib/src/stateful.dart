@@ -70,6 +70,9 @@ abstract class GameState<T extends StatefulGameWidget> extends Component {
   void didChangeDependencies() {}
 
   @mustCallSuper
+  void reassemble() {}
+
+  @mustCallSuper
   void dispose() {
     for (var action in _trackedInputActions) {
       action.dispose();
@@ -106,6 +109,12 @@ class StatefulGameElement extends GameObjectElement {
     super.update(newWidget);
     state.didUpdateWidget(oldWidget);
     _rebuild();
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    state.reassemble();
   }
 
   @override

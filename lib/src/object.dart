@@ -146,6 +146,11 @@ abstract class GameObjectElement extends RenderObjectElement
   GameObjectElement(super.widget);
 
   @override
+  void reassemble() {
+    super.reassemble();
+  }
+
+  @override
   String get name {
     final w = widget;
     if (w is GameWidget) {
@@ -595,7 +600,49 @@ class GameElement extends GameObjectElement {
   void update(GameWidget newWidget) {
     layer = newWidget.layer;
     super.update(newWidget);
+    _refreshComponents();
     updateChildElements(newWidget.children);
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    for (final component in _components) {
+      component.onHotReload();
+    }
+  }
+
+  void _refreshComponents() {
+    final newComponents = widget.components().toList();
+    for (final newComp in newComponents) {
+      final existing = _components
+          .where((c) => c.runtimeType == newComp.runtimeType)
+          .firstOrNull;
+      if (existing == null) {
+        addComponent(newComp);
+      } else {
+        _patchComponent(existing, newComp);
+      }
+    }
+  }
+
+  void _patchComponent(Component existing, Component newComp) {
+    if (existing is Camera && newComp is Camera) {
+      existing.backgroundColor = newComp.backgroundColor;
+      existing.orthographicSize = newComp.orthographicSize;
+      existing.depth = newComp.depth;
+      existing.cullingMask = newComp.cullingMask;
+      existing.clearFlags = newComp.clearFlags;
+      existing.nearClipPlane = newComp.nearClipPlane;
+      existing.farClipPlane = newComp.farClipPlane;
+    } else if (existing is SpriteRenderer && newComp is SpriteRenderer) {
+      existing.sprite = newComp.sprite;
+      existing.color = newComp.color;
+      existing.flipX = newComp.flipX;
+      existing.flipY = newComp.flipY;
+      existing.filterQuality = newComp.filterQuality;
+      existing.blendMode = newComp.blendMode;
+    }
   }
 }
 
