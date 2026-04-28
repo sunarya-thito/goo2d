@@ -36,7 +36,8 @@ class GameEngine {
   @internal
   Camera? currentRenderCamera;
 
-  GameEngine._create({
+  @internal
+  GameEngine.internal({
     required TickerState ticker,
     required InputSystem input,
     required PhysicsSystem physics,
@@ -50,7 +51,7 @@ class GameEngine {
        _screen = screen,
        _audio = audio;
 
-  factory GameEngine() => GameEngine._create(
+  factory GameEngine() => GameEngine.internal(
     ticker: TickerState(),
     input: InputSystem(),
     physics: PhysicsSystem(),

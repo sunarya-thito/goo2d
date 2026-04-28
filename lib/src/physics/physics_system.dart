@@ -40,11 +40,15 @@ class PhysicsSystem implements GameSystem {
   @override
   bool get gameAttached => _game != null;
 
+  /// Optional override for the physics bridge (used in benchmarks).
+  @visibleForTesting
+  PhysicsBridge? bridgeOverride;
+
   @override
   void attach(GameEngine game) {
     _game = game;
     worldId = _nextWorldId++;
-    _bridge = kIsWeb ? DirectPhysicsBridge() : WorkerPhysicsBridge();
+    _bridge = bridgeOverride ?? (kIsWeb ? DirectPhysicsBridge() : WorkerPhysicsBridge());
     _bridge.init(worldId, _handleStepResult, _handleRaycastResult);
     _bridge.createWorld();
     _bridge.setGravity(_gravity);

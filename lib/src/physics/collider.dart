@@ -1,7 +1,6 @@
 import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/goo2d.dart';
-import 'polygon_generator.dart';
 
 abstract class Collider extends Component with LifecycleListener {
   /// Local offset of the collider relative to the GameObject.

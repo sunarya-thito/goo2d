@@ -533,7 +533,19 @@ class WorkerPhysicsBridge extends PhysicsBridge {
 
   @override
   void addShape(int id, int bodyId, Collider collider) {
-    final buf = PhysicsBuffer.fixed(128); // Safe size for most shapes
+    // Calculate required size
+    int size = 1 + 4 + 4 + 4 + 1 + 4 + 4 + 4 + 4 + 1; // Base fields + shape type
+    if (collider is BoxCollider) {
+      size += 8;
+    } else if (collider is CircleCollider) {
+      size += 4;
+    } else if (collider is PolygonCollider) {
+      size += 4 + (collider.vertices.length * 8);
+    } else if (collider is CapsuleCollider) {
+      size += 4 + 4 + 1;
+    }
+
+    final buf = PhysicsBuffer.fixed(size);
     buf.writeUint8(PhysicsPacket.addShape);
     buf.writeInt32(_worldId);
     buf.writeInt32(id);

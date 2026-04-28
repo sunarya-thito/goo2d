@@ -18,29 +18,13 @@
 - **Time**: Prefer `FakeAsync` for ticker/coroutine tests.
 - **Teardown**: Always dispose created GameObjects/Components in `tearDown()`.
 
-## 4. Benchmarking with benchmark_harness
-Benchmarks must use `package:benchmark_harness` for consistent results.
-- **Base Class**: Inherit from `BenchmarkBase`.
-- **Hooks**: Use `setup()` for one-time initialization and `run()` for the code under test.
-- **Execution**: Run benchmarks in isolation (not within `testWidgets` unless testing rendering overhead).
+## 4. Benchmarking
+Benchmarks must follow the standards outlined in the [Benchmarking Guide](file:///e:/gameproj/goo2d/.guides/docs/benchmarking.md). 
 
-```dart
-import 'package:benchmark_harness/benchmark_harness.dart';
-
-class MyBenchmark extends BenchmarkBase {
-  MyBenchmark() : super('FeatureName');
-
-  @override
-  void setup() { /* Prepare data */ }
-
-  @override
-  void run() { /* Code to measure */ }
-}
-
-void main() {
-  MyBenchmark().report();
-}
-```
+Key Requirements:
+- Use `package:benchmark_harness`.
+- Files must reside in `test/benchmarks/`.
+- Must inherit from `BenchmarkBase`.
 
 ## 5. UI Testing
 - Use `testWidgets`.
