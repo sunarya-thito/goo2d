@@ -640,38 +640,22 @@ class GameRenderObject extends RenderBox
 
   @override
   double computeMaxIntrinsicHeight(double width) {
-    final transform = object.tryGetComponent<ObjectTransform>();
-    if (transform is ScreenTransform) {
-      return transform.constraints?.maxHeight ?? 0;
-    }
-    return 0;
+    return object.tryGetComponent<ObjectTransform>()?.computeMaxIntrinsicHeight(width) ?? 0;
   }
 
   @override
   double computeMaxIntrinsicWidth(double height) {
-    final transform = object.tryGetComponent<ObjectTransform>();
-    if (transform is ScreenTransform) {
-      return transform.constraints?.maxWidth ?? 0;
-    }
-    return 0;
+    return object.tryGetComponent<ObjectTransform>()?.computeMaxIntrinsicWidth(height) ?? 0;
   }
 
   @override
   double computeMinIntrinsicHeight(double width) {
-    final transform = object.tryGetComponent<ObjectTransform>();
-    if (transform is ScreenTransform) {
-      return transform.constraints?.minHeight ?? 0;
-    }
-    return 0;
+    return object.tryGetComponent<ObjectTransform>()?.computeMinIntrinsicHeight(width) ?? 0;
   }
 
   @override
   double computeMinIntrinsicWidth(double height) {
-    final transform = object.tryGetComponent<ObjectTransform>();
-    if (transform is ScreenTransform) {
-      return transform.constraints?.minWidth ?? 0;
-    }
-    return 0;
+    return object.tryGetComponent<ObjectTransform>()?.computeMinIntrinsicWidth(height) ?? 0;
   }
 
   @override

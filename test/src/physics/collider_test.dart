@@ -5,13 +5,16 @@ import 'package:goo2d/goo2d.dart';
 import 'package:goo2d/src/game.dart'; // To get GameProvider
 
 void main() {
+  AutomatedTestWidgetsFlutterBinding.ensureInitialized();
+
   group('Collider', () {
     testWidgets('BoxCollider worldBounds should account for offset and transform', (tester) async {
       BoxCollider? collider;
+      final game = GameEngine()..initialize();
       
       await tester.pumpWidget(
         GameProvider(
-          game: GameEngine(),
+          game: game,
           child: GameWidget(
             children: [
               GameWidget(
@@ -35,10 +38,11 @@ void main() {
 
     testWidgets('CircleCollider containsPoint should work in world space', (tester) async {
       CircleCollider? collider;
+      final game = GameEngine()..initialize();
 
       await tester.pumpWidget(
         GameProvider(
-          game: GameEngine(),
+          game: game,
           child: GameWidget(
             children: [
               GameWidget(
@@ -59,10 +63,11 @@ void main() {
 
     testWidgets('CapsuleCollider worldBounds should handle vertical orientation', (tester) async {
       CapsuleCollider? collider;
+      final game = GameEngine()..initialize();
 
       await tester.pumpWidget(
         GameProvider(
-          game: GameEngine(),
+          game: game,
           child: GameWidget(
             children: [
               GameWidget(

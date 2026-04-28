@@ -203,6 +203,12 @@ class ObjectTransform extends Component with LifecycleListener {
   BoxConstraints getChildConstraints(BoxConstraints constraints) =>
       constraints.loosen();
 
+  /// Intrinsic sizing methods.
+  double computeMinIntrinsicWidth(double height) => 0;
+  double computeMaxIntrinsicWidth(double height) => 0;
+  double computeMinIntrinsicHeight(double width) => 0;
+  double computeMaxIntrinsicHeight(double width) => 0;
+
   /// Convert degrees to radians (convenience for setting angles).
   static double degrees(double deg) => deg * math.pi / 180.0;
 }
@@ -250,4 +256,14 @@ class ScreenTransform extends ObjectTransform {
   BoxConstraints getChildConstraints(BoxConstraints constraints) {
     return this.constraints?.enforce(constraints) ?? constraints;
   }
+
+  @override
+  double computeMinIntrinsicWidth(double height) => constraints?.minWidth ?? 0;
+  @override
+  double computeMaxIntrinsicWidth(double height) => constraints?.maxWidth ?? 0;
+  @override
+  double computeMinIntrinsicHeight(double width) => constraints?.minHeight ?? 0;
+  @override
+  double computeMaxIntrinsicHeight(double width) =>
+      constraints?.maxHeight ?? 0;
 }
