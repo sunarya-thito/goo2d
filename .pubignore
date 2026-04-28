@@ -1,8 +1,6 @@
 # Documentation
 /docs_site/
 /mkdocs.yml
-/demo_preview.png
-/header.png
 /CONTRIBUTING.md
 
 # CI/CD and Tooling
