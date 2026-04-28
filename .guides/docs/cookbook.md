@@ -8,12 +8,37 @@ Every cookbook must follow this high-level structure:
 
 1.  **Header**: Docusaurus frontmatter (e.g., `sidebar_position`).
 2.  **Intro**: A brief description of the mechanic being taught.
-3.  **Live Demo**: An `iframe` pointing to the interactive demo.
+3.  **Live Demo**: An `iframe` pointing to the interactive demo (see [Live Demo Configuration](#live-demo-configuration) for implementation details).
 4.  **Assets**: A table listing the required assets with previews and download links.
 5.  **Tutorial Steps**: Granular, iterative steps.
 6.  **Final Full Code**: A complete, copy-pasteable version of the entire demo.
 
-## 2. Granularity Rules
+## 2. Live Demo Configuration
+
+The live demo is an interactive Flutter Web application hosted within an `iframe`. 
+
+### URL Structure
+The `iframe` must point to the `/goo2d/play/` path, using a URL hash (`#/`) to specify the unique route for the tutorial's example. These examples are defined in `example/lib/docs_main.dart` and deployed automatically via GitHub Actions (`.github/workflows/deploy_docs.yml`).
+
+### Implementation
+Use the following format for the `iframe`:
+
+```html
+<iframe 
+  src="/goo2d/play/#/your-example-route" 
+  width="100%" 
+  height="400px" 
+  style={{ border: 'none', borderRadius: '8px', background: '#000' }}
+/>
+```
+
+**Mandatory Requirements:**
+*   **Source (`src`)**: Must follow the `/goo2d/play/#/{route}` pattern.
+*   **Dimensions**: `width="100%"` and `height="400px"`.
+*   **Styling**: Must include `borderRadius: '8px'` and `background: '#000'` to match the documentation theme.
+*   **Route Registration**: You must ensure your example is registered in the `DocsRouterApp` within `example/lib/docs_main.dart` so the hash route works correctly.
+
+## 3. Granularity Rules
 
 *   **Small Steps**: Break down the tutorial into the smallest logical units. Do not jump into the "finish line."
 *   **Decompose Large Changes**: Make sure to break down large addition changes into smaller, manageable steps (e.g., separate defining a class from adding its properties).
@@ -21,7 +46,7 @@ Every cookbook must follow this high-level structure:
 *   **Break down large additions**: If a function or class change involves many lines of code (e.g. more than 5-10 lines), break it down into several smaller incremental steps instead of one large update.
 *   **Separation of Concerns**: Separate boilerplate setup (Imports, main, enums) from core mechanics.
 
-## 3. Code Formatting Rules
+## 4. Code Formatting Rules
 
 ### Full Class Context
 **NEVER** show a partial function or a loose snippet. Every code block must contain the **full class** (or full file for boilerplate) so the user understands exactly where the code belongs.
@@ -48,26 +73,19 @@ class ProjectileBehavior extends Behavior with Tickable {
 }
 ```
 
-## 4. Documentation & Explanations
+## 5. Documentation & Explanations
 
 *   **Post-Block Explanations**: After every code block, provide a clear, descriptive explanation of what the new code does and why it is necessary.
 *   **Avoid Generic Summaries**: Do not use headings like "What we did." Simply explain the function and intent of the code in 1-2 paragraphs.
 *   **Technical Detail**: Explain engine-specific concepts like `dt` (delta time), `ObjectTransform`, and mixins like `Collidable`.
 
-## 5. Asset Management
+## 6. Asset Management
 
 If the tutorial uses external assets:
 *   Include a **Step 0: Asset Setup** that explains directory structure and `pubspec.yaml` registration.
 *   Use a `GameTextures` enum in Step 1 or 2 to register textures properly using `AssetEnum` and `TextureAssetEnum`.
 *   **Asset Attribution**: Must include attribution to the original creator (e.g. Kenney) and a link to the original asset page in the "Assets Used" section.
 
-## 6. Checklist for Final Review
-
-- [ ] Does every step show a full class/file?
-- [ ] Are all new additions bracketed by `// Add this: ------` and `// --------`?
-- [ ] Is there an explanation after every code block?
-- [ ] Are classes defined before they are used or modified?
-- [ ] Does the "Final Full Code" at the end match the cumulative result of all steps?
 
 ## 7. Dos and Don'ts
 
@@ -207,6 +225,21 @@ void onCollision(CollisionEvent event) {
 
 ---
 
+### DO: Explain Code and Effects
+After attaching a code snippet, explain what you did or wrote and explain the effect or how it affects the game. This helps the user understand the *purpose* and *result* of the logic, not just the syntax.
+
+**Example:**
+In this step, we updated the `onUpdate` method to increment the `rotation` property by `rotationSpeed * dt`. This causes the game object to spin continuously at a constant rate regardless of the frame rate, adding a dynamic "power-up" visual effect to the sprite.
+
+### DON'T: Plainly Describe Syntax
+Don't simply restate what the code does in technical terms or provide a one-sentence summary that adds no value.
+
+**Example:**
+// BAD: Restating the code literally
+"This code adds rotation speed to the transform rotation."
+
+---
+
 ## 8. Step Example
 
 Here is how a single tutorial step should look in your markdown file:
@@ -243,3 +276,18 @@ class ProjectileBehavior extends Behavior with Tickable, Collidable {
 ```
 
 We calculate the difference between our position and the obstacle's position to determine the collision axis. We only flip the velocity if we are moving **towards** the other object. Additionally, we add a small `0.1` unit "push" to immediately separate the hitboxes, preventing them from staying stuck together in a loop.
+
+## 9. Final Review Checklist
+
+Before finalizing your cookbook, go through this checklist to ensure it follows all guidelines:
+
+- [ ] **Full Class Context**: Does every code block show the full class/file wrapper?
+- [ ] **Explicit Highlighting**: Are all new/changed lines bracketed by `// Add this: ------` and `// --------`?
+- [ ] **Granularity**: Are large changes broken down into small, iterative steps? (Max 10-15 lines per step).
+- [ ] **Definition Before Use**: Are all classes, variables, and assets defined/registered before they are modified or used?
+- [ ] **Meaningful Explanations**: Does every code block have a following explanation that describes both **what** was done and **how it affects the game**?
+- [ ] **No Plain Descriptions**: Did you avoid short, technical descriptions that only repeat what the code says (e.g., "This adds X to Y")?
+- [ ] **Live Demo Configuration**: Does the `iframe` use the correct `/goo2d/play/#/` URL and mandatory styling (8px radius, black background)?
+- [ ] **Asset Management**: Are all textures registered via Enums and properly attributed to their creators?
+- [ ] **Demo Parity**: Does the "Final Full Code" at the end match exactly what is required to run the tutorial's mechanic?
+- [ ] **Engine Concepts**: Are engine-specific terms like `dt`, `ObjectTransform`, or `Tickable` explained when they first appear?

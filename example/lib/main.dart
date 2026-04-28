@@ -661,19 +661,23 @@ class InstructionsUI extends StatefulGameWidget {
 
 class InstructionsState extends GameState<InstructionsUI> {
   @override
+  void initState() {
+    super.initState();
+    addComponent(ScreenTransform());
+  }
+
+  @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield CanvasWidget(
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: const Text(
-            'W (thrust) - A (rotate) - D (rotate) - Space (shoot)',
-            style: TextStyle(
-              fontSize: 48,
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
+    yield Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: const Text(
+          'W (thrust) - A (rotate) - D (rotate) - Space (shoot)',
+          style: TextStyle(
+            fontSize: 48,
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -689,21 +693,25 @@ class MinimapUI extends StatefulGameWidget {
 
 class MinimapState extends GameState<MinimapUI> {
   @override
+  void initState() {
+    super.initState();
+    addComponent(ScreenTransform());
+  }
+
+  @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield CanvasWidget(
-      child: Align(
-        alignment: Alignment.topRight,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Container(
-            width: 150,
-            height: 150,
-            foregroundDecoration: BoxDecoration(
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            decoration: const BoxDecoration(color: Colors.black87),
-            child: const CameraView(cameraTag: GameTag('MinimapCamera')),
+    yield Align(
+      alignment: Alignment.topRight,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Container(
+          width: 150,
+          height: 150,
+          foregroundDecoration: BoxDecoration(
+            border: Border.all(color: Colors.white, width: 2),
           ),
+          decoration: const BoxDecoration(color: Colors.black87),
+          child: const CameraView(cameraTag: GameTag('MinimapCamera')),
         ),
       ),
     );
@@ -735,6 +743,12 @@ class FPSState extends GameState<FPSUI> with Tickable {
   double _timer = 0;
 
   @override
+  void initState() {
+    super.initState();
+    addComponent(ScreenTransform());
+  }
+
+  @override
   void onUpdate(double dt) {
     _timer += dt;
     if (dt > 0) {
@@ -750,18 +764,16 @@ class FPSState extends GameState<FPSUI> with Tickable {
 
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield CanvasWidget(
-      child: Align(
-        alignment: Alignment.bottomLeft,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Text(
-            'FPS: ${_fps.round()}',
-            style: const TextStyle(
-              fontSize: 36,
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
+    yield Align(
+      alignment: Alignment.bottomLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Text(
+          'FPS: ${_fps.round()}',
+          style: const TextStyle(
+            fontSize: 36,
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -779,27 +791,31 @@ class MuteState extends GameState<MuteUI> {
   bool _muted = false;
 
   @override
+  void initState() {
+    super.initState();
+    addComponent(ScreenTransform());
+  }
+
+  @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield CanvasWidget(
-      child: Align(
-        alignment: Alignment.bottomRight,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Material(
-            color: Colors.transparent,
-            child: IconButton(
-              icon: Icon(
-                _muted ? Icons.volume_off : Icons.volume_up,
-                color: Colors.black,
-                size: 48,
-              ),
-              onPressed: () {
-                setState(() {
-                  _muted = !_muted;
-                  game.audio.globalVolume = _muted ? 0.0 : 1.0;
-                });
-              },
+    yield Align(
+      alignment: Alignment.bottomRight,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Material(
+          color: Colors.transparent,
+          child: IconButton(
+            icon: Icon(
+              _muted ? Icons.volume_off : Icons.volume_up,
+              color: Colors.black,
+              size: 48,
             ),
+            onPressed: () {
+              setState(() {
+                _muted = !_muted;
+                game.audio.globalVolume = _muted ? 0.0 : 1.0;
+              });
+            },
           ),
         ),
       ),

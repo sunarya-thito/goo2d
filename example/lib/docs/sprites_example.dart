@@ -74,16 +74,19 @@ class _SpriteWorldState extends GameState<SpriteWorld> with Tickable {
       ],
     );
 
-    yield CanvasWidget(
-      child: const Center(
-        child: Padding(
-          padding: EdgeInsets.only(top: 200),
-          child: Text(
-            'Sprite Sheet Animation: 13 Frames',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+    yield GameWidget(
+      components: () => [ScreenTransform()],
+      children: [
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 200),
+            child: Text(
+              'Sprite Sheet Animation: 13 Frames',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
           ),
         ),
-      ),
+      ],
     );
 
     yield GameWidget(

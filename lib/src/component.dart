@@ -23,6 +23,8 @@ abstract class Component {
   double get deltaTime => game.ticker.deltaTime;
   int get frameCount => game.ticker.frameCount;
 
+  String get name => gameObject.name;
+
   T stateObject<T extends GameState>() {
     return gameObject.getComponent<T>();
   }
@@ -96,6 +98,22 @@ abstract class Component {
 
   T? tryGetComponentInParent<T extends Component>() {
     return gameObject.tryGetComponentInParent<T>();
+  }
+
+  T getComponentInChildren<T extends Component>() {
+    return gameObject.getComponentInChildren<T>();
+  }
+
+  T? tryGetComponentInChildren<T extends Component>() {
+    return gameObject.tryGetComponentInChildren<T>();
+  }
+
+  Iterable<T> getComponentsInParent<T extends Component>() {
+    return gameObject.getComponentsInParent<T>();
+  }
+
+  GameObject? findChild(String name) {
+    return gameObject.findChild(name);
   }
 
   Future<void> startCoroutine(CoroutineFunction coroutine) {

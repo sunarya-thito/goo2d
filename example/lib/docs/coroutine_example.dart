@@ -164,41 +164,44 @@ class _CoroutineWorldState extends GameState<CoroutineWorld> {
     // Dynamic lasers
     yield* _lasers;
 
-    yield CanvasWidget(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          // Stop all instances of these routines
-          stopAllCoroutines(bossSequence);
-          stopAllCoroutines(fireLasers);
+    yield GameWidget(
+      components: () => [ScreenTransform()],
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            // Stop all instances of these routines
+            stopAllCoroutines(bossSequence);
+            stopAllCoroutines(fireLasers);
 
-          // Clear current lasers and reset state
-          setState(() {
-            _lasers.clear();
-            _bossTransform.position = const Offset(0, -8);
-            _bossTransform.scale = const Offset(1, 1);
-            startCoroutine(bossSequence);
-          });
-        },
-        child: Container(
-          color: Colors.transparent,
-          padding: const EdgeInsets.only(top: 80),
-          alignment: Alignment.topCenter,
-          child: Text(
-            _message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(blurRadius: 10, color: Colors.black),
-                Shadow(blurRadius: 2, color: Colors.blueAccent),
-              ],
+            // Clear current lasers and reset state
+            setState(() {
+              _lasers.clear();
+              _bossTransform.position = const Offset(0, -8);
+              _bossTransform.scale = const Offset(1, 1);
+              startCoroutine(bossSequence);
+            });
+          },
+          child: Container(
+            color: Colors.transparent,
+            padding: const EdgeInsets.only(top: 80),
+            alignment: Alignment.topCenter,
+            child: Text(
+              _message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(blurRadius: 10, color: Colors.black),
+                  Shadow(blurRadius: 2, color: Colors.blueAccent),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

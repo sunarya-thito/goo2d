@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/painting.dart';
+import 'package:flutter/rendering.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:vector_math/vector_math_64.dart';
@@ -40,10 +40,18 @@ class ObjectTransform extends Component with LifecycleListener {
   ObjectTransform? _parentTransform;
   final List<ObjectTransform> _childTransforms = [];
 
+  bool _isScreenSpace = false;
+
+  /// Whether this transform is in screen space (either by being a [ScreenTransform]
+  /// or a child of one).
+  bool get isScreenSpace => _isScreenSpace;
+
   @override
   void onMounted() {
-    _parentTransform = tryGetComponentInParent<ObjectTransform>();
+    _parentTransform = gameObject.parentObject
+        ?.tryGetComponentInParent<ObjectTransform>();
     _parentTransform?._childTransforms.add(this);
+    _isScreenSpace = _parentTransform?.isScreenSpace ?? false;
   }
 
   @override
@@ -168,6 +176,17 @@ class ObjectTransform extends Component with LifecycleListener {
     return Offset(local.x, local.y);
   }
 
+  /// Returns the matrix to be used for rendering and hit testing.
+  /// Default is simply the [localMatrix].
+  Matrix4 getPaintMatrix(GameEngine game, Size screenSize) => localMatrix;
+
+  /// Returns the size of this object based on the given constraints.
+  Size getSize(BoxConstraints constraints) {
+    final biggest = constraints.biggest;
+    if (biggest.isInfinite) return Size.zero;
+    return biggest;
+  }
+
   // ---------------------------------------------------------------------------
   // Convenience
   // ---------------------------------------------------------------------------
@@ -180,6 +199,55 @@ class ObjectTransform extends Component with LifecycleListener {
     localAngle = _localAngle + deltaRadians;
   }
 
+  /// Returns the constraints that should be passed to children during layout.
+  BoxConstraints getChildConstraints(BoxConstraints constraints) =>
+      constraints.loosen();
+
   /// Convert degrees to radians (convenience for setting angles).
   static double degrees(double deg) => deg * math.pi / 180.0;
+}
+
+/// A transform component that exists in screen space instead of world space.
+/// It automatically reverts any camera transform for itself and its children.
+class ScreenTransform extends ObjectTransform {
+  /// Optional constraints to enforce on the size of this object.
+  BoxConstraints? constraints;
+
+  bool _isNestedScreenTransform = false;
+
+  @override
+  void onMounted() {
+    super.onMounted();
+    // Cache whether we are already in a screen-space hierarchy.
+    // If so, we are a "nested" ScreenTransform and shouldn't revert the camera again.
+    _isNestedScreenTransform = _parentTransform?.isScreenSpace ?? false;
+    _isScreenSpace = true;
+  }
+
+  @override
+  Matrix4 getPaintMatrix(GameEngine game, Size screenSize) {
+    // Revert camera transform in main pass, but stay world-space in secondary passes
+    if (game.isSecondaryPass || !game.cameras.isReady) {
+      return localMatrix;
+    }
+
+    if (_isNestedScreenTransform) {
+      return localMatrix;
+    }
+
+    final invCamera = game.cameras.main.getFullMatrixInverse(screenSize);
+    return invCamera * localMatrix;
+  }
+
+  @override
+  Size getSize(BoxConstraints constraints) {
+    final effectiveConstraints =
+        this.constraints?.enforce(constraints) ?? constraints;
+    return effectiveConstraints.biggest;
+  }
+
+  @override
+  BoxConstraints getChildConstraints(BoxConstraints constraints) {
+    return this.constraints?.enforce(constraints) ?? constraints;
+  }
 }

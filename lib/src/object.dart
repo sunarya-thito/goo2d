@@ -14,6 +14,7 @@ class GameTag extends GlobalObjectKey {
 }
 
 abstract class GameObject implements BuildContext {
+  String get name;
   GameEngine get game;
   GameTag? get tag;
   bool get active;
@@ -61,6 +62,61 @@ abstract class GameObject implements BuildContext {
   T getComponent<T extends Component>();
   T? tryGetComponent<T extends Component>();
   Iterable<T> getComponents<T extends Component>();
+  T getComponentInChildren<T extends Component>();
+  T? tryGetComponentInChildren<T extends Component>();
+  Iterable<T> getComponentsInParent<T extends Component>();
+
+  GameObject? findChild(String name);
+
+  static GameObject? find(BuildContext context, String name) {
+    final engine = GameEngine.of(context);
+    final isAbsolute = name.startsWith('/');
+    final path = isAbsolute ? name.substring(1) : name;
+    final parts = path.split('/');
+
+    for (final root in engine.rootObjects) {
+      // Check if root matches first part
+      if (root.name == parts[0]) {
+        if (parts.length == 1) return root;
+        final found = root.findChild(path.substring(parts[0].length + 1));
+        if (found != null) return found;
+      }
+
+      // If not absolute, search for first part deep
+      if (!isAbsolute) {
+        final foundStart = root.findChild(parts[0]);
+        if (foundStart != null) {
+          if (parts.length == 1) return foundStart;
+          final foundFull = foundStart.findChild(
+            path.substring(parts[0].length + 1),
+          );
+          if (foundFull != null) return foundFull;
+        }
+      }
+    }
+    return null;
+  }
+
+  static GameObject? findWithTag(BuildContext context, GameTag tag) {
+    return tag.gameObject;
+  }
+
+  static Iterable<GameObject> findGameObjectsWithTag(
+    BuildContext context,
+    GameTag tag,
+  ) {
+    final engine = GameEngine.of(context);
+    return engine.rootObjects.expand((e) => _findAllWithTag(e, tag));
+  }
+
+  static Iterable<GameObject> _findAllWithTag(GameObject root, GameTag tag) {
+    final result = <GameObject>[];
+    if (root.tag == tag) result.add(root);
+    for (final child in root.childrenObjects) {
+      result.addAll(_findAllWithTag(child, tag));
+    }
+    return result;
+  }
 
   Future<void> startCoroutine(CoroutineFunction coroutine);
   Future<void> startCoroutineWithOption<T>(
@@ -88,6 +144,15 @@ abstract class GameObjectElement extends RenderObjectElement
 
   int _layer = RenderLayer.defaultLayer;
   GameObjectElement(super.widget);
+
+  @override
+  String get name {
+    final w = widget;
+    if (w is GameWidget) {
+      return w.name ?? w.runtimeType.toString();
+    }
+    return w.runtimeType.toString();
+  }
 
   @override
   int get layer => _layer;
@@ -234,23 +299,79 @@ abstract class GameObjectElement extends RenderObjectElement
   }
 
   @override
+  T getComponentInChildren<T extends Component>() {
+    final result = tryGetComponentInChildren<T>();
+    if (result != null) return result;
+    throw Exception('Component $T not found in children of $this');
+  }
+
+  @override
+  T? tryGetComponentInChildren<T extends Component>() {
+    final self = tryGetComponent<T>();
+    if (self != null) return self;
+    for (final child in childrenObjects) {
+      final found = child.tryGetComponentInChildren<T>();
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  @override
   T getComponentInParent<T extends Component>() {
     T? result = tryGetComponentInParent<T>();
     if (result != null) {
       return result;
     }
-    throw Exception('Component $T not found in parent');
+    throw Exception('Component $T not found in parent of $this');
   }
 
   @override
   T? tryGetComponentInParent<T extends Component>() {
-    GameObject? parent = parentObject;
-    while (parent != null) {
-      T? result = parent.tryGetComponent<T>();
+    GameObject? current = this;
+    while (current != null) {
+      T? result = current.tryGetComponent<T>();
       if (result != null) {
         return result;
       }
-      parent = parent.parentObject;
+      current = current.parentObject;
+    }
+    return null;
+  }
+
+  @override
+  Iterable<T> getComponentsInParent<T extends Component>() sync* {
+    GameObject? current = this;
+    while (current != null) {
+      yield* current.getComponents<T>();
+      current = current.parentObject;
+    }
+  }
+
+  @override
+  GameObject? findChild(String name) {
+    if (name.contains('/')) {
+      final parts = name.split('/');
+      GameObject? current = this;
+      for (final part in parts) {
+        GameObject? next;
+        for (final child in current!.internalChildrenObjects) {
+          if (child.name == part) {
+            next = child;
+            break;
+          }
+        }
+        if (next == null) return null;
+        current = next;
+      }
+      return current;
+    }
+
+    for (final child in _childrenObjects) {
+      if (child.name == name) return child;
+    }
+    for (final child in _childrenObjects) {
+      final found = child.findChild(name);
+      if (found != null) return found;
     }
     return null;
   }
@@ -424,12 +545,14 @@ class GameWidget extends RenderObjectWidget {
   final List<Widget> children;
   final Iterable<Component> Function() components;
   final int layer;
+  final String? name;
 
   const GameWidget({
     super.key,
     this.children = const [],
     this.components = _emptyComponents,
     this.layer = RenderLayer.defaultLayer,
+    this.name,
   });
 
   @override
@@ -508,39 +631,58 @@ class GameRenderObject extends RenderBox
 
   @override
   Size computeDryLayout(covariant BoxConstraints constraints) {
-    return constraints.constrain(
-      object.tryGetComponent<ObjectSize>()?.size ?? Size.infinite,
-    );
+    final transform = object.tryGetComponent<ObjectTransform>();
+    if (transform != null) {
+      return transform.getSize(constraints);
+    }
+    return constraints.constrain(Size.infinite);
   }
 
   @override
   double computeMaxIntrinsicHeight(double width) {
-    return object.tryGetComponent<ObjectSize>()?.size.height ?? 0;
+    final transform = object.tryGetComponent<ObjectTransform>();
+    if (transform is ScreenTransform) {
+      return transform.constraints?.maxHeight ?? 0;
+    }
+    return 0;
   }
 
   @override
   double computeMaxIntrinsicWidth(double height) {
-    return object.tryGetComponent<ObjectSize>()?.size.width ?? 0;
+    final transform = object.tryGetComponent<ObjectTransform>();
+    if (transform is ScreenTransform) {
+      return transform.constraints?.maxWidth ?? 0;
+    }
+    return 0;
   }
 
   @override
   double computeMinIntrinsicHeight(double width) {
-    return object.tryGetComponent<ObjectSize>()?.size.height ?? 0;
+    final transform = object.tryGetComponent<ObjectTransform>();
+    if (transform is ScreenTransform) {
+      return transform.constraints?.minHeight ?? 0;
+    }
+    return 0;
   }
 
   @override
   double computeMinIntrinsicWidth(double height) {
-    return object.tryGetComponent<ObjectSize>()?.size.width ?? 0;
+    final transform = object.tryGetComponent<ObjectTransform>();
+    if (transform is ScreenTransform) {
+      return transform.constraints?.minWidth ?? 0;
+    }
+    return 0;
   }
 
   @override
   void performLayout() {
-    final objectSize = constraints.constrain(
-      object.tryGetComponent<ObjectSize>()?.size ?? Size.infinite,
-    );
+    final transform = object.tryGetComponent<ObjectTransform>();
+    final objectSize = transform?.getSize(constraints) ?? constraints.constrain(Size.infinite);
+    final childConstraints = transform?.getChildConstraints(constraints) ?? constraints.loosen();
+    
     RenderObject? child = firstChild;
     while (child != null) {
-      child.layout(BoxConstraints.loose(objectSize));
+      child.layout(childConstraints);
       child = (child.parentData as GameParentData).nextSibling;
     }
     size = objectSize.isInfinite ? Size.zero : objectSize;
@@ -556,28 +698,15 @@ class GameRenderObject extends RenderBox
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
 
     if (optionalTransform != null) {
+      final paintMatrix = optionalTransform.getPaintMatrix(
+        object.game,
+        object.game.ticker.screenSize,
+      );
+
       if (object.game.isSecondaryPass || !needsCompositing) {
         context.canvas.save();
         context.canvas.translate(offset.dx, offset.dy);
-        context.canvas.transform(optionalTransform.localMatrix.storage);
-
-        // Frustum culling
-        final optionalSize = object.tryGetComponent<ObjectSize>();
-        if (optionalSize != null && !object.game.isSecondaryPass) {
-          final clip = context.canvas.getLocalClipBounds();
-          if (!clip.isInfinite) {
-            final objRect = Rect.fromLTWH(
-              0,
-              0,
-              optionalSize.size.width,
-              optionalSize.size.height,
-            );
-            if (!clip.overlaps(objRect)) {
-              context.canvas.restore();
-              return;
-            }
-          }
-        }
+        context.canvas.transform(paintMatrix.storage);
 
         RenderEvent(context.canvas).dispatchTo(object);
         defaultPaint(context, Offset.zero);
@@ -586,25 +715,8 @@ class GameRenderObject extends RenderBox
         layer = context.pushTransform(
           needsCompositing,
           offset,
-          optionalTransform.localMatrix,
+          paintMatrix,
           (context, offset) {
-            // Frustum culling in composited layer
-            final optionalSize = object.tryGetComponent<ObjectSize>();
-            if (optionalSize != null && !object.game.isSecondaryPass) {
-              final clip = context.canvas.getLocalClipBounds();
-              if (!clip.isInfinite) {
-                final objRect = Rect.fromLTWH(
-                  0,
-                  0,
-                  optionalSize.size.width,
-                  optionalSize.size.height,
-                );
-                if (!clip.overlaps(objRect)) {
-                  return;
-                }
-              }
-            }
-
             RenderEvent(context.canvas).dispatchTo(object);
             defaultPaint(context, offset);
           },
@@ -622,19 +734,6 @@ class GameRenderObject extends RenderBox
 
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    final optionalTransform = object.tryGetComponent<ObjectTransform>();
-    if (optionalTransform != null) {
-      return result.addWithPaintTransform(
-        transform: optionalTransform.localMatrix,
-        position: position,
-        hitTest: (BoxHitTestResult result, Offset? transformedPosition) {
-          if (transformedPosition == null) return false;
-          return defaultHitTestChildren(result, position: transformedPosition);
-        },
-      );
-    }
-    
-    // No transform. Hit-test children at the current position.
     return defaultHitTestChildren(result, position: position);
   }
 
@@ -642,8 +741,12 @@ class GameRenderObject extends RenderBox
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
     if (optionalTransform != null) {
+      final paintMatrix = optionalTransform.getPaintMatrix(
+        object.game,
+        object.game.ticker.screenSize,
+      );
       return result.addWithPaintTransform(
-        transform: optionalTransform.localMatrix,
+        transform: paintMatrix,
         position: position,
         hitTest: (BoxHitTestResult result, Offset? transformedPosition) {
           if (transformedPosition == null) return false;

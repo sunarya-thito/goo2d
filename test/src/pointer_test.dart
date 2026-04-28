@@ -27,13 +27,17 @@ void main() {
     testWidgets('should dispatch events to PointerReceiver when hit', (tester) async {
       final receiver = MockPointerReceiver();
       final collider = BoxCollider()..size = const Size(100, 100)..offset = const Offset(50, 50);
-      final size = ObjectSize()..size = const Size(100, 100);
       
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [ObjectTransform(), receiver, collider, size],
+              components: () => [
+                ScreenTransform()
+                  ..constraints = const BoxConstraints.tightFor(width: 100, height: 100),
+                receiver,
+                collider,
+              ],
             ),
           ),
         ),
@@ -52,13 +56,17 @@ void main() {
     testWidgets('should NOT dispatch events when NOT hit', (tester) async {
       final receiver = MockPointerReceiver();
       final collider = BoxCollider()..size = const Size(50, 50)..offset = const Offset(25, 25);
-      final size = ObjectSize()..size = const Size(100, 100);
       
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [ObjectTransform(), receiver, collider, size],
+              components: () => [
+                ScreenTransform()
+                  ..constraints = const BoxConstraints.tightFor(width: 100, height: 100),
+                receiver,
+                collider,
+              ],
             ),
           ),
         ),
@@ -81,7 +89,12 @@ void main() {
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [ObjectTransform(), receiver, collider],
+              components: () => [
+                ScreenTransform()
+                  ..constraints = const BoxConstraints.tightFor(width: 100, height: 100),
+                receiver,
+                collider,
+              ],
             ),
           ),
         ),

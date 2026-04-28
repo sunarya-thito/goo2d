@@ -1,0 +1,25 @@
+# Goo2D Usage Guide (v{{ @packageVersion }})
+
+Goo2D is a low-level, high-performance 2D game engine for Flutter. It uses a composition-based architecture similar to an ECS (Entity Component System).
+
+## Core Architecture
+- **Game**: The root widget that hosts the engine.
+- **StatefulGameWidget**: The base for complex game entities and the world container.
+- **GameState**: Manages the lifecycle and child widgets of a `StatefulGameWidget`.
+- **GameObject**: Implicitly created by `StatefulGameWidget`. Access via `game` or `gameObject` in components/behaviors.
+- **Components**: Data-holding classes like `ObjectTransform` (position/rotation) and `SpriteRenderer`.
+- **Behaviors**: Logic-holding classes. Mix in `Tickable` (updates) or `LateTickable` (updates after others).
+
+## Implementation Rules
+- **Delta Time**: Always multiply movement and timers by `dt` in `onUpdate(double dt)` for frame-rate independence.
+- **Transform**: Every visual object requires an `ObjectTransform` component. Access it via `getComponent<ObjectTransform>()`.
+- **Positioning**: Use `Offset` for 2D positions.
+- **Input**: Use `createInputAction` in `initState` to define logical controls.
+- **Assets**: Define textures using enums with `AssetEnum` and `TextureAssetEnum`.
+
+## High-Performance Tips
+- Use `LateTickable` for cameras to avoid jitter.
+- Prefer `StatefulGameWidget` over standard `StatefulWidget` for entities that need to interact with the engine.
+- Use `SpriteBatch` (if available) for large amounts of sprites.
+
+For detailed mechanic implementations (Camera, Physics, etc.), refer to the docs in `.guides/docs/`.

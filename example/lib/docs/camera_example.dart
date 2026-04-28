@@ -182,21 +182,24 @@ class SimpleHUD extends StatefulGameWidget {
 class _SimpleHUDState extends GameState<SimpleHUD> {
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield CanvasWidget(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            color: Colors.black54,
-            child: const Text(
-              'Smooth Camera Follow Example',
-              style: TextStyle(color: Colors.white, fontSize: 18),
+    yield GameWidget(
+      components: () => [ScreenTransform()],
+      children: [
+        Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              color: Colors.black54,
+              child: const Text(
+                'Smooth Camera Follow Example',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

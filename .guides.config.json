@@ -1,0 +1,10 @@
+{
+  "packages": {
+    "disabled": [],
+    "discovered": [
+      "goo2d"
+    ]
+  },
+  "agent": "gemini-cli",
+  "contextBudget": "medium"
+}
