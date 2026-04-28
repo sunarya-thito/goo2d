@@ -24,7 +24,7 @@ void main() {
   group('Screen', () {
     testWidgets('should detect onEnterScreen and onExitScreen based on camera view', (tester) async {
       final receiver = MockScreenReceiver();
-      final collider = BoxCollisionTrigger()..rect = const Rect.fromLTWH(-1, -1, 2, 2);
+      final collider = BoxCollider()..size = const Size(2, 2);
       final transform = ObjectTransform()..localPosition = const Offset(100, 0);
 
       await tester.pumpWidget(
@@ -67,7 +67,7 @@ void main() {
 
     testWidgets('should detect OuterScreen events when partially exiting', (tester) async {
       final receiver = MockScreenReceiver();
-      final collider = BoxCollisionTrigger()..rect = const Rect.fromLTWH(-2, -2, 4, 4);
+      final collider = BoxCollider()..size = const Size(4, 4);
       final transform = ObjectTransform()..localPosition = Offset.zero;
 
       await tester.pumpWidget(
@@ -111,7 +111,7 @@ void main() {
 
     testWidgets('should fallback to screen space if no camera is enabled', (tester) async {
       final receiver = MockScreenReceiver();
-      final collider = BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 10, 10);
+      final collider = BoxCollider()..size = const Size(10, 10)..offset = const Offset(5, 5);
       final transform = ObjectTransform()..localPosition = const Offset(-20, -20);
 
       await tester.pumpWidget(
@@ -124,7 +124,7 @@ void main() {
       await tester.pump();
 
       final game = (tester.element(find.byType(GameWidget).first) as GameObject).game;
-      expect(game.collision.activeColliders.length, equals(1));
+      expect(game.physics.activeColliders.length, equals(1));
 
       game.screen.update(const Size(800, 600));
       expect(receiver.enterCount, equals(0));

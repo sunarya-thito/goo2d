@@ -10,11 +10,10 @@ export 'src/object.dart'
 export 'src/render.dart';
 export 'src/pointer.dart';
 export 'src/transform.dart';
-export 'src/collision.dart'
-    hide
-        internalUpdateScreenState,
-        internalGetWasOverlapping,
-        internalGetWasFullyInside;
+export 'src/physics/common.dart';
+export 'src/physics/collider.dart';
+export 'src/physics/rigidbody.dart';
+export 'src/physics/physics_system.dart';
 export 'src/camera.dart';
 export 'src/ticker.dart'
     hide

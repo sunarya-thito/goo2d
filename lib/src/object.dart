@@ -611,14 +611,12 @@ class GameRenderObject extends RenderBox
         );
       }
     } else {
-      // No transform. Only render if it's on the UI layer.
-      if ((object.layer & RenderLayer.ui) != 0) {
-        context.canvas.save();
-        context.canvas.translate(offset.dx, offset.dy);
-        RenderEvent(context.canvas).dispatchTo(object);
-        context.canvas.restore();
-        defaultPaint(context, offset);
-      }
+      // No transform. Render at the current offset.
+      context.canvas.save();
+      context.canvas.translate(offset.dx, offset.dy);
+      RenderEvent(context.canvas).dispatchTo(object);
+      context.canvas.restore();
+      defaultPaint(context, offset);
     }
   }
 
@@ -636,11 +634,8 @@ class GameRenderObject extends RenderBox
       );
     }
     
-    // No transform. Only hit-test children if it's on the UI layer.
-    if ((object.layer & RenderLayer.ui) != 0) {
-      return defaultHitTestChildren(result, position: position);
-    }
-    return false;
+    // No transform. Hit-test children at the current position.
+    return defaultHitTestChildren(result, position: position);
   }
 
   @override
@@ -662,20 +657,18 @@ class GameRenderObject extends RenderBox
       );
     }
 
-    // No transform. Only hit-test if it's on the UI layer.
-    if ((object.layer & RenderLayer.ui) != 0) {
-      if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
-        result.add(BoxHitTestEntry(this, position));
-        return true;
-      }
+    // No transform. Hit-test at the current position.
+    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
     }
     return false;
   }
 
   @override
   bool hitTestSelf(Offset position) {
-    for (var component in object.getComponents<CollisionTrigger>()) {
-      if (component.contains(position)) {
+    for (var component in object.getComponents<Collider>()) {
+      if (component.containsPoint(position)) {
         return true;
       }
     }

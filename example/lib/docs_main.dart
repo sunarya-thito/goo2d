@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:example/main.dart' as app;
@@ -24,16 +25,18 @@ class DocsRouterApp extends StatefulWidget {
 }
 
 class _DocsRouterAppState extends State<DocsRouterApp> {
-  String _route = '/collision';
+  String _route = '/';
 
   @override
   void initState() {
     super.initState();
     // Parse the URL hash on Web
     // Example: https://goo2d.dev/examples/#/input
-    final path = Uri.base.fragment;
-    if (path.isNotEmpty) {
-      _route = path;
+    if (kIsWeb) {
+      final path = Uri.base.fragment;
+      if (path.isNotEmpty) {
+        _route = path;
+      }
     }
   }
 

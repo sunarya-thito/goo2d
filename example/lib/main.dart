@@ -195,6 +195,7 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
           key: GameTag(UniqueKey()),
           components: () => [
             ObjectTransform()..position = pos,
+            Rigidbody()..type = RigidbodyType.kinematic,
             SpriteRenderer()
               ..sprite = GameSprite(
                 texture: MyGameTexture.enemy,
@@ -202,9 +203,8 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
               )
               ..filterQuality = ui.FilterQuality.none,
             EnemyController(),
-            OvalCollisionTrigger()
-              ..radiusX = 0.2
-              ..radiusY = 0.2,
+            CircleCollider()
+              ..radius = 0.2,
           ],
         ),
       );
@@ -282,6 +282,7 @@ class PlayerState extends GameState<Player> with Tickable {
 
     addComponent(
       ObjectTransform()..position = Offset.zero,
+      Rigidbody()..type = RigidbodyType.kinematic,
       SpriteRenderer()
         ..sprite = GameSprite(
           texture: MyGameTexture.ship,
@@ -289,9 +290,8 @@ class PlayerState extends GameState<Player> with Tickable {
           pixelsPerUnit: 64.0,
         )
         ..filterQuality = ui.FilterQuality.none,
-      OvalCollisionTrigger()
-        ..radiusX = 0.2
-        ..radiusY = 0.2,
+      CircleCollider()
+        ..radius = 0.2,
       BlinkEffect(),
       _audioSource = AudioSource()
         ..clip = MyGameSound.shoot
@@ -355,10 +355,10 @@ class PlayerState extends GameState<Player> with Tickable {
               ..sprite = _bulletSprite
               ..filterQuality = ui.FilterQuality.none,
             BulletController()..direction = facing,
+            Rigidbody()..type = RigidbodyType.kinematic,
             BulletOutOfScreenDestroyer(),
-            OvalCollisionTrigger()
-              ..radiusX = 0.2
-              ..radiusY = 0.2,
+            CircleCollider()
+              ..radius = 0.2,
           ],
         ),
       );
@@ -368,7 +368,7 @@ class PlayerState extends GameState<Player> with Tickable {
 }
 
 class BulletController extends Behavior
-    with Tickable, LifecycleListener, Collidable {
+    with Tickable, LifecycleListener, CollisionListener {
   late Offset direction;
   late ObjectTransform _transform;
   late BattleWorldState world;
@@ -387,15 +387,15 @@ class BulletController extends Behavior
   }
 
   @override
-  void onCollision(CollisionEvent collision) {
-    if (collision.other.gameObject.tryGetComponent<EnemyController>() != null) {
+  void onCollisionEnter(Collision collision) {
+    if (collision.otherCollider.gameObject.tryGetComponent<EnemyController>() != null) {
       world._destroyObject(gameObject);
     }
   }
 }
 
 class EnemyController extends Behavior
-    with Tickable, LifecycleListener, Collidable {
+    with Tickable, LifecycleListener, CollisionListener {
   late ObjectTransform _transform;
   late BattleWorldState world;
   late double speed, _swerveOffset, _swerveSpeed;
@@ -430,8 +430,8 @@ class EnemyController extends Behavior
   }
 
   @override
-  void onCollision(CollisionEvent collision) {
-    final other = collision.other;
+  void onCollisionEnter(Collision collision) {
+    final other = collision.otherCollider;
     if (other.gameObject.tag == const GameTag('Player')) {
       const GameTag(
         'MainCamera',

@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:meta/meta.dart';
 import 'input.dart';
-import 'collision.dart';
+import 'physics/physics_system.dart';
 import 'camera.dart';
 import 'screen.dart';
 import 'ticker.dart';
@@ -25,7 +25,7 @@ class GameEngine {
 
   final TickerState _ticker;
   final InputSystem _input;
-  final CollisionSystem _collision;
+  final PhysicsSystem _physics;
   final CameraSystem _cameras;
   final ScreenSystem _screen;
   final AudioSystem _audio;
@@ -39,13 +39,13 @@ class GameEngine {
   GameEngine._create({
     required TickerState ticker,
     required InputSystem input,
-    required CollisionSystem collision,
+    required PhysicsSystem physics,
     required CameraSystem cameras,
     required ScreenSystem screen,
     required AudioSystem audio,
   }) : _ticker = ticker,
        _input = input,
-       _collision = collision,
+       _physics = physics,
        _cameras = cameras,
        _screen = screen,
        _audio = audio;
@@ -53,7 +53,7 @@ class GameEngine {
   factory GameEngine() => GameEngine._create(
     ticker: TickerState(),
     input: InputSystem(),
-    collision: CollisionSystem(),
+    physics: PhysicsSystem(),
     cameras: CameraSystem(),
     screen: ScreenSystem(),
     audio: AudioSystem(),
@@ -61,7 +61,7 @@ class GameEngine {
 
   TickerState get ticker => _ticker;
   InputSystem get input => _input;
-  CollisionSystem get collision => _collision;
+  PhysicsSystem get physics => _physics;
   CameraSystem get cameras => _cameras;
   ScreenSystem get screen => _screen;
   AudioSystem get audio => _audio;
@@ -88,7 +88,7 @@ class GameEngine {
   void dispose() {
     _input.dispose();
     _ticker.dispose();
-    _collision.dispose();
+    _physics.dispose();
     _cameras.dispose();
     _screen.dispose();
     _audio.dispose();
@@ -97,7 +97,7 @@ class GameEngine {
   void initialize() {
     _ticker.attach(this);
     _input.attach(this);
-    _collision.attach(this);
+    _physics.attach(this);
     _cameras.attach(this);
     _screen.attach(this);
     _audio.attach(this);
@@ -159,7 +159,7 @@ class TickerState implements GameSystem {
     }
 
     game.screen.update(screenSize);
-    game.collision.runCollisionPass();
+    game.physics.step(dt);
 
     for (final obj in game._rootObjects) {
       obj.broadcastEvent(LateTickEvent(dt));
@@ -244,80 +244,6 @@ class CameraSystem implements GameSystem {
   void dispose() {
     _allCameras.clear();
     _main = null;
-  }
-}
-
-class CollisionSystem implements GameSystem {
-  final List<CollisionTrigger> _active = [];
-  Iterable<CollisionTrigger> get activeColliders => _active;
-
-  GameEngine? _game;
-  @override
-  GameEngine get game {
-    assert(_game != null, 'CollisionSystem is not attached to a GameEngine');
-    return _game!;
-  }
-
-  @override
-  bool get gameAttached => _game != null;
-
-  @override
-  void attach(GameEngine game) => _game = game;
-
-  void register(CollisionTrigger collider) {
-    _active.add(collider);
-  }
-
-  void unregister(CollisionTrigger collider) {
-    _active.remove(collider);
-  }
-
-  void runCollisionPass() {
-    final n = _active.length;
-    if (n < 2) return;
-
-    // Insertion sort by worldBounds.left
-    for (int i = 1; i < n; i++) {
-      final key = _active[i];
-      final keyLeft = key.worldBounds.left;
-      int j = i - 1;
-      while (j >= 0 && _active[j].worldBounds.left > keyLeft) {
-        _active[j + 1] = _active[j];
-        j--;
-      }
-      _active[j + 1] = key;
-    }
-
-    // Sweep-and-prune on X axis
-    for (int i = 0; i < n; i++) {
-      final a = _active[i];
-      if (a.transform == null) continue;
-      final aBounds = a.worldBounds;
-
-      for (int j = i + 1; j < n; j++) {
-        final b = _active[j];
-        if (b.transform == null) continue;
-        final bBounds = b.worldBounds;
-
-        if (bBounds.left > aBounds.right) break;
-        if ((a.layerMask & b.layerMask) == 0) continue;
-        if (aBounds.bottom <= bBounds.top || bBounds.bottom <= aBounds.top) {
-          continue;
-        }
-        if (!a.collidesWith(b)) continue;
-
-        final intersection = aBounds.intersect(bBounds);
-        if (!intersection.isEmpty) {
-          a.gameObject.broadcastEvent(CollisionEvent(a, b, intersection));
-          b.gameObject.broadcastEvent(CollisionEvent(b, a, intersection));
-        }
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _active.clear();
   }
 }
 
@@ -451,9 +377,7 @@ class _GameState extends State<Game> {
       game: _game,
       child: GameLoop(
         game: _game,
-        child: RepaintBoundary(
-          child: GameRenderer(child: World(child: widget.child)),
-        ),
+        child: GameRenderer(child: World(child: widget.child)),
       ),
     );
   }

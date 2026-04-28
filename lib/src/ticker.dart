@@ -130,6 +130,12 @@ class RenderGameRenderer extends RenderProxyBox {
       game.ticker.screenSize = size;
     }
 
+    final screenSize = size;
+    if (screenSize.width <= 0 || screenSize.height <= 0) {
+      super.paint(context, offset);
+      return;
+    }
+
     if (!game.cameras.isReady) {
       super.paint(context, offset);
       return;
@@ -140,8 +146,10 @@ class RenderGameRenderer extends RenderProxyBox {
       super.paint(context, offset);
       return;
     }
-
-    final screenSize = size;
+    if (!camera.gameObject.active || !camera.enabled) {
+      super.paint(context, offset);
+      return;
+    }
 
     if (camera.clearFlags == CameraClearFlags.solidColor) {
       final paint = Paint()..color = camera.backgroundColor;

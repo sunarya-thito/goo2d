@@ -70,8 +70,7 @@ void main() {
                 Camera()..orthographicSize = 5.0,
                 ObjectTransform()..position = Offset.zero,
                 _MockPointerReceiver(() => hit = true),
-                BoxCollisionTrigger()
-                  ..rect = const Rect.fromLTWH(-50, -50, 100, 100),
+                BoxCollider()..size = const Size(100, 100),
               ],
             ),
           ),

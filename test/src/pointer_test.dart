@@ -26,14 +26,14 @@ void main() {
   group('Pointer', () {
     testWidgets('should dispatch events to PointerReceiver when hit', (tester) async {
       final receiver = MockPointerReceiver();
-      final collider = BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 100, 100);
+      final collider = BoxCollider()..size = const Size(100, 100)..offset = const Offset(50, 50);
       final size = ObjectSize()..size = const Size(100, 100);
       
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [receiver, collider, size],
+              components: () => [ObjectTransform(), receiver, collider, size],
             ),
           ),
         ),
@@ -51,14 +51,14 @@ void main() {
 
     testWidgets('should NOT dispatch events when NOT hit', (tester) async {
       final receiver = MockPointerReceiver();
-      final collider = BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 50, 50);
+      final collider = BoxCollider()..size = const Size(50, 50)..offset = const Offset(25, 25);
       final size = ObjectSize()..size = const Size(100, 100);
       
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [receiver, collider, size],
+              components: () => [ObjectTransform(), receiver, collider, size],
             ),
           ),
         ),
@@ -75,13 +75,13 @@ void main() {
 
     testWidgets('should handle move and hover events', (tester) async {
       final receiver = MockPointerReceiver();
-      final collider = BoxCollisionTrigger()..rect = const Rect.fromLTWH(0, 0, 100, 100);
+      final collider = BoxCollider()..size = const Size(100, 100)..offset = const Offset(50, 50);
       
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [receiver, collider],
+              components: () => [ObjectTransform(), receiver, collider],
             ),
           ),
         ),

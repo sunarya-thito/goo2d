@@ -1,7 +1,5 @@
 import 'dart:ui';
-
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/collision.dart';
 
 mixin ScreenCollidable implements EventListener {
   /// Called when object collider touches screen edge/enters the screen bounds.
@@ -75,7 +73,6 @@ class ScreenSystem implements GameSystem {
   @override
   void dispose() {}
 
-
   /// Checks all active colliders against the screen bounds and dispatches events.
   /// This should be called once per frame, usually after movement logic.
   void update(Size screenSize) {
@@ -93,7 +90,7 @@ class ScreenSystem implements GameSystem {
       screenRect = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
     }
 
-    for (final collider in game.collision.activeColliders) {
+    for (final collider in game.physics.activeColliders) {
       final bounds = collider.worldBounds;
       final overlapping = screenRect.overlaps(bounds);
 
@@ -104,8 +101,8 @@ class ScreenSystem implements GameSystem {
           screenRect.top <= bounds.top &&
           screenRect.bottom >= bounds.bottom;
 
-      final wasOverlapping = internalGetWasOverlapping(collider);
-      final wasFullyInside = internalGetWasFullyInside(collider);
+      final wasOverlapping = collider.wasOverlappingScreen;
+      final wasFullyInside = collider.wasFullyInsideScreen;
 
       // ScreenCollidable: onEnterScreen (any part enters) / onExitScreen (all parts leave)
       if (overlapping && !wasOverlapping) {
@@ -121,11 +118,8 @@ class ScreenSystem implements GameSystem {
         collider.gameObject.broadcastEvent(const OuterScreenExitEvent());
       }
 
-      internalUpdateScreenState(
-        collider,
-        overlapping: overlapping,
-        fullyInside: fullyInside,
-      );
+      collider.wasOverlappingScreen = overlapping;
+      collider.wasFullyInsideScreen = fullyInside;
     }
   }
 }

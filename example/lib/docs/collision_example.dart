@@ -105,14 +105,14 @@ class _MovingBoxState extends GameState<MovingBox> {
     super.initState();
     addComponent(
       ObjectTransform()..position = const Offset(-2, 0),
-      BoxCollisionTrigger()..rect = const Rect.fromLTWH(-0.25, -0.25, 0.5, 0.5),
+      BoxCollider()..size = const Size(0.5, 0.5),
       BouncingBehavior(),
     );
   }
 }
 
 class BouncingBehavior extends Behavior
-    with Tickable, OuterScreenCollidable, Collidable, LifecycleListener {
+    with Tickable, OuterScreenCollidable, CollisionListener, LifecycleListener {
   Offset _velocity = const Offset(2.0, 1.5);
   late SpriteRenderer _renderer;
 
@@ -198,13 +198,13 @@ class BouncingBehavior extends Behavior
   ];
 
   @override
-  void onCollision(CollisionEvent event) {
+  void onCollisionEnter(Collision collision) {
     _hitCount = (_hitCount + 1) % _colors.length;
     _renderer.color = _colors[_hitCount];
 
     final transform = getComponent<ObjectTransform>();
     final selfPos = transform.position;
-    final otherPos = event.other.gameObject
+    final otherPos = collision.otherCollider.gameObject
         .getComponent<ObjectTransform>()
         .position;
     final diff = selfPos - otherPos;
@@ -261,7 +261,7 @@ class _StationaryTargetState extends GameState<StationaryTarget> {
     super.initState();
     addComponent(
       ObjectTransform()..position = widget.position,
-      BoxCollisionTrigger()..rect = const Rect.fromLTWH(-0.25, -0.25, 0.5, 0.5),
+      BoxCollider()..size = const Size(0.5, 0.5),
       SpriteRenderer()
         ..sprite = GameSprite(
           texture: CollisionExampleTexture.ship,

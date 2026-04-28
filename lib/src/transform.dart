@@ -56,7 +56,7 @@ class ObjectTransform extends Component with LifecycleListener {
   Matrix4? _cachedWorld;
   Matrix4? _cachedWorldInverse;
 
-  /// Incremented on every transform change. Dependents (e.g. [CollisionTrigger]) use
+  /// Incremented on every transform change. Dependents (e.g. [Collider]) use
   /// this to cheaply detect when their cached derived data is stale.
   int version = 0;
 
@@ -75,12 +75,12 @@ class ObjectTransform extends Component with LifecycleListener {
   Matrix4 get localMatrix {
     if (_cachedLocal != null) return _cachedLocal!;
     final m = Matrix4.identity();
-    m.translateByVector3(Vector3(_localPosition.dx, _localPosition.dy, 0.0));
+    m.translateByDouble(_localPosition.dx, _localPosition.dy, 0.0, 1.0);
     if (_localAngle != 0.0) {
       m.rotateZ(_localAngle);
     }
     if (_localScale.dx != 1.0 || _localScale.dy != 1.0) {
-      m.scaleByVector3(Vector3(_localScale.dx, _localScale.dy, 1.0));
+      m.scaleByDouble(_localScale.dx, _localScale.dy, 1.0, 1.0);
     }
     _cachedLocal = m;
     return m;
