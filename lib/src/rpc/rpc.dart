@@ -24,7 +24,7 @@ class NetworkManager extends Component with Tickable {
   List<FunctionEntry> get functions =>
       List.unmodifiable(_registry?.functions ?? const []);
 
-  Future<T> call<T>(Function function, List<Object> args) {
+  Future<T> callRemoteFunction<T>(Function function, List<Object> args) {
     assert(
       _registry != null,
       'You must provide a list of functions before using RPC functions.',
