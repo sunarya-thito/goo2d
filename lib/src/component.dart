@@ -3,26 +3,54 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:goo2d/goo2d.dart';
 
-void test() {
-  List<ComponentFactoryOr> list = [
-    SpriteRenderer.new.withParams((c) {}),
-    SpriteRenderer.new.withNoParams,
-    SpriteRenderer(),
-  ];
-
-  list[0].internalCreate();
-}
-
 @internal
 void internalAttach(Component component, GameObject gameObject) {
   component._gameObject = gameObject;
 }
 
-abstract class ComponentFactoryOr {
-  @internal
-  Component internalCreate();
+mixin ComponentFuture<T extends Component>
+    implements Future<ComponentFactory<T>> {
   @internal
   Type get internalType;
+  @internal
+  T internalCreate();
+
+  @override
+  Stream<ComponentFactory<T>> asStream() {
+    return Stream.value(internalCreate);
+  }
+
+  @override
+  Future<ComponentFactory<T>> catchError(
+    Function onError, {
+    bool Function(Object error)? test,
+  }) {
+    return this;
+  }
+
+  @override
+  Future<R> then<R>(
+    FutureOr<R> Function(ComponentFactory<T> value) onValue, {
+    Function? onError,
+  }) {
+    return Future.value(onValue(internalCreate));
+  }
+
+  @override
+  Future<ComponentFactory<T>> timeout(
+    Duration timeLimit, {
+    FutureOr<dynamic> Function()? onTimeout,
+  }) {
+    return this;
+  }
+
+  @override
+  Future<ComponentFactory<T>> whenComplete(
+    FutureOr<dynamic> Function() action,
+  ) {
+    action.call();
+    return this;
+  }
 }
 
 typedef ComponentFactory<T extends Component> = T Function();
@@ -31,21 +59,21 @@ typedef ComponentParameterHandler<T extends Component> =
 
 extension ComponentFactoryExtension<T extends Component>
     on ComponentFactory<T> {
-  ComponentFactoryOr withParams(ComponentParameterHandler<T> params) {
-    return _ComponentFactoryOf(this, params);
+  ComponentFuture<T> withParams(ComponentParameterHandler<T> params) {
+    return _ComponentFactoryOf<T>(this, params);
   }
 
-  ComponentFactoryOr get withNoParams => _ComponentFactoryOf(this, null);
+  ComponentFuture<T> get withNoParams => _ComponentFactoryOf<T>(this, null);
 }
 
-class _ComponentFactoryOf<T extends Component> implements ComponentFactoryOr {
+class _ComponentFactoryOf<T extends Component> with ComponentFuture<T> {
   final ComponentFactory<T> factory;
   final ComponentParameterHandler<T>? params;
 
   _ComponentFactoryOf(this.factory, this.params);
 
   @override
-  Component internalCreate() {
+  T internalCreate() {
     final component = factory();
     params?.call(component);
     return component;
@@ -76,7 +104,7 @@ class _ComponentFactoryOf<T extends Component> implements ComponentFactoryOr {
 ///   }
 /// }
 /// ```
-abstract class Component implements ComponentFactoryOr {
+abstract class Component with ComponentFuture {
   GameObject? _gameObject;
 
   @override
