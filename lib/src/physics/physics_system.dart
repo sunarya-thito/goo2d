@@ -4,6 +4,18 @@ import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
 import 'physics_bridge.dart';
 
+/// The central system responsible for physical simulation and collision detection.
+/// 
+/// [PhysicsSystem] manages the lifecycle of rigidbodies and colliders, 
+/// synchronizing their state with a background physics worker (or a 
+/// direct bridge on the web). It handles the fixed-step update loop 
+/// to ensure deterministic simulation results across different frame rates.
+/// 
+/// ```dart
+/// // Access physics via the game instance
+/// game.physics.gravity = const Offset(0, 9.8);
+/// final hit = await game.physics.raycast(pos, dir);
+/// ```
 class PhysicsSystem implements GameSystem {
   late final PhysicsBridge _bridge;
   static int _nextWorldId = 1;
@@ -14,20 +26,43 @@ class PhysicsSystem implements GameSystem {
   final Map<int, int> _bodyColliderCount = {};
   final Map<int, Completer<RaycastHit?>> _raycastCompleters = {};
 
-  /// Set of shape ID pairs that were contacting in the last frame.
+  // Set of shape ID pairs that were contacting in the last frame.
   final Set<String> _previousContacts = {};
 
   int _nextId = 1;
   int _nextRequestId = 1;
+
+  /// The unique identifier for the physics world instance.
+  /// 
+  /// This ID is passed to the [PhysicsBridge] to manage multi-world 
+  /// simulations in environments that support them.
   int worldId = 0;
 
+  /// Returns all currently registered colliders in the system.
+  /// 
+  /// This provides a live view of the physical shapes currently 
+  /// participating in the simulation.
   Iterable<Collider> get activeColliders => _colliders.values;
 
-  double fixedTimeStep = 1.0 / 50.0; // 50Hz default
+  /// The frequency of physics updates (default is 50Hz).
+  /// 
+  /// Smaller values result in higher precision but increase the 
+  /// computational load on the worker.
+  double fixedTimeStep = 1.0 / 50.0; 
   double _accumulator = 0.0;
 
   Offset _gravity = const Offset(0, 980);
+
+  /// The global gravity vector applied to all dynamic rigidbodies.
+  /// 
+  /// The default value is (0, 980) pixels/sec², pointing downwards.
   Offset get gravity => _gravity;
+
+  /// Sets the global gravity vector.
+  /// 
+  /// Updates the underlying physics world simulation immediately.
+  /// 
+  /// * [value]: The new gravity vector.
   set gravity(Offset value) {
     if (_gravity == value) return;
     _gravity = value;
@@ -35,12 +70,17 @@ class PhysicsSystem implements GameSystem {
   }
 
   GameEngine? _game;
+
   @override
   GameEngine get game => _game!;
+
   @override
   bool get gameAttached => _game != null;
 
   /// Optional override for the physics bridge (used in benchmarks).
+  /// 
+  /// Allows the injection of a custom [PhysicsBridge] for testing 
+  /// or specialized simulation environments.
   @visibleForTesting
   PhysicsBridge? bridgeOverride;
 
@@ -54,6 +94,15 @@ class PhysicsSystem implements GameSystem {
     _bridge.setGravity(_gravity);
   }
 
+  /// Processes the results from a completed physics step.
+  /// 
+  /// This method performs two critical tasks:
+  /// 1. Synchronizes the positions/rotations of [Rigidbody]s back 
+  ///    to their parent [ObjectTransform]s.
+  /// 2. Resolves contact events and broadcasts [CollisionEvent]s or 
+  ///    [TriggerEvent]s to the relevant [GameObject]s.
+  /// 
+  /// * [result]: The data package containing body states and contacts.
   void _handleStepResult(PhysicsStepResult result) {
     for (final entry in result.dynamicBodies.entries) {
       final body = _rigidbodies[entry.key];
@@ -168,6 +217,14 @@ class PhysicsSystem implements GameSystem {
     _previousContacts.addAll(currentContactKeys);
   }
 
+  /// Internal handler for raycast completion.
+  /// 
+  /// This bridges the asynchronous response from the [PhysicsBridge] 
+  /// back to the [Future] returned to the user.
+  /// 
+  /// * [requestId]: The ID of the original request.
+  /// * [hasHit]: Whether an intersection was found.
+  /// * [data]: The raw hit data from the worker.
   void _handleRaycastResult(
     int requestId,
     bool hasHit,
@@ -196,6 +253,12 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Registers a [Rigidbody] into the physical simulation.
+  /// 
+  /// This creates a corresponding body in the [PhysicsBridge] and 
+  /// begins synchronizing its transform every step.
+  /// 
+  /// * [body]: The component to register.
   void registerRigidbody(Rigidbody body) {
     final t = body.tryTransform;
     if (t == null) return;
@@ -216,6 +279,12 @@ class PhysicsSystem implements GameSystem {
     );
   }
 
+  /// Removes a [Rigidbody] from the simulation.
+  /// 
+  /// The body and all its attached shapes will be destroyed in the 
+  /// underlying physics engine.
+  /// 
+  /// * [body]: The component to remove.
   void unregisterRigidbody(Rigidbody body) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -227,6 +296,12 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Updates the physical properties of an existing [Rigidbody].
+  /// 
+  /// This should be called whenever mass, drag, or gravity scale properties 
+  /// are modified on the [Rigidbody] component.
+  /// 
+  /// * [body]: The component whose properties changed.
   void updateRigidbody(Rigidbody body) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -244,6 +319,13 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Synchronizes linear velocity from the engine to the physics worker.
+  /// 
+  /// This is an internal method used by the [Rigidbody.velocity] setter 
+  /// to ensure the simulation stays in sync.
+  /// 
+  /// * [body]: The body to update.
+  /// * [velocity]: The new world-space velocity.
   void internalSyncVelocity(Rigidbody body, Offset velocity) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -254,6 +336,10 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Synchronizes angular velocity from the engine to the physics worker.
+  /// 
+  /// * [body]: The body to update.
+  /// * [angularVelocity]: The new rotational velocity in radians/sec.
   void internalSyncAngularVelocity(Rigidbody body, double angularVelocity) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -287,6 +373,12 @@ class PhysicsSystem implements GameSystem {
     _bridge.removeBody(bodyId);
   }
 
+  /// Registers a [Collider] and attaches it to its parent [Rigidbody].
+  /// 
+  /// If the [GameObject] does not have a [Rigidbody], a static 
+  /// standalone body is created automatically to host the collider.
+  /// 
+  /// * [collider]: The shape to add to the simulation.
   void registerCollider(Collider collider) {
     final id = _nextId++;
     _colliders[id] = collider;
@@ -311,6 +403,12 @@ class PhysicsSystem implements GameSystem {
     _bridge.addShape(id, rbId, collider);
   }
 
+  /// Removes a [Collider] from the simulation.
+  /// 
+  /// If this was the last collider on a standalone body, that body 
+  /// is also destroyed.
+  /// 
+  /// * [collider]: The shape to remove.
   void unregisterCollider(Collider collider) {
     final id = _colliders.keys.firstWhere(
       (k) => _colliders[k] == collider,
@@ -336,6 +434,13 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Advances the simulation by [dt].
+  /// 
+  /// Uses an accumulator pattern to ensure that the physics simulation 
+  /// runs at a fixed frequency (determined by [fixedTimeStep]), 
+  /// independent of the rendering frame rate.
+  /// 
+  /// * [dt]: The elapsed time since the last frame in seconds.
   void step(double dt) {
     _accumulator += dt;
     while (_accumulator >= fixedTimeStep) {
@@ -344,6 +449,7 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  // Synchronizes static transforms and commands the bridge to step.
   void _internalStep(double dt) {
     final Map<int, PhysicsTransformSync> sync = {};
 
@@ -366,6 +472,13 @@ class PhysicsSystem implements GameSystem {
     _bridge.step(dt, sync);
   }
 
+  /// Queues a force to be applied to a [Rigidbody] on the next physics step.
+  /// 
+  /// Forces are cumulative and are reset at the end of each physical 
+  /// step resolution.
+  /// 
+  /// * [body]: The target body.
+  /// * [force]: The force vector.
   void internalQueueForce(Rigidbody body, Offset force) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -376,6 +489,13 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Queues an instantaneous impulse to be applied to a [Rigidbody].
+  /// 
+  /// Impulses cause an immediate change in velocity without needing 
+  /// a continuous force application.
+  /// 
+  /// * [body]: The target body.
+  /// * [impulse]: The impulse vector.
   void internalQueueImpulse(Rigidbody body, Offset impulse) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -386,6 +506,13 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Queues a torque to be applied to a [Rigidbody].
+  /// 
+  /// Torques apply rotational acceleration to the body around its 
+  /// center of mass.
+  /// 
+  /// * [body]: The target body.
+  /// * [torque]: The rotational force magnitude.
   void internalQueueTorque(Rigidbody body, double torque) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -396,6 +523,13 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Queues an angular impulse to be applied to a [Rigidbody].
+  /// 
+  /// Rotational impulses cause an immediate change in angular velocity 
+  /// without being affected by time steps.
+  /// 
+  /// * [body]: The target body.
+  /// * [impulse]: The rotational impulse magnitude.
   void internalQueueAngularImpulse(Rigidbody body, double impulse) {
     final id = _rigidbodies.keys.firstWhere(
       (k) => _rigidbodies[k] == body,
@@ -406,6 +540,21 @@ class PhysicsSystem implements GameSystem {
     }
   }
 
+  /// Casts a ray into the physics world and returns the closest hit.
+  /// 
+  /// Since physics often runs in a separate Isolate, this operation 
+  /// is asynchronous and returns a [Future].
+  /// 
+  /// * [origin]: The world-space starting point of the ray.
+  /// * [direction]: The normalized vector defining the ray's path.
+  /// * [maxDistance]: The maximum length of the ray.
+  /// 
+  /// ```dart
+  /// final hit = await game.physics.raycast(pos, dir);
+  /// if (hit != null) {
+  ///   print('Hit object: ${hit.collider.gameObject.name}');
+  /// }
+  /// ```
   Future<RaycastHit?> raycast(
     Offset origin,
     Offset direction, [

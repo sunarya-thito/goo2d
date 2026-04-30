@@ -3,15 +3,43 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:goo2d/goo2d.dart';
 
+/// Attaches a [component] to a [gameObject] and sets its internal state.
+/// 
+/// This is used internally by the engine to establish the relationship 
+/// between objects and their logic. It should not be called by users.
+/// 
+/// * [component]: The component instance to attach.
+/// * [gameObject]: The parent object that will own the component.
 @internal
 void internalAttach(Component component, GameObject gameObject) {
   component._gameObject = gameObject;
 }
 
+/// A handle for a [Component] that will be created or configured in the future.
+/// 
+/// [ComponentFuture] implements the [Future] interface, allowing it to be used 
+/// in asynchronous initialization chains. It is primarily used by the 
+/// [ComponentFactory] system to support fluent parameter injection. It allows 
+/// for a clean separation between component creation and configuration.
+/// 
+/// ```dart
+/// final future = myFactory.withParams((c) => c.val = 10);
+/// final factory = await future;
+/// ```
+/// 
+/// See also:
+/// * [ComponentFactoryExtension.withParams] for creating a future with parameters.
 mixin ComponentFuture<T extends Component>
     implements Future<ComponentFactory<T>> {
+  /// The specific [Type] of component this future will produce.
+  /// 
+  /// Used for runtime type checks during component injection.
   @internal
   Type get internalType;
+
+  /// Creates the component instance and applies any configured parameters.
+  /// 
+  /// Triggers the underlying factory and invokes parameter handlers.
   @internal
   T internalCreate();
 
@@ -53,23 +81,67 @@ mixin ComponentFuture<T extends Component>
   }
 }
 
+/// A function signature that creates a [Component] instance of type [T].
+/// 
+/// Used as a blueprint for component instantiation.
 typedef ComponentFactory<T extends Component> = T Function();
+
+/// A function signature for configuring a [Component] instance after creation.
+/// 
+/// Provides a hook for dependency injection and property setting.
 typedef ComponentParameterHandler<T extends Component> =
     void Function(T component);
 
+/// Provides fluent utility methods for [ComponentFactory] functions.
+/// 
+/// Enables the `withParams` syntax for configuring components during addition.
+/// 
+/// ```dart
+/// gameObject.addComponent(MyComp.new.withParams((c) => c.id = 1));
+/// ```
 extension ComponentFactoryExtension<T extends Component>
     on ComponentFactory<T> {
+  /// Wraps this factory in a [ComponentFuture] that applies [params] after creation.
+  /// 
+  /// Creates a configuration chain that executes when the component is added.
+  /// 
+  /// * [params]: The callback used to configure the newly created component.
   ComponentFuture<T> withParams(ComponentParameterHandler<T> params) {
     return _ComponentFactoryOf<T>(this, params);
   }
 
+  /// Wraps this factory in a [ComponentFuture] with no additional configuration.
+  /// 
+  /// Used to standardize component handles for factories with no settings.
   ComponentFuture<T> get withNoParams => _ComponentFactoryOf<T>(this, null);
 }
 
+/// Private implementation of [ComponentFuture].
+/// 
+/// [_ComponentFactoryOf] stores the base factory and any configuration 
+/// parameters to be applied during the creation process. It is used 
+/// by the [ComponentFactoryExtension] to build configuration chains.
+/// 
+/// ```dart
+/// final cf = _ComponentFactoryOf(myFactory, myParams);
+/// ```
 class _ComponentFactoryOf<T extends Component> with ComponentFuture<T> {
+  /// The function that creates the component instance.
+  /// 
+  /// This factory is invoked by the engine when the component needs to 
+  /// be instantiated during a [GameObject] addition pass.
   final ComponentFactory<T> factory;
+
+  /// The optional callback for configuring the component.
+  /// 
+  /// If provided, this handler is executed immediately after the 
+  /// [factory] creates the instance, allowing for parameter injection.
   final ComponentParameterHandler<T>? params;
 
+  /// Creates a new factory wrapper.
+  /// 
+  /// * [factory]: The source factory function.
+  /// * [params]: The configuration callback.
   _ComponentFactoryOf(this.factory, this.params);
 
   @override
@@ -212,8 +284,17 @@ abstract class Component with ComponentFuture {
   /// for efficiency. Each component will be attached to the [gameObject]
   /// and initialized in the order they are provided.
   ///
-  /// * [component] The primary component to add.
-  /// * [a] through [j] Optional additional components to add.
+  /// * [component]: The primary component to add.
+  /// * [a]: Optional additional component to add.
+  /// * [b]: Optional additional component to add.
+  /// * [c]: Optional additional component to add.
+  /// * [d]: Optional additional component to add.
+  /// * [e]: Optional additional component to add.
+  /// * [f]: Optional additional component to add.
+  /// * [g]: Optional additional component to add.
+  /// * [h]: Optional additional component to add.
+  /// * [i]: Optional additional component to add.
+  /// * [j]: Optional additional component to add.
   void addComponent(
     Component component, [
     Component? a,
@@ -235,8 +316,17 @@ abstract class Component with ComponentFuture {
   /// If a component is not found on the object, it is silently ignored.
   /// Removed components are detached and will no longer receive events.
   ///
-  /// * [component] The primary component to remove.
-  /// * [a] through [j] Optional additional components to remove.
+  /// * [component]: The primary component to remove.
+  /// * [a]: Optional additional component to remove.
+  /// * [b]: Optional additional component to remove.
+  /// * [c]: Optional additional component to remove.
+  /// * [d]: Optional additional component to remove.
+  /// * [e]: Optional additional component to remove.
+  /// * [f]: Optional additional component to remove.
+  /// * [g]: Optional additional component to remove.
+  /// * [h]: Optional additional component to remove.
+  /// * [i]: Optional additional component to remove.
+  /// * [j]: Optional additional component to remove.
   void removeComponent(
     Component component, [
     Component? a,
@@ -258,7 +348,7 @@ abstract class Component with ComponentFuture {
   /// This uses a recursive double-dispatch mechanism to notify every
   /// component in the tree that implements the event's target listener type.
   ///
-  /// * [event] The event to broadcast.
+  /// * [event]: The event to broadcast.
   void broadcastEvent(Event event) {
     gameObject.broadcastEvent(event);
   }
@@ -269,7 +359,7 @@ abstract class Component with ComponentFuture {
   /// It is used for localized communication between components on the
   /// same object.
   ///
-  /// * [event] The event to send.
+  /// * [event]: The event to send.
   void sendEvent(Event event) {
     gameObject.sendEvent(event);
   }
@@ -347,7 +437,7 @@ abstract class Component with ComponentFuture {
   /// Only searches immediate children. Returns null if no child
   /// matches the name.
   ///
-  /// * [name] The name of the child to search for.
+  /// * [name]: The name of the child to search for.
   GameObject? findChild(String name) {
     return gameObject.findChild(name);
   }
@@ -357,7 +447,7 @@ abstract class Component with ComponentFuture {
   /// Coroutines are tied to the lifecycle of the object. If the object
   /// is disposed, the coroutine is automatically stopped.
   ///
-  /// * [coroutine] The async* generator function to run.
+  /// * [coroutine]: The async* generator function to run.
   Future<void> startCoroutine(CoroutineFunction coroutine) {
     return gameObject.startCoroutine(coroutine);
   }
@@ -367,8 +457,8 @@ abstract class Component with ComponentFuture {
   /// This allows passing data to the coroutine generator while
   /// maintaining lifecycle management.
   ///
-  /// * [coroutine] The async* generator function.
-  /// * [option] The data to pass to the coroutine.
+  /// * [coroutine]: The async* generator function.
+  /// * [option]: The data to pass to the coroutine.
   Future<void> startCoroutineWithOption<T>(
     CoroutineFunctionWithOptions<T> coroutine, {
     required T option,
@@ -377,15 +467,19 @@ abstract class Component with ComponentFuture {
   }
 
   /// Stops a specific running coroutine.
+  /// 
+  /// Terminates the execution of the provided [coroutine] handle.
   ///
-  /// * [coroutine] The [Future] returned by [startCoroutine].
+  /// * [coroutine]: The [Future] returned by [startCoroutine].
   void stopCoroutine(Future<void> coroutine) {
     gameObject.stopCoroutine(coroutine);
   }
 
   /// Stops all coroutines or those of a specific type.
+  /// 
+  /// Cleans up active coroutine handles from the parent [GameObject].
   ///
-  /// * [coroutine] Optional function to filter which coroutines to stop.
+  /// * [coroutine]: Optional function to filter which coroutines to stop.
   void stopAllCoroutines([Function? coroutine]) {
     gameObject.stopAllCoroutines(coroutine);
   }

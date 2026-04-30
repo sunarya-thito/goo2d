@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "dotguides": {
+      "command": "dotguides",
+      "args": [
+        "mcp"
+      ],
+      "type": "stdio"
+    }
+  }
+}
