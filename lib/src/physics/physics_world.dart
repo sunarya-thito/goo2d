@@ -1,68 +1,196 @@
 import 'dart:math' as math;
 import 'package:flutter/painting.dart';
 
+/// Represents a physical object in the [PhysicsWorld].
+/// 
+/// A [PhysicsBody] holds physical properties like mass, velocity, and 
+/// forces, and contains one or more [PhysicsShape]s that define its volume. 
+/// It is the primary unit of simulation in the engine's internal physics.
+/// 
+/// ```dart
+/// final body = PhysicsBody(id: 1, type: 0);
+/// body.position = Offset(100, 100);
+/// ```
 class PhysicsBody {
+  /// Unique identifier for this body.
+  /// 
+  /// Used by the [PhysicsSystem] to track bodies across frames and 
+  /// synchronize their state with the worker.
   final int id;
+  /// The type of body (0: dynamic, 1: kinematic, 2: static).
+  /// 
+  /// 0: Dynamic bodies respond to forces and gravity.
+  /// 1: Kinematic bodies move only via velocity.
+  /// 2: Static bodies are immovable.
+  /// 
+  /// The type determines which integration path the [PhysicsWorld] 
+  /// uses for the body.
   int type; // 0: dynamic, 1: kinematic, 2: static
 
+  /// World-space position.
+  /// 
+  /// Represents the center of mass of the body. Updated by the 
+  /// integrator every step based on velocity and forces.
   Offset position = Offset.zero;
+  /// Rotation in radians.
+  /// 
+  /// The orientation of the body in world space. Affects the 
+  /// orientation of all attached [PhysicsShape]s.
   double rotation = 0.0;
+  /// Linear velocity in pixels per second.
+  /// 
+  /// The current speed and direction of the body. Subject to 
+  /// [drag] and external impulses.
   Offset velocity = Offset.zero;
+  /// Angular velocity in radians per second.
+  /// 
+  /// The current rotational speed. Subject to [angularDrag] and 
+  /// torque-induced acceleration.
   double angularVelocity = 0.0;
 
+  /// The mass of the body.
+  /// 
+  /// Determines resistance to linear acceleration. Must be positive 
+  /// for dynamic bodies to avoid infinite acceleration.
   double mass = 1.0;
+  /// The inverse mass (1/mass). Used to optimize integration.
+  /// 
+  /// Cached to avoid division in the hot path of the simulation loop.
   double invMass = 1.0;
+  /// The moment of inertia.
+  /// 
+  /// Determines resistance to rotational acceleration based on mass 
+  /// distribution relative to the center.
   double inertia = 1.0;
+  /// The inverse moment of inertia (1/inertia).
+  /// 
+  /// Used for rotational integration. Setting this to 0.0 effectively 
+  /// freezes rotation.
   double invInertia = 1.0;
 
+  /// Multiplier for the global gravity vector.
+  /// 
+  /// Allows individual bodies to fall faster or slower than the 
+  /// world's base gravity setting.
   double gravityScale = 1.0;
+  /// Linear damping coefficient.
+  /// 
+  /// Simulates air resistance or friction. Gradually reduces linear 
+  /// velocity over time.
   double drag = 0.0;
+  /// Angular damping coefficient.
+  /// 
+  /// Simulates rotational resistance. Gradually reduces angular 
+  /// velocity over time.
   double angularDrag = 0.05;
 
   bool _freezeRotation = false;
+  /// Whether the body's rotation is locked.
+  /// 
+  /// When true, the body will not rotate regardless of forces or impulses applied.
   bool get freezeRotation => _freezeRotation;
+
+  /// Sets whether the body's rotation is frozen.
+  /// 
+  /// Updates the internal inertia state to reflect the new rotation constraint.
+  /// 
+  /// * [value]: True to lock rotation, false to allow it.
   set freezeRotation(bool value) {
     _freezeRotation = value;
     setInertia(inertia);
   }
 
+  /// Accumulated linear force for the current step.
+  /// 
+  /// Forces are reset at the end of each [integrate] call.
   Offset force = Offset.zero;
+  /// Accumulated torque for the current step.
+  /// 
+  /// Torques affect angular acceleration and are reset every step.
   double torque = 0.0;
 
+  /// The list of geometric shapes attached to this body.
+  /// 
+  /// Each shape defines a portion of the body's physical volume and 
+  /// material properties like friction and bounciness.
   final List<PhysicsShape> shapes = [];
 
+  /// Creates a [PhysicsBody] with a unique [id].
+  /// 
+  /// * [id]: The unique identifier for this body.
+  /// * [type]: The body type (dynamic, kinematic, or static).
   PhysicsBody({required this.id, this.type = 0});
 
+  /// Adds a [force] to be applied during the next integration step.
+  /// 
+  /// Only dynamic bodies respond to force accumulation.
+  /// 
+  /// * [f]: The force vector to apply.
   void applyForce(Offset f) {
     if (type != 0) return;
     force += f;
   }
 
+  /// Applies an instantaneous change in linear velocity.
+  /// 
+  /// Impulses are applied directly to the velocity based on the inverse mass.
+  /// 
+  /// * [j]: The impulse vector to apply.
   void applyImpulse(Offset j) {
     if (type != 0) return;
     velocity += j * invMass;
   }
 
+  /// Adds [torque] to be applied during the next integration step.
+  /// 
+  /// Only dynamic bodies respond to torque accumulation.
+  /// 
+  /// * [t]: The torque value to apply.
   void applyTorque(double t) {
     if (type != 0) return;
     torque += t;
   }
 
+  /// Applies an instantaneous change in angular velocity.
+  /// 
+  /// The rotational velocity is modified based on the impulse and 
+  /// the current [invInertia].
+  /// 
+  /// * [j]: The angular impulse to apply.
   void applyAngularImpulse(double j) {
     if (type != 0) return;
     angularVelocity += j * invInertia;
   }
 
+  /// Sets the [mass] and updates the [invMass].
+  /// 
+  /// Providing a mass of 0.0 effectively makes the body's mass infinite, 
+  /// preventing linear acceleration.
+  /// 
+  /// * [m]: The new mass value.
   void setMass(double m) {
     mass = m;
     invMass = m > 0 ? 1.0 / m : 0.0;
   }
 
+  /// Sets the rotational [inertia] and updates the [invInertia].
+  /// 
+  /// If [freezeRotation] is active, the [invInertia] will be set to 0.0 
+  /// regardless of the input value.
+  /// 
+  /// * [i]: The new moment of inertia.
   void setInertia(double i) {
     inertia = i;
     invInertia = i > 0 && !freezeRotation ? 1.0 / i : 0.0;
   }
 
+  /// Advances the body's state by a single time step [dt].
+  /// 
+  /// This method applies forces, gravity, and drag to update velocities, 
+  /// which are then used to increment [position] and [rotation].
+  /// 
+  /// * [dt]: The duration of the simulation step.
+  /// * [gravity]: The global gravity vector to apply.
   void integrate(double dt, Offset gravity) {
     if (type != 0) return; // Only dynamic bodies integrate
 
@@ -84,17 +212,64 @@ class PhysicsBody {
   }
 }
 
+/// Base class for all geometric shapes used in collision detection.
+/// 
+/// [PhysicsShape] defines the volume of a [PhysicsBody] and provides 
+/// the mathematical basis for intersection and contact resolution.
+/// 
+/// ```dart
+/// final circle = PhysicsCircle(id: 1, radius: 10.0);
+/// body.addShape(circle);
+/// ```
 abstract class PhysicsShape {
+  /// Unique identifier for this shape.
+  /// 
+  /// Used to map collision events back to specific engine colliders.
   int id = 0;
+  /// The ID of the parent body.
+  /// 
+  /// Allows the collision resolver to fetch the associated [PhysicsBody] 
+  /// for mass and velocity data.
   int bodyId = 0;
+  /// The position of the shape relative to the body's center.
+  /// 
+  /// Used for compound bodies where multiple shapes are offset from 
+  /// the main transform.
   Offset localOffset = Offset.zero;
+  /// The rotation of the shape relative to the body's orientation.
+  /// 
+  /// Allows for shapes to be tilted within a larger physical object.
   double localRotation = 0.0;
+  /// Whether the shape is a trigger.
+  /// 
+  /// Triggers detect overlaps but do not generate physical resolution 
+  /// forces (they are "ghost" objects).
   bool isTrigger = false;
+  /// The restitution coefficient (bounce).
+  /// 
+  /// Determines how much energy is retained during a collision.
   double bounciness = 0.0;
+  /// The friction coefficient.
+  /// 
+  /// Determines the resistance to sliding against other surfaces.
   double friction = 0.4;
 
+  /// The [PhysicsBody] this shape is currently attached to.
+  /// 
+  /// Providing a body link allows the shape to participate in the 
+  /// physical simulation and receive transforms.
   PhysicsBody? _body;
+  
+  /// Access the attached body.
+  /// 
+  /// Returns null if the shape is not currently part of a body.
   PhysicsBody? get body => _body;
+  
+  /// Sets the parent body.
+  /// 
+  /// Handles registration and unregistration from the body's shape list.
+  /// 
+  /// * [value]: The new parent body or null to detach.
   set body(PhysicsBody? value) {
     if (_body == value) return;
     _body?.shapes.remove(this);
@@ -105,38 +280,146 @@ abstract class PhysicsShape {
     }
   }
 
+  /// Creates a new [PhysicsShape] instance.
+  /// 
+  /// Initializes the base physical properties with default values.
   PhysicsShape();
 }
 
+/// A specialized rectangular polygon shape.
+/// 
+/// [PhysicsBox] is a convenience for defining rectangular collision 
+/// boundaries. It is often used for floors, walls, or boxy characters.
+/// 
+/// ```dart
+/// final box = PhysicsBox(100, 50);
+/// ```
 class PhysicsBox extends PhysicsShape {
+  /// The width and height dimensions of the box.
+  /// 
+  /// Used to calculate intersection bounds during the collision step.
   final Size size;
+
+  /// Creates a [PhysicsBox] with specific [w]idth and [h]eight.
+  /// 
+  /// * [w]: The width in pixels.
+  /// * [h]: The height in pixels.
   PhysicsBox(double w, double h) : size = Size(w, h);
 }
 
+/// A circular geometric shape for collision detection.
+/// 
+/// Circles are the fastest shapes to resolve as they only require 
+/// a radius comparison. Related to [PhysicsWorld].
+/// 
+/// ```dart
+/// final circle = PhysicsCircle(10.0);
+/// ```
 class PhysicsCircle extends PhysicsShape {
+  /// The radius of the circle shape.
+  /// 
+  /// Defines the distance from the center to the collision boundary.
   final double radius;
+
+  /// Creates a [PhysicsCircle] with a specific [radius].
+  /// 
+  /// * [radius]: The radius in pixels.
   PhysicsCircle(this.radius);
 }
 
+/// A capsule shape consisting of a cylinder with two hemispherical ends.
+/// 
+/// Capsules are excellent for humanoids as they prevent "snagging" 
+/// on corner edges. Related to [PhysicsWorld].
+/// 
+/// ```dart
+/// final capsule = PhysicsCapsule(10.0, 40.0, true);
+/// ```
 class PhysicsCapsule extends PhysicsShape {
+  /// The radius of the capsule ends.
+  /// 
+  /// Determines the thickness of the capsule body.
   final double radius;
+
+  /// The total height of the capsule.
+  /// 
+  /// Includes the space occupied by the hemispherical caps.
   final double height;
+
+  /// Whether the capsule is oriented vertically.
+  /// 
+  /// Determines the axis along which the cylinder is stretched.
   final bool isVertical;
+
+  /// Creates a [PhysicsCapsule] with given dimensions and orientation.
+  /// 
+  /// * [radius]: The thickness radius.
+  /// * [height]: The total length.
+  /// * [isVertical]: Orientation flag.
   PhysicsCapsule(this.radius, this.height, this.isVertical);
 }
 
+/// A convex polygonal shape defined by a set of vertices.
+/// 
+/// Polygons provide the most flexibility for custom shapes. Related to [PhysicsWorld].
+/// 
+/// ```dart
+/// final poly = PhysicsPolygon([Offset(0,0), Offset(10,0), Offset(5,10)]);
+/// ```
 class PhysicsPolygon extends PhysicsShape {
+  /// The local vertices of the polygon.
+  /// 
+  /// These points are relative to the shape's [localOffset].
   final List<Offset> vertices;
+
+  /// Creates a [PhysicsPolygon] from a list of [vertices].
+  /// 
+  /// * [vertices]: The points defining the convex shape.
   PhysicsPolygon(this.vertices);
 }
 
+/// Data returned from a physics raycast operation.
+/// 
+/// Contains information about where and how a ray intersected 
+/// with a [PhysicsShape] in the world. Related to [PhysicsWorld.raycast].
+/// 
+/// ```dart
+/// final hit = world.raycast(origin, dir, 100);
+/// if (hit != null) print(hit.point);
+/// ```
 class PhysicsRaycastHit {
+  /// The ID of the shape that was hit.
+  /// 
+  /// Allows identification of the specific object the ray intersected.
   final int shapeId;
+
+  /// The world-space point of intersection.
+  /// 
+  /// Useful for positioning impact effects or particles.
   final Offset point;
+
+  /// The surface normal at the point of intersection.
+  /// 
+  /// Used for calculating reflection vectors or aligning decals.
   final Offset normal;
+
+  /// The distance from the ray origin to the intersection point.
+  /// 
+  /// Helpful for sorting hits by proximity.
   final double distance;
+
+  /// The distance expressed as a fraction of the ray's maximum length.
+  /// 
+  /// Range is [0.0, 1.0].
   final double fraction;
 
+  /// Creates a [PhysicsRaycastHit] with intersection details.
+  /// 
+  /// * [shapeId]: ID of the intersected shape.
+  /// * [point]: World-space hit position.
+  /// * [normal]: Surface normal at hit.
+  /// * [distance]: Distance from origin.
+  /// * [fraction]: Percentage of ray length.
   PhysicsRaycastHit({
     required this.shapeId,
     required this.point,
@@ -146,16 +429,48 @@ class PhysicsRaycastHit {
   });
 }
 
+/// The central engine for physical simulation and collision resolution.
+/// 
+/// [PhysicsWorld] manages a collection of [PhysicsBody]s and performs 
+/// iterative integration to simulate physical movement. It is the core 
+/// component used by the physics worker Isolate.
+/// 
+/// ```dart
+/// final world = PhysicsWorld();
+/// world.step(1 / 60);
+/// ```
 class PhysicsWorld {
+  /// The registry of all physical bodies in the world.
+  /// 
+  /// Bodies are indexed by their unique integer ID for fast lookup 
+  /// during synchronization and simulation steps.
   final Map<int, PhysicsBody> bodies = {};
 
-  // Helper to get all shapes across all bodies
+  /// Helper to get all shapes across all bodies.
+  /// 
+  /// Flattens the shape lists of all registered bodies into a single iterable.
   Iterable<PhysicsShape> get allShapes => bodies.values.expand((b) => b.shapes);
+  /// The global acceleration vector applied to all dynamic bodies.
+  /// 
+  /// Represents world forces like gravity. Defaults to 980 pixels/s^2 
+  /// downwards (standard Earth gravity scaled for pixels).
   Offset gravity = const Offset(0, 980); // Default gravity (pixels/s^2)
 
   /// Contacts detected in the current step.
+  /// Contacts detected and resolved in the current simulation step.
+  /// 
+  /// This list is cleared at the start of every [step] and populated during 
+  /// the collision detection phase.
   final List<PhysicsContact> activeContacts = [];
 
+  /// Performs a linear spatial query to find the first shape hit by a ray.
+  /// 
+  /// Iterates through all shapes in the world and calculates intersections. 
+  /// Returns the closest hit or null if nothing was intersected.
+  /// 
+  /// * [origin]: The starting point of the ray in world space.
+  /// * [direction]: The normalized direction vector of the ray.
+  /// * [maxDistance]: The maximum length of the ray to check.
   PhysicsRaycastHit? raycast(
     Offset origin,
     Offset direction,
@@ -277,6 +592,12 @@ class PhysicsWorld {
     );
   }
 
+  /// Performs a single simulation step.
+  /// 
+  /// This updates the positions and velocities of all bodies based on 
+  /// forces, gravity, and collisions. Returns a [StepResult].
+  /// 
+  /// * [dt]: The fixed time step in seconds.
   StepResult step(double dt) {
     activeContacts.clear();
 
@@ -827,10 +1148,36 @@ class PhysicsWorld {
   }
 }
 
+/// Geometric details of a collision intersection.
+/// 
+/// [ContactManifold] stores the normal, penetration depth, and exact 
+/// point of contact between two [PhysicsShape]s.
+/// 
+/// ```dart
+/// final manifold = ContactManifold(normal: Offset(0,1), depth: 0.5, contactPoint: Offset(10,10));
+/// ```
 class ContactManifold {
+  /// The unit vector pointing from shape A to shape B.
+  /// 
+  /// Defines the direction of the separation force required to resolve 
+  /// the collision.
   final Offset normal;
+
+  /// The amount of overlap between the two shapes.
+  /// 
+  /// Used for positional correction to push the shapes apart.
   final double depth;
+
+  /// The world-space position where the collision occurred.
+  /// 
+  /// Useful for positioning impact particles or sound sources.
   final Offset contactPoint;
+
+  /// Creates a [ContactManifold] with specific intersection data.
+  /// 
+  /// * [normal]: The collision normal vector.
+  /// * [depth]: The penetration distance.
+  /// * [contactPoint]: The world-space hit point.
   ContactManifold({
     required this.normal,
     required this.depth,
@@ -838,12 +1185,41 @@ class ContactManifold {
   });
 }
 
+/// Represents a persistent interaction between two colliding shapes.
+/// 
+/// [PhysicsContact] tracks the [ContactManifold] and the accumulated 
+/// impulse applied during the last resolution step. Used by [PhysicsWorld].
+/// 
+/// ```dart
+/// final contact = PhysicsContact(shapeAId: 1, shapeBId: 2, manifold: manifold);
+/// ```
 class PhysicsContact {
+  /// The ID of the first shape in the contact pair.
+  /// 
+  /// Always corresponds to the body that the [manifold] normal points away from.
   final int shapeAId;
+
+  /// The ID of the second shape in the contact pair.
+  /// 
+  /// Corresponds to the body being pushed along the [manifold] normal.
   final int shapeBId;
+
+  /// The detailed geometry of the intersection.
+  /// 
+  /// Used by the solver to calculate resolution impulses.
   final ContactManifold manifold;
+
+  /// The total impulse applied during the last resolution.
+  /// 
+  /// Can be used to determine the intensity of the collision for gameplay logic.
   final double impulse;
 
+  /// Creates a [PhysicsContact] between two shapes.
+  /// 
+  /// * [shapeAId]: ID of the first shape.
+  /// * [shapeBId]: ID of the second shape.
+  /// * [manifold]: Geometric collision details.
+  /// * [impulse]: Initial or accumulated impulse.
   PhysicsContact({
     required this.shapeAId,
     required this.shapeBId,
@@ -852,7 +1228,23 @@ class PhysicsContact {
   });
 }
 
+/// The result of a single simulation step in the [PhysicsWorld].
+/// 
+/// [StepResult] contains the list of all [PhysicsContact]s that were 
+/// processed during the integration. Returned by [PhysicsWorld.step].
+/// 
+/// ```dart
+/// final result = world.step(1/60);
+/// print(result.contacts.length);
+/// ```
 class StepResult {
+  /// The list of active contacts resolved in this step.
+  /// 
+  /// Provides insight into which objects are currently touching.
   final List<PhysicsContact> contacts;
+
+  /// Creates a [StepResult] with the provided [contacts].
+  /// 
+  /// * [contacts]: The list of collisions processed.
   StepResult({required this.contacts});
 }

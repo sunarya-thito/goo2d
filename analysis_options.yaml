@@ -1,6 +1,16 @@
 include: package:flutter_lints/flutter.yaml
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+analyzer:
+  plugins:
+    - custom_lint
+  exclude:
+    - "bin/**"
+    - "goo2d_lints/**"
+
+linter:
+  rules:
+    - public_member_api_docs
+    - slash_for_doc_comments
+
 formatter: 
   trailing_commas: preserve

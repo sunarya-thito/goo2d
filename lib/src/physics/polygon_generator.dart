@@ -2,8 +2,33 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
 
+/// Utility for generating collision polygons from sprite image data.
+/// 
+/// [SpritePolygonGenerator] analyzes the alpha channel of a pixel buffer 
+/// to construct a convex or simplified concave hull. This is essential 
+/// for creating high-fidelity colliders that match visual assets.
+/// 
+/// ```dart
+/// final vertices = SpritePolygonGenerator.generate(
+///   pixels: myPixels,
+///   width: 64,
+///   height: 64,
+/// );
+/// ```
 class SpritePolygonGenerator {
   /// Generates a list of vertices that approximate the outline of the sprite's alpha channel.
+  /// 
+  /// The generator uses Moore-Neighbor Tracing to find the contour of the 
+  /// non-transparent pixels and then simplifies the resulting path using the 
+  /// Ramer-Douglas-Peucker algorithm. This approach balances detail with 
+  /// simulation performance by reducing the number of vertices.
+  /// 
+  /// * [pixels]: The raw 32-bit pixel data (RGBA).
+  /// * [width]: The width of the pixel buffer.
+  /// * [height]: The height of the pixel buffer.
+  /// * [sourceRect]: Optional sub-region of the image to process.
+  /// * [alphaThreshold]: The alpha value (0.0 to 1.0) above which a pixel is considered solid.
+  /// * [tolerance]: Simplification tolerance; higher values result in fewer vertices.
   static List<Offset> generate({
     required Uint32List pixels,
     required int width,

@@ -49,7 +49,10 @@ void main() {
         writer: (_) {},
       );
 
-      final future = registry[testFunc]([], timeout: const Duration(milliseconds: 10));
+      final future = registry[testFunc](
+        [],
+        timeout: const Duration(milliseconds: 10),
+      );
       expect(() => future, throwsA(isA<Exception>()));
     });
   });
@@ -88,7 +91,7 @@ void main() {
       manager.functions = [testFunction.describe([])];
 
       // Initiate a call
-      manager.call(testFunction, []);
+      manager.callRemoteFunction(testFunction, []);
 
       // Verify that data was sent through the interface
       expect(mockInterface.outgoing, isNotEmpty);

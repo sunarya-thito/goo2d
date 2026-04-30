@@ -4,12 +4,38 @@ import 'package:flutter/painting.dart';
 import 'physics_world.dart';
 import 'physics_protocol.dart';
 
+/// Manages multiple physics worlds within a background Isolate.
+/// 
+/// [PhysicsWorkerManager] processes binary messages from the main thread, 
+/// routes them to the correct [PhysicsWorld] instance, and sends back 
+/// simulation results. It acts as the orchestration layer for all background 
+/// physical simulations.
+/// 
+/// ```dart
+/// final worker = PhysicsWorkerManager(onResponse: (data) => print('Sent!'));
+/// ```
 class PhysicsWorkerManager {
+  /// Map of world IDs to their respective physics simulations.
+  /// 
+  /// Each ID corresponds to a [PhysicsWorld] instance managed by this worker.
   final Map<int, PhysicsWorld> worlds = {};
+  
+  /// Callback used to send serialized responses back to the main thread.
+  /// 
+  /// This typically wraps a [SendPort] to communicate across Isolate boundaries.
   final void Function(ByteData) onResponse;
 
+  /// Creates a [PhysicsWorkerManager].
+  /// 
+  /// * [onResponse]: The handler for sending binary packets back to the main thread.
   PhysicsWorkerManager({required this.onResponse});
 
+  /// Decodes and executes a binary [message].
+  /// 
+  /// This is the main entry point for commands sent from the [WorkerPhysicsBridge]. 
+  /// It uses a [PhysicsBuffer] to parse the opcode and data payload.
+  /// 
+  /// * [message]: The raw binary data received from the main thread.
   void handleMessage(ByteData message) {
     final buffer = PhysicsBuffer(message);
     final packetId = buffer.readUint8();
@@ -225,6 +251,12 @@ class PhysicsWorkerManager {
   }
 }
 
+/// The entry point for the physics Isolate.
+/// 
+/// This function is called by [Isolate.spawn] and establishes the 
+/// communication channel with the main thread.
+/// 
+/// * [mainSendPort]: The port used to communicate back to the main isolate.
 void physicsWorkerEntry(SendPort mainSendPort) {
   final workerReceivePort = ReceivePort();
   mainSendPort.send(workerReceivePort.sendPort);
