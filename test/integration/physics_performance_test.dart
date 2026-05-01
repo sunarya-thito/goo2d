@@ -11,13 +11,17 @@ void main() {
 
   group('Goo2D Physics Scaling Benchmarks (Extreme)', () {
     final vertexCounts = [4, 16, 64, 256, 512, 1024];
-    
+
     for (final v in vertexCounts) {
       testWidgets('Physics.worldBounds (Vertices $v)', (tester) async {
         final polyTag = GameTag('poly_$v');
-        await tester.pumpWidget(MaterialApp(
-          home: Game(child: PhysicsStressScene(vertexCount: v, polyTag: polyTag)),
-        ));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Game(
+              child: PhysicsStressScene(vertexCount: v, polyTag: polyTag),
+            ),
+          ),
+        );
         await tester.pump();
 
         final polyObject = polyTag.gameObject!;
@@ -30,9 +34,13 @@ void main() {
 
       testWidgets('Physics.containsPoint (Vertices $v)', (tester) async {
         final polyTag = GameTag('poly_$v');
-        await tester.pumpWidget(MaterialApp(
-          home: Game(child: PhysicsStressScene(vertexCount: v, polyTag: polyTag)),
-        ));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Game(
+              child: PhysicsStressScene(vertexCount: v, polyTag: polyTag),
+            ),
+          ),
+        );
         await tester.pump();
 
         final polyObject = polyTag.gameObject!;
@@ -50,7 +58,11 @@ void main() {
 class PhysicsStressScene extends StatelessWidget {
   final int vertexCount;
   final GameTag polyTag;
-  const PhysicsStressScene({super.key, required this.vertexCount, required this.polyTag});
+  const PhysicsStressScene({
+    super.key,
+    required this.vertexCount,
+    required this.polyTag,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -59,12 +71,15 @@ class PhysicsStressScene extends StatelessWidget {
       return Offset(r * (i.isEven ? 1 : -1), r * (i.isOdd ? 1 : -1));
     });
 
-    return GameWidget(
+    return GameObjectWidget(
       key: polyTag,
       name: 'poly',
-      components: [
-        ObjectTransform.new,
-        PolygonCollider.new.withParams((c) => c.vertices = vertices),
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          PolygonCollider.new,
+          update: (c) => c.vertices = vertices,
+        ),
       ],
     );
   }

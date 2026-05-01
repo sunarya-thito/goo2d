@@ -8,9 +8,10 @@ void main() {
 
   group('Keyboard', () {
     testWidgets('should detect key presses', (tester) async {
-      await tester.pumpWidget(Game(child: const GameWidget()));
+      await tester.pumpWidget(Game(child: const GameObjectWidget()));
       await tester.pump();
-      final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
 
       await simulateKeyDownEvent(LogicalKeyboardKey.space);
       game.input.update();
@@ -24,9 +25,10 @@ void main() {
     });
 
     testWidgets('should track frame-relative state', (tester) async {
-      await tester.pumpWidget(Game(child: const GameWidget()));
+      await tester.pumpWidget(Game(child: const GameObjectWidget()));
       await tester.pump();
-      final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
 
       // Frame 1: Press
       game.ticker.update(0.016);
@@ -63,8 +65,16 @@ void main() {
           textDirection: TextDirection.ltr,
           child: Column(
             children: [
-              SizedBox(width: 100, height: 100, child: Game(game: game1, child: const GameWidget())),
-              SizedBox(width: 100, height: 100, child: Game(game: game2, child: const GameWidget())),
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: Game(game: game1, child: const GameObjectWidget()),
+              ),
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: Game(game: game2, child: const GameObjectWidget()),
+              ),
             ],
           ),
         ),
@@ -93,9 +103,10 @@ void main() {
 
     group('InputControl', () {
       testWidgets('should report correctly', (tester) async {
-        await tester.pumpWidget(Game(child: const GameWidget()));
+        await tester.pumpWidget(Game(child: const GameObjectWidget()));
         await tester.pump();
-        final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
+        final game =
+            (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
 
         final btn = ButtonControl(game);
         expect(btn.isPressed, isFalse);

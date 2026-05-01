@@ -23,11 +23,14 @@ void main() {
         await tester.pumpWidget(
           Game(
             game: game, // Corrected from engine
-            child: GameWidget(
+            child: GameObjectWidget(
               key: const GameTag('MainCamera'),
-              components: [
-                Camera.new,
-                ObjectTransform.new.withParams((c) => c.position = const Offset(100, 200)),
+              children: [
+                ComponentWidget(Camera.new),
+                ComponentWidget(
+                  ObjectTransform.new,
+                  update: (c) => c.position = const Offset(100, 200),
+                ),
               ],
             ),
           ),
@@ -64,13 +67,22 @@ void main() {
         bool hit = false;
         await tester.pumpWidget(
           Game(
-            child: GameWidget(
+            child: GameObjectWidget(
               key: const GameTag('MainCamera'),
-              components: [
-                Camera.new.withParams((c) => c.orthographicSize = 5.0),
-                ObjectTransform.new.withParams((c) => c.position = Offset.zero),
-                () => _MockPointerReceiver(() => hit = true),
-                BoxCollider.new.withParams((c) => c.size = const Size(100, 100)),
+              children: [
+                ComponentWidget(
+                  Camera.new,
+                  update: (c) => c.orthographicSize = 5.0,
+                ),
+                ComponentWidget(
+                  ObjectTransform.new,
+                  update: (c) => c.position = Offset.zero,
+                ),
+                ComponentWidget(() => _MockPointerReceiver(() => hit = true)),
+                ComponentWidget(
+                  BoxCollider.new,
+                  update: (c) => c.size = const Size(100, 100),
+                ),
               ],
             ),
           ),

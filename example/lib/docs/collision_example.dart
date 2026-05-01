@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:goo2d/goo2d.dart';
-// ignore: implementation_imports
-import 'package:goo2d/src/component.dart';
 import 'dart:math' as math;
 
 enum CollisionExampleTexture with AssetEnum, TextureAssetEnum {
@@ -76,11 +74,13 @@ class _CollisionExampleWorldState extends GameState<CollisionExampleWorld> {
       }
     }
 
-    yield GameWidget(
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams(
-          (c) => c
+    yield GameObjectWidget(
+      key: const GameTag('MainCamera'),
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new,
+          update: (c) => c
             ..orthographicSize = 5.0
             ..depth = 1.0,
         ),
@@ -107,11 +107,9 @@ class _MovingBoxState extends GameState<MovingBox> {
   @override
   void initState() {
     super.initState();
-    addComponent(
-      ObjectTransform.new.withParams((c) => c.position = const Offset(-2, 0)),
-      BoxCollider.new.withParams((c) => c.size = const Size(0.5, 0.5)),
-      BouncingBehavior.new,
-    );
+    addComponent(ObjectTransform()..position = const Offset(-2, 0));
+    addComponent(BoxCollider()..size = const Size(0.5, 0.5));
+    addComponent(BouncingBehavior());
   }
 }
 
@@ -122,17 +120,11 @@ class BouncingBehavior extends Behavior
 
   @override
   void onMounted() {
-    _renderer =
-        internalCreateComponent(
-              SpriteRenderer.new.withParams(
-                (c) => c
-                  ..sprite = GameSprite(
-                    texture: CollisionExampleTexture.enemy,
-                    pixelsPerUnit: 32.0,
-                  ),
-              ),
-            )
-            as SpriteRenderer;
+    _renderer = SpriteRenderer()
+      ..sprite = GameSprite(
+        texture: CollisionExampleTexture.enemy,
+        pixelsPerUnit: 32.0,
+      );
     addComponent(_renderer);
   }
 
@@ -269,17 +261,15 @@ class _StationaryTargetState extends GameState<StationaryTarget> {
   @override
   void initState() {
     super.initState();
+    addComponent(ObjectTransform()..position = widget.position);
+    addComponent(BoxCollider()..size = const Size(0.5, 0.5));
     addComponent(
-      ObjectTransform.new.withParams((c) => c.position = widget.position),
-      BoxCollider.new.withParams((c) => c.size = const Size(0.5, 0.5)),
-      SpriteRenderer.new.withParams(
-        (c) => c
-          ..sprite = GameSprite(
-            texture: CollisionExampleTexture.ship,
-            pixelsPerUnit: 32.0,
-          )
-          ..color = Colors.blue.withValues(alpha: 0.5),
-      ),
+      SpriteRenderer()
+        ..sprite = GameSprite(
+          texture: CollisionExampleTexture.ship,
+          pixelsPerUnit: 32.0,
+        )
+        ..color = Colors.blue.withValues(alpha: 0.5),
     );
   }
 }

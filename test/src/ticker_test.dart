@@ -31,13 +31,16 @@ void main() {
     testWidgets('should increment frameCount and update deltaTime', (
       tester,
     ) async {
-      final tickable = internalCreateComponent(MockTickable.new) as MockTickable;
+      final tickable = MockTickable();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => tickable])),
+        Game(
+          child: GameObjectWidget(children: [ComponentWidget(() => tickable)]),
+        ),
       );
 
-      final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
       final initialFrameCount = game.ticker.frameCount;
 
       // Pump one frame
@@ -52,10 +55,14 @@ void main() {
     testWidgets('should run multiple FixedUpdate ticks when delta is large', (
       tester,
     ) async {
-      final fixedTickable = internalCreateComponent(MockFixedTickable.new) as MockFixedTickable;
+      final fixedTickable = MockFixedTickable();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => fixedTickable])),
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => fixedTickable)],
+          ),
+        ),
       );
       await tester.pump();
 
@@ -67,14 +74,19 @@ void main() {
     });
 
     testWidgets('should respect custom fixedDeltaTime', (tester) async {
-      final fixedTickable = internalCreateComponent(MockFixedTickable.new) as MockFixedTickable;
+      final fixedTickable = MockFixedTickable();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => fixedTickable])),
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => fixedTickable)],
+          ),
+        ),
       );
       await tester.pump();
 
-      final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
       game.ticker.fixedDeltaTime = 0.01; // 10ms
 
       // Pump 25ms, should trigger 2 fixed updates
@@ -88,14 +100,19 @@ void main() {
     });
 
     testWidgets('should maintain accumulator between frames', (tester) async {
-      final fixedTickable = internalCreateComponent(MockFixedTickable.new) as MockFixedTickable;
+      final fixedTickable = MockFixedTickable();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => fixedTickable])),
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => fixedTickable)],
+          ),
+        ),
       );
       await tester.pump();
 
-      final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
       game.ticker.fixedDeltaTime = 0.02; // 20ms
 
       // Frame 1: 15ms. Accumulator: 15ms. FixedUpdate: 0.

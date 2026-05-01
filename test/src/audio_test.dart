@@ -49,7 +49,7 @@ void main() {
       tester,
     ) async {
       final mockAudio = MockGameAudio('test_sound');
-      final audioSource = internalCreateComponent(AudioSource.new.withParams((c) => c.clip = mockAudio)) as AudioSource;
+      final audioSource = AudioSource()..clip = mockAudio;
 
       // We manually call play() here.
       // Note: It will still attempt to call SoLoud.instance.play,
@@ -66,11 +66,16 @@ void main() {
     testWidgets('should clean up handle registration on unmount', (
       tester,
     ) async {
-      final audioSource = internalCreateComponent(AudioSource.new) as AudioSource;
+      final audioSource = AudioSource();
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(components: [() => audioSource, ObjectTransform.new]),
+          child: GameObjectWidget(
+            children: [
+              ComponentWidget(() => audioSource),
+              ComponentWidget(ObjectTransform.new),
+            ],
+          ),
         ),
       );
       await tester.pump();
@@ -86,16 +91,19 @@ void main() {
     testWidgets('should be detected by AudioSource for 3D spatialization', (
       tester,
     ) async {
-      final listener = internalCreateComponent(AudioListener.new) as AudioListener;
-      final audioSource = internalCreateComponent(AudioSource.new) as AudioSource;
+      final listener = AudioListener();
+      final audioSource = AudioSource();
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [
-              () => listener,
-              () => audioSource,
-              ObjectTransform.new.withParams((c) => c.position = const Offset(100, 0)),
+          child: GameObjectWidget(
+            children: [
+              ComponentWidget(() => listener),
+              ComponentWidget(() => audioSource),
+              ComponentWidget(
+                ObjectTransform.new,
+                update: (c) => c.position = const Offset(100, 0),
+              ),
             ],
           ),
         ),

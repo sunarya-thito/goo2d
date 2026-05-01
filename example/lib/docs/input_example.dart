@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
 
 enum InputExampleTexture with AssetEnum, TextureAssetEnum {
-  ship;
+  ship
+  ;
+
   @override
   AssetSource get source => AssetSource.local("assets/sprites/$name.png");
 }
@@ -62,23 +64,37 @@ class _InputExampleWorldState extends GameState<InputExampleWorld> {
   @override
   Iterable<Widget> build(BuildContext context) sync* {
     // Player Ship
-    yield GameWidget(
-      components: [
-        ObjectTransform.new.withParams((c) => c.position = Offset.zero),
-        SpriteRenderer.new.withParams((c) => c
-          ..sprite = GameSprite(
-            texture: InputExampleTexture.ship,
-            pixelsPerUnit: 32.0,
-          )),
-        PlayerInputMovement.new.withParams((c) => c.moveAction = moveAction),
+    yield GameObjectWidget(
+      children: [
+        ComponentWidget(
+          ObjectTransform.new.withInitialValues(
+            (c) => c.position = Offset.zero,
+          ),
+        ),
+        ComponentWidget(
+          SpriteRenderer.new.withInitialValues(
+            (c) => c
+              ..sprite = GameSprite(
+                texture: InputExampleTexture.ship,
+                pixelsPerUnit: 32.0,
+              ),
+          ),
+        ),
+        ComponentWidget(
+          PlayerInputMovement.new.withInitialValues(
+            (c) => c.moveAction = moveAction,
+          ),
+        ),
       ],
     );
 
     // Camera
-    yield GameWidget(
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams((c) => c..orthographicSize = 5.0),
+    yield GameObjectWidget(
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new.withInitialValues((c) => c..orthographicSize = 5.0),
+        ),
       ],
     );
   }
@@ -91,7 +107,7 @@ class PlayerInputMovement extends Behavior with Tickable {
   void onUpdate(double dt) {
     final moveVector = moveAction.readValue<Offset>();
     final transform = getComponent<ObjectTransform>();
-    
+
     // Smooth movement with speed 5.0 units per second
     transform.position += moveVector * 5.0 * dt;
 

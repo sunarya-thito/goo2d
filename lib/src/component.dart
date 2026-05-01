@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:goo2d/src/object.dart';
 import 'package:goo2d/src/event.dart';
 import 'package:goo2d/src/input.dart';
@@ -11,53 +12,23 @@ import 'package:meta/meta.dart';
 
 typedef GameComponent<T extends Component> = FutureOr<ComponentFactory<T>>;
 
-Component internalCreateComponent(GameComponent c) {
-  return switch (c) {
-    Component c => c,
-    ComponentFuture future => future.internalCreate(),
-    Object o => (o as ComponentFactory)(),
-  };
-}
-
-Type internalType(GameComponent c) {
-  return switch (c) {
-    Component c => c.runtimeType,
-    ComponentFuture f => f.internalType,
-    Object o => (o as ComponentFactory)().runtimeType, // had to initialize :(
-  };
-}
-
-/// A handle for a [Component] that will be created or configured in the future.
-///
-/// [ComponentFuture] implements the [Future] interface, allowing it to be used
-/// in asynchronous initialization chains. It is primarily used by the
-/// [ComponentFactory] system to support fluent parameter injection. It allows
-/// for a clean separation between component creation and configuration.
-///
-/// ```dart
-/// final future = myFactory.withParams((c) => c.val = 10);
-/// final factory = await future;
-/// ```
-///
-/// See also:
-/// * [ComponentFactoryExtension.withParams] for creating a future with parameters.
-mixin ComponentFuture<T extends Component>
+class ComponentFactoryWithParams<T extends Component>
     implements Future<ComponentFactory<T>> {
-  /// The specific [Type] of component this future will produce.
-  ///
-  /// Used for runtime type checks during component injection.
-  @internal
-  Type get internalType;
+  // we implement Future so that we can use FutureOr type-union
+  final ComponentFactory<T> factory;
+  final ComponentParameterHandler<T>? params;
 
-  /// Creates the component instance and applies any configured parameters.
-  ///
-  /// Triggers the underlying factory and invokes parameter handlers.
-  @internal
-  T internalCreate();
+  ComponentFactoryWithParams(this.factory, {this.params});
+
+  T create() {
+    final component = factory();
+    params?.call(component);
+    return component;
+  }
 
   @override
   Stream<ComponentFactory<T>> asStream() {
-    return Stream.value(internalCreate);
+    return Stream.value(create);
   }
 
   @override
@@ -73,7 +44,7 @@ mixin ComponentFuture<T extends Component>
     FutureOr<R> Function(ComponentFactory<T> value) onValue, {
     Function? onError,
   }) {
-    return Future.value(onValue(internalCreate));
+    return Future.value(onValue(create));
   }
 
   @override
@@ -88,8 +59,17 @@ mixin ComponentFuture<T extends Component>
   Future<ComponentFactory<T>> whenComplete(
     FutureOr<dynamic> Function() action,
   ) {
-    action.call();
+    action();
     return this;
+  }
+}
+
+extension ComponentFactoryExtension<T extends Component>
+    on ComponentFactory<T> {
+  ComponentFactoryWithParams<T> withInitialValues(
+    ComponentParameterHandler<T> params,
+  ) {
+    return ComponentFactoryWithParams<T>(this, params: params);
   }
 }
 
@@ -104,86 +84,206 @@ typedef ComponentFactory<T extends Component> = T Function();
 typedef ComponentParameterHandler<T extends Component> =
     void Function(T component);
 
-/// Provides fluent utility methods for [ComponentFactory] functions.
-///
-/// Enables the `withParams` syntax for configuring components during addition.
-///
-/// ```dart
-/// gameObject.addComponent(MyComp.new.withParams((c) => c.id = 1));
-/// ```
-extension ComponentFactoryExtension<T extends Component>
-    on ComponentFactory<T> {
-  /// Wraps this factory in a [ComponentFuture] that applies [params] after creation.
-  ///
-  /// Creates a configuration chain that executes when the component is added.
-  ///
-  /// * [params]: The callback used to configure the newly created component.
-  /// * [update]: If true, the component will be updated when the factory is updated.
-  ComponentFuture<T> withParams(
-    ComponentParameterHandler<T> params, [
-    bool update = false,
-  ]) {
-    return ComponentFactoryWithParams<T>(this, params, update);
-  }
-
-  ComponentFuture<T> withUpdateParams(ComponentParameterHandler<T> params) {
-    return ComponentFactoryWithParams<T>(this, params, true);
-  }
-
-  /// Wraps this factory in a [ComponentFuture] with no additional configuration.
-  ///
-  /// Used to standardize component handles for factories with no settings.
-  ComponentFuture<T> get withNoParams =>
-      ComponentFactoryWithParams<T>(this, null, true);
-}
-
 /// Private implementation of [ComponentFuture].
 ///
-/// [ComponentFactoryWithParams] stores the base factory and any configuration
+/// [ComponentWidget] stores the base factory and any configuration
 /// parameters to be applied during the creation process. It is used
 /// by the [ComponentFactoryExtension] to build configuration chains.
 ///
 /// ```dart
 /// final cf = _ComponentFactoryOf(myFactory, myParams);
 /// ```
-class ComponentFactoryWithParams<T extends Component> with ComponentFuture<T> {
+class ComponentWidget<T extends Component> extends Widget {
   /// The function that creates the component instance.
   ///
   /// This factory is invoked by the engine when the component needs to
   /// be instantiated during a [GameObject] addition pass.
-  final ComponentFactory<T> factory;
+  final GameComponent<T> factory;
 
   /// The optional callback for configuring the component.
   ///
   /// If provided, this handler is executed immediately after the
   /// [factory] creates the instance, allowing for parameter injection.
-  final ComponentParameterHandler<T>? params;
+  final ComponentParameterHandler<T>? update;
 
-  final bool update;
+  const ComponentWidget(this.factory, {super.key, this.update});
 
-  /// Creates a new factory wrapper.
-  ///
-  /// * [factory]: The source factory function.
-  /// * [params]: The configuration callback.
-  ComponentFactoryWithParams(
-    this.factory,
-    this.params, [
-    this.update = false,
-  ]);
-
-  @override
-  T internalCreate() {
-    final component = factory();
-    params?.call(component);
+  T apply(T component) {
+    update?.call(component);
     return component;
   }
 
-  void apply(Component component) {
-    params?.call(component as T);
+  @override
+  Element createElement() {
+    return _ComponentElement(this);
+  }
+}
+
+class _ComponentRegistration<T extends Component> {
+  final T component;
+  GameObject? gameObject;
+  _ComponentRegistration({required this.component, required this.gameObject}) {
+    gameObject?.addComponent(component);
+  }
+
+  void reparent(GameObject newGameObject) {
+    if (newGameObject == gameObject) return;
+    gameObject?.removeComponent(component);
+    newGameObject.addComponent(component);
+    gameObject = newGameObject;
+  }
+
+  void remove() {
+    gameObject?.removeComponent(component);
+    gameObject = null;
+  }
+}
+
+class _ComponentElement<T extends Component> extends Element {
+  _ComponentElement(ComponentWidget super.widget);
+
+  @override
+  ComponentWidget<T> get widget => super.widget as ComponentWidget<T>;
+
+  FutureOr<_ComponentRegistration<T>>? _registration;
+
+  GameObject? _findParentGameObject(Element? parent) {
+    if (parent is GameObject) return parent as GameObject;
+    if (parent == null) return null;
+    GameObject? found;
+    parent.visitAncestorElements((element) {
+      if (element is GameObject) {
+        found = element as GameObject;
+        return false;
+      }
+      return true;
+    });
+    return found;
   }
 
   @override
-  Type get internalType => T;
+  void mount(Element? parent, Object? newSlot) {
+    super.mount(parent, newSlot);
+    final gameObject = _findParentGameObject(parent);
+    assert(
+      gameObject != null,
+      'Component $widget must be added to a GameObject.',
+    );
+    switch (widget.factory) {
+      case ComponentFactoryWithParams<T> withParams:
+        _registration = _ComponentRegistration(
+          component: widget.apply(withParams.create()),
+          gameObject: gameObject!,
+        );
+        break;
+      case Future<ComponentFactory<T>> future:
+        _registration = future.then(
+          (factory) => _registration = _ComponentRegistration(
+            component: widget.apply(factory()),
+            gameObject: gameObject!,
+          ),
+        );
+        break;
+      case ComponentFactory<T> factory:
+        _registration = _ComponentRegistration(
+          component: widget.apply(factory()),
+          gameObject: gameObject!,
+        );
+        break;
+    }
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    assert(
+      _registration != null,
+      'Component has not been registered previously',
+    );
+    final gameObject = _findParentGameObject(this);
+    assert(
+      gameObject != null,
+      'Component $widget must be added to a GameObject.',
+    );
+    switch (_registration) {
+      case _ComponentRegistration<T> registration:
+        registration.reparent(gameObject!);
+        break;
+      case Future<_ComponentRegistration<T>> future:
+        _registration = future.then((registration) {
+          _registration = registration;
+          registration.reparent(gameObject!);
+          return registration;
+        });
+        break;
+    }
+  }
+
+  @override
+  void update(covariant ComponentWidget<T> newWidget) {
+    super.update(newWidget);
+    assert(
+      _registration != null,
+      'Component has not been registered previously',
+    );
+    switch (_registration) {
+      case _ComponentRegistration<T> registration:
+        newWidget.apply(registration.component);
+        break;
+      case Future<_ComponentRegistration<T>> future:
+        _registration = future.then((registration) {
+          _registration = registration;
+          newWidget.apply(registration.component);
+          return registration;
+        });
+        break;
+    }
+  }
+
+  @override
+  void deactivate() {
+    assert(
+      _registration != null,
+      'Component has not been registered previously',
+    );
+    switch (_registration) {
+      case _ComponentRegistration<T> registration:
+        registration.remove();
+        break;
+      case Future<_ComponentRegistration<T>> future:
+        _registration = future.then((registration) {
+          _registration = registration;
+          registration.remove();
+          return registration;
+        });
+        break;
+    }
+    super.deactivate();
+  }
+
+  @override
+  void unmount() {
+    assert(
+      _registration != null,
+      'Component has not been registered previously',
+    );
+    switch (_registration) {
+      case _ComponentRegistration<T> registration:
+        registration.remove();
+        break;
+      case Future<_ComponentRegistration<T>> future:
+        _registration = future.then((registration) {
+          _registration = registration;
+          registration.remove();
+          return registration;
+        });
+        break;
+    }
+    super.unmount();
+  }
+
+  @override
+  bool get debugDoingBuild => false;
 }
 
 /// The base class for all functional logic attached to a [GameObject].
@@ -208,29 +308,24 @@ class ComponentFactoryWithParams<T extends Component> with ComponentFuture<T> {
 /// }
 /// ```
 /// A mixin that marks a [Component] as allowing multiple instances on the same [GameObject].
-/// 
-/// By default, [GameObject] prevents adding multiple components of the same 
-/// runtime type to avoid unintended behavior and optimize lookups. 
-/// Components that need to support multiple instances (like colliders) 
+///
+/// By default, [GameObject] prevents adding multiple components of the same
+/// runtime type to avoid unintended behavior and optimize lookups.
+/// Components that need to support multiple instances (like colliders)
 /// should implement this mixin.
 mixin MultiComponent on Component {}
 
-abstract class Component with ComponentFuture {
+abstract class Component {
   GameObject? _gameObject;
-
-  @override
-  Component internalCreate() {
-    return this;
-  }
-
-  @override
-  Type get internalType => runtimeType;
 
   /// The [GameObject] this component is currently attached to.
   GameObject get gameObject {
     assert(_gameObject != null, 'Component is not added to a GameObject');
     return _gameObject!;
   }
+
+  /// Attempts to get the [GameObject] this component is attached to, or null if detached.
+  GameObject? get tryGameObject => _gameObject;
 
   /// Internal method to attach this component to a [GameObject].
   @internal
@@ -324,17 +419,17 @@ abstract class Component with ComponentFuture {
 
   /// Adds one or more components to this object.
   void addComponent(
-    GameComponent component, [
-    GameComponent? a,
-    GameComponent? b,
-    GameComponent? c,
-    GameComponent? d,
-    GameComponent? e,
-    GameComponent? f,
-    GameComponent? g,
-    GameComponent? h,
-    GameComponent? i,
-    GameComponent? j,
+    Component component, [
+    Component? a,
+    Component? b,
+    Component? c,
+    Component? d,
+    Component? e,
+    Component? f,
+    Component? g,
+    Component? h,
+    Component? i,
+    Component? j,
   ]) => gameObject.addComponent(component, a, b, c, d, e, f, g, h, i, j);
 
   /// Removes one or more component instances from this object.
@@ -373,7 +468,7 @@ abstract class Component with ComponentFuture {
       gameObject.removeComponentOfType<T>();
 
   /// Adds multiple components to this object.
-  void addComponents(Iterable<GameComponent> components) =>
+  void addComponents(Iterable<Component> components) =>
       gameObject.addComponents(components);
 
   /// Removes all components of the specified exact runtime types.

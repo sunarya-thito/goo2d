@@ -12,17 +12,17 @@ import 'package:goo2d/src/render.dart';
 
 /// A concrete implementation of [GameObject] that integrates with
 /// the Flutter element tree.
-/// 
-/// [GameObjectElement] acts as the bridge between the declarative Flutter 
-/// UI and the imperative game engine logic. It manages a collection of 
+///
+/// [GameObjectElement] acts as the bridge between the declarative Flutter
+/// UI and the imperative game engine logic. It manages a collection of
 /// [Component]s and handles the lifecycle of the object within the scene graph.
-/// 
-/// Why: Flutter's element tree is the source of truth for widget hierarchy, 
-/// and [GameObjectElement] leverages this to provide automatic parenting 
+///
+/// Why: Flutter's element tree is the source of truth for widget hierarchy,
+/// and [GameObjectElement] leverages this to provide automatic parenting
 /// and resource management for game objects.
-/// 
-/// How: By extending [RenderObjectElement], it participates in the layout 
-/// and paint phases while exposing a high-level API for component management 
+///
+/// How: By extending [RenderObjectElement], it participates in the layout
+/// and paint phases while exposing a high-level API for component management
 /// and coroutine execution.
 ///
 /// ```dart
@@ -31,23 +31,26 @@ import 'package:goo2d/src/render.dart';
 /// ```
 class GameObjectElement extends RenderObjectElement implements GameObject {
   /// Creates a [GameObjectElement] for the given [widget].
-  /// 
-  /// This constructor initializes the element within the Flutter framework 
+  ///
+  /// This constructor initializes the element within the Flutter framework
   /// and prepares it for mounting into the game's scene graph.
-  /// 
-  /// Why: Every game object needs a reference to its configuration widget 
+  ///
+  /// Why: Every game object needs a reference to its configuration widget
   /// to correctly handle updates and lifecycle events.
-  /// 
-  /// How: The widget is passed to the super constructor, and the engine 
+  ///
+  /// How: The widget is passed to the super constructor, and the engine
   /// later populates the game and parent references during the mount phase.
-  /// 
+  ///
   /// * [widget]: The configuration widget for this game object.
-  GameObjectElement(GameObjectWidget super.widget);
+  GameObjectElement(GameWidget super.widget);
 
   final List<Component> _components = [];
   final List<CoroutineFuture> _runningCoroutines = [];
   GameObject? _parentObject;
   GameEngine? _game;
+
+  final List<Component> _deferredLifecycleComponents = [];
+  bool _isMounting = false;
 
   GameState? _state;
   List<Element> _children = const <Element>[];
@@ -96,59 +99,78 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   GameState? get state => _state;
 
   void _addComponentInternal(Component component) {
-    assert(!component.isAttached, 'Component is already attached to ${component.isAttached ? component.gameObject : "another object"}.');
-    assert(component is! GameState || _state == component, 'GameState components are managed by the engine and cannot be added manually.');
+    assert(
+      !component.isAttached,
+      'Component is already attached to ${component.isAttached ? component.gameObject : "another object"}.',
+    );
+    assert(
+      component is! GameState || _state == component,
+      'GameState components are managed by the engine and cannot be added manually.',
+    );
 
-    // Enforce MultiComponent rule
+    // Add component
+    component.internalAttach(this);
+    _components.add(component);
+    if (!_isMounting) {
+      _checkSingleInstanceConflict(component);
+    }
+
+    if (active && component is LifecycleListener) {
+      if (_isMounting) {
+        _deferredLifecycleComponents.add(component);
+      } else {
+        component.onMounted();
+      }
+    }
+  }
+
+  void _checkSingleInstanceConflict(Component component) {
     if (component is! MultiComponent) {
       final type = component.runtimeType;
       for (var c in _components) {
-        if (c.runtimeType == type) {
+        if (c != component && c.runtimeType == type) {
           throw AssertionError(
             'Only one component of type $type is allowed on GameObject "$name". '
-            'To allow multiple instances, the component must implement MultiComponent.'
+            'To allow multiple instances, the component must implement MultiComponent.',
           );
         }
       }
-    }
-
-    component.internalAttach(this);
-    _components.add(component);
-    if (active && component is LifecycleListener) {
-      component.onMounted();
     }
   }
 
   @override
   void addComponent(
-    GameComponent component, [
-    GameComponent? a,
-    GameComponent? b,
-    GameComponent? c,
-    GameComponent? d,
-    GameComponent? e,
-    GameComponent? f,
-    GameComponent? g,
-    GameComponent? h,
-    GameComponent? i,
-    GameComponent? j,
+    Component component, [
+    Component? a,
+    Component? b,
+    Component? c,
+    Component? d,
+    Component? e,
+    Component? f,
+    Component? g,
+    Component? h,
+    Component? i,
+    Component? j,
   ]) {
-    _addComponentInternal(internalCreateComponent(component));
-    if (a != null) _addComponentInternal(internalCreateComponent(a));
-    if (b != null) _addComponentInternal(internalCreateComponent(b));
-    if (c != null) _addComponentInternal(internalCreateComponent(c));
-    if (d != null) _addComponentInternal(internalCreateComponent(d));
-    if (e != null) _addComponentInternal(internalCreateComponent(e));
-    if (f != null) _addComponentInternal(internalCreateComponent(f));
-    if (g != null) _addComponentInternal(internalCreateComponent(g));
-    if (h != null) _addComponentInternal(internalCreateComponent(h));
-    if (i != null) _addComponentInternal(internalCreateComponent(i));
-    if (j != null) _addComponentInternal(internalCreateComponent(j));
+    _addComponentInternal(component);
+    if (a != null) _addComponentInternal(a);
+    if (b != null) _addComponentInternal(b);
+    if (c != null) _addComponentInternal(c);
+    if (d != null) _addComponentInternal(d);
+    if (e != null) _addComponentInternal(e);
+    if (f != null) _addComponentInternal(f);
+    if (g != null) _addComponentInternal(g);
+    if (h != null) _addComponentInternal(h);
+    if (i != null) _addComponentInternal(i);
+    if (j != null) _addComponentInternal(j);
   }
 
   void _removeComponentInternal(Component component) {
-    assert(component is! GameState, 'GameState components are managed by the engine and cannot be removed manually.');
-    assert(component.gameObject == this, 'Cannot remove component that is not attached to this GameObject');
+    assert(
+      component is! GameState,
+      'GameState components are managed by the engine and cannot be removed manually.',
+    );
+    if (component.tryGameObject != this) return;
     if (_components.remove(component)) {
       _onComponentRemoved(component);
     }
@@ -255,9 +277,9 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   }
 
   @override
-  void addComponents(Iterable<GameComponent> components) {
+  void addComponents(Iterable<Component> components) {
     for (var component in components) {
-      _addComponentInternal(internalCreateComponent(component));
+      _addComponentInternal(component);
     }
   }
 
@@ -489,7 +511,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   @override
   String get name {
     final w = widget;
-    if (w is GameObjectWidget) {
+    if (w is GameWidget) {
       return w.name ?? w.runtimeType.toString();
     }
     return w.runtimeType.toString();
@@ -537,12 +559,13 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    _isMounting = true;
     super.mount(parent, newSlot);
     _game = parent?.dependOnInheritedWidgetOfExactType<GameProvider>()?.game;
     _attachToParent();
-    _layer = (widget as GameObjectWidget).layer;
+    _layer = (widget as GameWidget).layer;
 
-    _state = (widget as GameObjectWidget).createState();
+    _state = (widget as GameWidget).createState();
     if (_state != null) {
       _state!._element = this;
       _addComponentInternal(_state!);
@@ -562,11 +585,37 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
       previousChild = newChild;
     }
     _children = children;
+    _finalizeMount();
+  }
+
+  void _finalizeMount() {
+    _isMounting = false;
+
+    // Check for single instance conflicts that might have persisted after the build.
+    final Set<Type> seenTypes = {};
+    for (final component in _components) {
+      if (component is! MultiComponent) {
+        if (seenTypes.contains(component.runtimeType)) {
+          throw AssertionError(
+            'Only one component of type ${component.runtimeType} is allowed on GameObject "$name". '
+            'To allow multiple instances, the component must implement MultiComponent.',
+          );
+        }
+        seenTypes.add(component.runtimeType);
+      }
+    }
+
+    for (final component in _deferredLifecycleComponents) {
+      if (component is LifecycleListener) {
+        component.onMounted();
+      }
+    }
+    _deferredLifecycleComponents.clear();
   }
 
   @override
-  void update(GameObjectWidget newWidget) {
-    final oldWidget = widget as GameObjectWidget;
+  void update(GameWidget newWidget) {
+    final oldWidget = widget as GameWidget;
     super.update(newWidget);
     _layer = newWidget.layer;
     if (_state != null) {
@@ -590,6 +639,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   }
 
   void _rebuild() {
+    _isMounting = true;
     final widgets = _state?.build(this).toList() ?? const <Widget>[];
     _children = updateChildren(
       _children,
@@ -597,6 +647,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
       forgottenChildren: _forgottenChildren,
     );
     _forgottenChildren.clear();
+    _finalizeMount();
   }
 
   void _attachToParent() {
@@ -708,7 +759,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 }
 
 /// The logic and internal state for a [StatefulGameWidget].
-abstract class GameState<T extends GameObjectWidget> extends Component {
+abstract class GameState<T extends GameWidget> extends Component {
   GameObjectElement? _element;
   final List<InputAction> _trackedInputActions = [];
 

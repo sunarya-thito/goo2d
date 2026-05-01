@@ -48,12 +48,16 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(key: GlobalKey(), components: [() => component]),
+          child: GameObjectWidget(
+            key: GlobalKey(),
+            children: [ComponentWidget(() => component)],
+          ),
         ),
       );
       await tester.pump();
 
-      final element = tester.element(find.byType(GameWidget)) as GameElement;
+      final element =
+          tester.element(find.byType(GameObjectWidget)) as GameElement;
       gameObject = element;
 
       expect(gameObject.components, contains(component));
@@ -68,11 +72,16 @@ void main() {
       final eventComponent = EventComponent();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => eventComponent])),
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => eventComponent)],
+          ),
+        ),
       );
       await tester.pump();
 
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
       final event = TestEvent();
 
       gameObject.broadcastEvent(event);
@@ -87,10 +96,12 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => parentEventComponent],
+          child: GameObjectWidget(
             children: [
-              GameWidget(components: [() => childEventComponent]),
+              ComponentWidget(() => parentEventComponent),
+              GameObjectWidget(
+                children: [ComponentWidget(() => childEventComponent)],
+              ),
             ],
           ),
         ),
@@ -99,9 +110,14 @@ void main() {
 
       final parentObject =
           tester.element(
-                find.byWidgetPredicate(
-                  (w) => w is GameWidget && w.children.isNotEmpty,
-                ),
+                find
+                    .byWidgetPredicate(
+                      (w) =>
+                          w is GameObjectWidget &&
+                          w.name ==
+                              null, // Root GameWidget in this test has no name
+                    )
+                    .first,
               )
               as GameObject;
 
@@ -115,11 +131,14 @@ void main() {
       final component = MockComponent();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => component])),
+        Game(
+          child: GameObjectWidget(children: [ComponentWidget(() => component)]),
+        ),
       );
       await tester.pump();
 
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       expect(gameObject.getComponent<MockComponent>(), equals(component));
       expect(gameObject.tryGetComponent<MockComponent>(), equals(component));
@@ -127,10 +146,13 @@ void main() {
     });
 
     testWidgets('should throw error when getComponent fails', (tester) async {
-      await tester.pumpWidget(Game(child: const GameWidget(components: [])));
+      await tester.pumpWidget(
+        Game(child: const GameObjectWidget(children: [])),
+      );
       await tester.pump();
 
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       expect(() => gameObject.getComponent<MockComponent>(), throwsStateError);
     });

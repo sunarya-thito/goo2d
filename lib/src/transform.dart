@@ -381,13 +381,15 @@ class ScreenTransform extends ObjectTransform {
   /// effective dimensions of the component in screen space.
   BoxConstraints? constraints;
 
+  @override
+  bool get isScreenSpace => true;
+
   bool _isNestedScreenTransform = false;
 
   @override
   void onMounted() {
     super.onMounted();
     _isNestedScreenTransform = _parentTransform?.isScreenSpace ?? false;
-    _isScreenSpace = true;
   }
 
   @override

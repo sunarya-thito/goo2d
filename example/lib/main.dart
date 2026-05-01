@@ -125,16 +125,18 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     const playerTag = GameTag('Player');
 
     // Background & Music
-    yield GameWidget(
+    yield GameObjectWidget(
       key: const GameTag('Background'),
-      components: [
-        ObjectTransform.new,
-        TiledBackground.new,
-        AudioSource.new.withParams(
-          (c) => c
-            ..clip = MyGameSound.bgm
-            ..loop = true
-            ..volume = 0.5,
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(TiledBackground.new),
+        ComponentWidget(
+          AudioSource.new.withInitialValues(
+            (c) => c
+              ..clip = MyGameSound.bgm
+              ..loop = true
+              ..volume = 0.5,
+          ),
         ),
       ],
     );
@@ -146,33 +148,41 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     );
 
     // Cameras
-    yield GameWidget(
+    yield GameObjectWidget(
       key: const GameTag('MainCamera'),
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams(
-          (c) => c
-            ..depth = 1.0
-            ..backgroundColor = Colors.black
-            ..orthographicSize = 2.0,
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new.withInitialValues(
+            (c) => c
+              ..depth = 1.0
+              ..backgroundColor = Colors.black
+              ..orthographicSize = 2.0,
+          ),
         ),
-        FollowTarget.new.withParams((c) => c.targetTag = playerTag),
-        CameraShake.new,
+        ComponentWidget(
+          FollowTarget.new.withInitialValues((c) => c.targetTag = playerTag),
+        ),
+        ComponentWidget(CameraShake.new),
       ],
     );
 
-    yield GameWidget(
+    yield GameObjectWidget(
       key: const GameTag('MinimapCamera'),
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams(
-          (c) => c
-            ..depth = 0.0
-            ..orthographicSize = 3.0
-            ..backgroundColor = Colors.black87
-            ..cullingMask = RenderLayer.world,
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new.withInitialValues(
+            (c) => c
+              ..depth = 0.0
+              ..orthographicSize = 3.0
+              ..backgroundColor = Colors.black87
+              ..cullingMask = RenderLayer.world,
+          ),
         ),
-        FollowTarget.new.withParams((c) => c.targetTag = playerTag),
+        ComponentWidget(
+          FollowTarget.new.withInitialValues((c) => c.targetTag = playerTag),
+        ),
       ],
     );
 
@@ -212,21 +222,31 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
 
     setState(() {
       enemies.add(
-        GameWidget(
+        GameObjectWidget(
           key: GameTag(UniqueKey()),
-          components: [
-            ObjectTransform.new.withParams((c) => c.position = pos),
-            Rigidbody.new.withParams((c) => c.type = RigidbodyType.kinematic),
-            SpriteRenderer.new.withParams(
-              (c) => c
-                ..sprite = GameSprite(
-                  texture: MyGameTexture.enemy,
-                  pixelsPerUnit: 64.0,
-                )
-                ..filterQuality = ui.FilterQuality.none,
+          children: [
+            ComponentWidget(
+              ObjectTransform.new.withInitialValues((c) => c.position = pos),
             ),
-            EnemyController.new,
-            CircleCollider.new.withParams((c) => c.radius = 0.2),
+            ComponentWidget(
+              Rigidbody.new.withInitialValues(
+                (c) => c.type = RigidbodyType.kinematic,
+              ),
+            ),
+            ComponentWidget(
+              SpriteRenderer.new.withInitialValues(
+                (c) => c
+                  ..sprite = GameSprite(
+                    texture: MyGameTexture.enemy,
+                    pixelsPerUnit: 64.0,
+                  )
+                  ..filterQuality = ui.FilterQuality.none,
+              ),
+            ),
+            ComponentWidget(EnemyController.new),
+            ComponentWidget(
+              CircleCollider.new.withInitialValues((c) => c.radius = 0.2),
+            ),
           ],
         ),
       );
@@ -236,24 +256,30 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
   void _spawnExplosion(Offset position) {
     setState(() {
       enemies.add(
-        GameWidget(
+        GameObjectWidget(
           key: GameTag(UniqueKey()),
-          components: [
-            ObjectTransform.new.withParams(
-              (c) => c
-                ..position = position
-                ..scale = const Offset(1.0, -1.0),
+          children: [
+            ComponentWidget(
+              ObjectTransform.new.withInitialValues(
+                (c) => c
+                  ..position = position
+                  ..scale = const Offset(1.0, -1.0),
+              ),
             ),
-            SpriteRenderer.new.withParams(
-              (c) => c
-                ..sprite = explosionSheet[(0, 0)]
-                ..filterQuality = ui.FilterQuality.none,
+            ComponentWidget(
+              SpriteRenderer.new.withInitialValues(
+                (c) => c
+                  ..sprite = explosionSheet[(0, 0)]
+                  ..filterQuality = ui.FilterQuality.none,
+              ),
             ),
-            ExplosionController.new,
-            AudioSource.new.withParams(
-              (c) => c
-                ..clip = MyGameSound.explosion
-                ..volume = 1.5,
+            ComponentWidget(ExplosionController.new),
+            ComponentWidget(
+              AudioSource.new.withInitialValues(
+                (c) => c
+                  ..clip = MyGameSound.explosion
+                  ..volume = 1.5,
+              ),
             ),
           ],
         ),
@@ -309,29 +335,21 @@ class PlayerState extends GameState<Player> with Tickable {
     );
 
     addComponent(
-      ObjectTransform.new.withParams((c) => c.position = Offset.zero),
-      Rigidbody.new.withParams((c) => c.type = RigidbodyType.kinematic),
-      SpriteRenderer.new.withParams(
-        (c) => c
-          ..sprite = GameSprite(
-            texture: MyGameTexture.ship,
-            pivot: NormalizedPivot.center,
-            pixelsPerUnit: 64.0,
-          )
-          ..filterQuality = ui.FilterQuality.none,
-      ),
-      CircleCollider.new.withParams((c) => c.radius = 0.2),
-      BlinkEffect.new,
-      _audioSource =
-          internalCreateComponent(
-                AudioSource.new.withParams(
-                  (c) => c
-                    ..clip = MyGameSound.shoot
-                    ..volume = 0.4
-                    ..playOnAwake = false,
-                ),
-              )
-              as AudioSource,
+      ObjectTransform()..position = Offset.zero,
+      Rigidbody()..type = RigidbodyType.kinematic,
+      SpriteRenderer()
+        ..sprite = GameSprite(
+          texture: MyGameTexture.ship,
+          pivot: NormalizedPivot.center,
+          pixelsPerUnit: 64.0,
+        )
+        ..filterQuality = ui.FilterQuality.none,
+      CircleCollider()..radius = 0.2,
+      BlinkEffect(),
+      _audioSource = AudioSource()
+        ..clip = MyGameSound.shoot
+        ..volume = 0.4
+        ..playOnAwake = false,
     );
   }
 
@@ -380,23 +398,37 @@ class PlayerState extends GameState<Player> with Tickable {
     if (shootAction.inProgress && _shootTimer <= 0) {
       _audioSource.play();
       _world.addBullet(
-        GameWidget(
+        GameObjectWidget(
           key: GameTag(UniqueKey()),
-          components: [
-            ObjectTransform.new.withParams(
-              (c) => c
-                ..position = trans.position + facing * 0.25
-                ..angle = trans.angle,
+          children: [
+            ComponentWidget(
+              ObjectTransform.new.withInitialValues(
+                (c) => c
+                  ..position = trans.position + facing * 0.25
+                  ..angle = trans.angle,
+              ),
             ),
-            SpriteRenderer.new.withParams(
-              (c) => c
-                ..sprite = _bulletSprite
-                ..filterQuality = ui.FilterQuality.none,
+            ComponentWidget(
+              SpriteRenderer.new.withInitialValues(
+                (c) => c
+                  ..sprite = _bulletSprite
+                  ..filterQuality = ui.FilterQuality.none,
+              ),
             ),
-            BulletController.new.withParams((c) => c.direction = facing),
-            Rigidbody.new.withParams((c) => c.type = RigidbodyType.kinematic),
-            BulletOutOfScreenDestroyer.new,
-            CircleCollider.new.withParams((c) => c.radius = 0.2),
+            ComponentWidget(
+              BulletController.new.withInitialValues(
+                (c) => c.direction = facing,
+              ),
+            ),
+            ComponentWidget(
+              Rigidbody.new.withInitialValues(
+                (c) => c.type = RigidbodyType.kinematic,
+              ),
+            ),
+            ComponentWidget(BulletOutOfScreenDestroyer.new),
+            ComponentWidget(
+              CircleCollider.new.withInitialValues((c) => c.radius = 0.2),
+            ),
           ],
         ),
       );

@@ -7,7 +7,7 @@ void main() {
   group('CameraView', () {
     testWidgets('should render children through tagged camera', (tester) async {
       const camTag = GameTag('SecondaryCamera');
-      final cam = internalCreateComponent(Camera.new.withParams((c) => c.backgroundColor = const Color(0xFFFF0000))) as Camera;
+      final cam = Camera()..backgroundColor = const Color(0xFFFF0000);
 
       await tester.pumpWidget(
         Directionality(
@@ -15,9 +15,12 @@ void main() {
           child: Game(
             child: Stack(
               children: [
-                GameWidget(
+                GameObjectWidget(
                   key: camTag,
-                  components: [ObjectTransform.new, () => cam],
+                  children: [
+                    ComponentWidget(ObjectTransform.new),
+                    ComponentWidget(() => cam),
+                  ],
                 ),
                 const Positioned(
                   bottom: 0,

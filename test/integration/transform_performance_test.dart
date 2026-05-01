@@ -10,15 +10,23 @@ void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Goo2D Transform Scaling Benchmarks (Profiler)', () {
-    final depths = [5, 10, 25, 50, 75, 100, 125, 150]; 
+    final depths = [5, 10, 25, 50, 75, 100, 125, 150];
     for (final d in depths) {
       testWidgets('Transform.worldMatrixDeep (Depth $d)', (tester) async {
         final rootTag = GameTag('root_obj_$d');
         final leafTag = GameTag('leaf_obj_$d');
-        
-        await tester.pumpWidget(MaterialApp(
-          home: Game(child: WorldMatrixStressScene(depth: d, rootTag: rootTag, leafTag: leafTag)),
-        ));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Game(
+              child: WorldMatrixStressScene(
+                depth: d,
+                rootTag: rootTag,
+                leafTag: leafTag,
+              ),
+            ),
+          ),
+        );
         await tester.pump();
 
         final rootObject = rootTag.gameObject!;
@@ -27,7 +35,10 @@ void main() {
         final leafTransform = leafObject.getComponent<ObjectTransform>();
 
         await binding.traceAction(() async {
-          rootTransform.localPosition = Offset(rootTransform.localPosition.dx + 0.1, 0);
+          rootTransform.localPosition = Offset(
+            rootTransform.localPosition.dx + 0.1,
+            0,
+          );
           final _ = leafTransform.worldMatrix;
         }, reportKey: 'transform_depth_$d');
       });
@@ -39,7 +50,12 @@ class WorldMatrixStressScene extends StatelessWidget {
   final int depth;
   final GameTag rootTag;
   final GameTag leafTag;
-  const WorldMatrixStressScene({super.key, required this.depth, required this.rootTag, required this.leafTag});
+  const WorldMatrixStressScene({
+    super.key,
+    required this.depth,
+    required this.rootTag,
+    required this.leafTag,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +65,13 @@ class WorldMatrixStressScene extends StatelessWidget {
   Widget _buildDepth(int max, int current) {
     final bool isRoot = current == 0;
     final bool isLeaf = current == max;
-    return GameWidget(
+    return GameObjectWidget(
       key: isRoot ? rootTag : (isLeaf ? leafTag : null),
       name: isRoot ? 'root' : (isLeaf ? 'leaf' : 'd_$current'),
-      components: [ObjectTransform.new],
-      children: [if (!isLeaf) _buildDepth(max, current + 1)],
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        if (!isLeaf) _buildDepth(max, current + 1),
+      ],
     );
   }
 }

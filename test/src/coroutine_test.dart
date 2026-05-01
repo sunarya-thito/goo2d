@@ -15,11 +15,12 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(),
+          child: GameObjectWidget(),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       gameObject.startCoroutine(myCoroutine);
       await tester.idle(); // Let the Future in setupCoroutine run
@@ -40,15 +41,16 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(),
+          child: GameObjectWidget(),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       gameObject.startCoroutine(myCoroutine);
       await tester.idle();
-      await tester.pump(); 
+      await tester.pump();
       expect(count, equals(1));
 
       // Wait 100ms
@@ -66,15 +68,16 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(),
+          child: GameObjectWidget(),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       gameObject.startCoroutine(myCoroutine);
       await tester.idle();
-      await tester.pump(); 
+      await tester.pump();
       expect(reached, isFalse);
 
       await tester.pump(const Duration(milliseconds: 16));
@@ -94,15 +97,16 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(),
+          child: GameObjectWidget(),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       final future = gameObject.startCoroutine(myCoroutine);
       await tester.idle(); // Ensure it added itself to the list
-      
+
       gameObject.stopCoroutine(future);
 
       await tester.pump(const Duration(seconds: 2));
@@ -120,11 +124,11 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(),
+          child: GameObjectWidget(),
         ),
       );
       await tester.pump();
-      final obj = tester.element(find.byType(GameWidget)) as GameObject;
+      final obj = tester.element(find.byType(GameObjectWidget)) as GameObject;
       obj.startCoroutine(myCoroutine);
       await tester.idle();
 
@@ -136,15 +140,15 @@ void main() {
       await tester.pumpWidget(Game(child: const SizedBox()));
       await tester.pump();
       await tester.idle();
-      
+
       // Pump a few more times to ensure it's really stopped
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
-      
+
       // It might increment once more if it was already waiting for a frame
       expect(count, lessThanOrEqualTo(lastCount + 1));
       final finalCount = count;
-      
+
       await tester.pump(const Duration(milliseconds: 100));
       expect(count, equals(finalCount));
     });
@@ -162,18 +166,19 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(),
+          child: GameObjectWidget(),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       gameObject.startCoroutine(outer);
       await tester.idle();
       await tester.pump(); // Start outer, start inner, inner yields null
       await tester.pump(); // Inner continues after frame
       await tester.idle(); // Finish microtasks
-      
+
       expect(innerReached, isTrue);
     });
   });

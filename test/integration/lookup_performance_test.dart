@@ -12,16 +12,22 @@ void main() {
   group('Goo2D Lookup Scaling Benchmarks (Extreme)', () {
     // Scaling up to 100,000 objects
     final lookupCounts = [100, 1000, 10000, 50000, 100000];
-    
+
     for (final n in lookupCounts) {
-      testWidgets('Lookup.getComponentsInChildren ($n objects)', (tester) async {
+      testWidgets('Lookup.getComponentsInChildren ($n objects)', (
+        tester,
+      ) async {
         final rootTag = GameTag('root_obj_$n');
-        await tester.pumpWidget(MaterialApp(
-          home: Game(child: LookupStressScene(count: n, rootTag: rootTag)),
-        ));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Game(
+              child: LookupStressScene(count: n, rootTag: rootTag),
+            ),
+          ),
+        );
         await tester.pump();
         final rootObject = rootTag.gameObject!;
-        
+
         await binding.traceAction(() async {
           final _ = rootObject.getComponentsInChildren<BoxCollider>();
         }, reportKey: 'lookup_downward_$n');
@@ -29,13 +35,17 @@ void main() {
     }
 
     // Scaling up to 500 layers deep
-    final pathDepths = [10, 50, 100, 250, 500]; 
+    final pathDepths = [10, 50, 100, 250, 500];
     for (final d in pathDepths) {
       testWidgets('Lookup.findChildPath (Depth $d)', (tester) async {
         final rootTag = GameTag('path_root_$d');
-        await tester.pumpWidget(MaterialApp(
-          home: Game(child: PathStressScene(depth: d, rootTag: rootTag)),
-        ));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Game(
+              child: PathStressScene(depth: d, rootTag: rootTag),
+            ),
+          ),
+        );
         await tester.pump();
         final rootObject = rootTag.gameObject!;
         final path = List.generate(d, (i) => 'child_$i').join('/');
@@ -51,11 +61,15 @@ void main() {
 class LookupStressScene extends StatelessWidget {
   final int count;
   final GameTag rootTag;
-  const LookupStressScene({super.key, required this.count, required this.rootTag});
+  const LookupStressScene({
+    super.key,
+    required this.count,
+    required this.rootTag,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GameWidget(
+    return GameObjectWidget(
       key: rootTag,
       name: 'root',
       children: [_buildWideTree(count)],
@@ -64,12 +78,15 @@ class LookupStressScene extends StatelessWidget {
 
   // Use a wider tree to avoid hitting Flutter element depth limits while reaching high N
   Widget _buildWideTree(int total) {
-    return GameWidget(
+    return GameObjectWidget(
       name: 'container',
-      children: List.generate(total, (i) => GameWidget(
-        name: 'obj_$i',
-        components: i % 100 == 0 ? [BoxCollider.new] : [],
-      )),
+      children: List.generate(
+        total,
+        (i) => GameObjectWidget(
+          name: 'obj_$i',
+          children: i % 100 == 0 ? [ComponentWidget(BoxCollider.new)] : [],
+        ),
+      ),
     );
   }
 }
@@ -77,17 +94,25 @@ class LookupStressScene extends StatelessWidget {
 class PathStressScene extends StatelessWidget {
   final int depth;
   final GameTag rootTag;
-  const PathStressScene({super.key, required this.depth, required this.rootTag});
+  const PathStressScene({
+    super.key,
+    required this.depth,
+    required this.rootTag,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GameWidget(key: rootTag, name: 'root', children: [_buildPathIterative(depth)]);
+    return GameObjectWidget(
+      key: rootTag,
+      name: 'root',
+      children: [_buildPathIterative(depth)],
+    );
   }
 
   Widget _buildPathIterative(int n) {
     Widget current = const SizedBox.shrink();
     for (int i = n - 1; i >= 0; i--) {
-      current = GameWidget(name: 'child_$i', children: [current]);
+      current = GameObjectWidget(name: 'child_$i', children: [current]);
     }
     return current;
   }

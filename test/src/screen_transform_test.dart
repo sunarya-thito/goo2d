@@ -4,32 +4,39 @@ import 'package:goo2d/goo2d.dart';
 
 void main() {
   group('ScreenTransform', () {
-    testWidgets('should render children in screen space even when camera is moved', (tester) async {
+    testWidgets('should render children in screen space even when camera is moved', (
+      tester,
+    ) async {
       bool hit = false;
       await tester.pumpWidget(
         MaterialApp(
           home: Game(
-            child: GameWidget(
+            child: GameObjectWidget(
               children: [
                 // Camera object at 5000, 5000
-                GameWidget(
+                GameObjectWidget(
                   name: 'CameraObject',
                   key: const GameTag('MainCamera'),
-                  components: [
-                    Camera.new.withParams((c) => c.orthographicSize = 1000.0),
-                    ObjectTransform.new.withParams((c) => c.position = const Offset(5000, 5000)),
+                  children: [
+                    ComponentWidget(
+                      Camera.new,
+                      update: (c) => c.orthographicSize = 1000.0,
+                    ),
+                    ComponentWidget(
+                      ObjectTransform.new,
+                      update: (c) => c.position = const Offset(5000, 5000),
+                    ),
                   ],
                 ),
                 // HUD object in screen space
-                GameWidget(
+                GameObjectWidget(
                   name: 'HUDObject',
-                  components: [ScreenTransform.new],
                   children: [
-                    GameWidget(
+                    ComponentWidget(ScreenTransform.new),
+                    GameObjectWidget(
                       name: 'Button',
-                      components: [ObjectTransform.new],
                       children: [
-                        // Use a native Flutter widget for hit testing
+                        ComponentWidget(ObjectTransform.new),
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => hit = true,
@@ -49,35 +56,48 @@ void main() {
       );
       await tester.pump();
 
-      // Tap at screen (50, 50). 
+      // Tap at screen (50, 50).
       // Camera is at (5000, 5000), so world space (5050, 5050) maps to screen (50, 50).
       // ScreenTransform should revert this, so tapping at (50, 50) hits the child.
       await tester.tapAt(const Offset(50, 50));
-      expect(hit, isTrue, reason: 'HUD should be hit at screen coordinates regardless of camera position');
+      expect(
+        hit,
+        isTrue,
+        reason:
+            'HUD should be hit at screen coordinates regardless of camera position',
+      );
     });
 
-    testWidgets('should handle nested ScreenTransforms by applying identity', (tester) async {
+    testWidgets('should handle nested ScreenTransforms by applying identity', (
+      tester,
+    ) async {
       bool hit = false;
       await tester.pumpWidget(
         MaterialApp(
           home: Game(
-            child: GameWidget(
+            child: GameObjectWidget(
               children: [
-                GameWidget(
+                GameObjectWidget(
                   key: const GameTag('MainCamera'),
-                  components: [
-                    Camera.new.withParams((c) => c.orthographicSize = 1000.0),
-                    ObjectTransform.new.withParams((c) => c.position = const Offset(5000, 5000)),
+                  children: [
+                    ComponentWidget(
+                      Camera.new,
+                      update: (c) => c.orthographicSize = 1000.0,
+                    ),
+                    ComponentWidget(
+                      ObjectTransform.new,
+                      update: (c) => c.position = const Offset(5000, 5000),
+                    ),
                   ],
                 ),
-                GameWidget(
+                GameObjectWidget(
                   name: 'OuterHUD',
-                  components: [ScreenTransform.new],
                   children: [
-                    GameWidget(
+                    ComponentWidget(ScreenTransform.new),
+                    GameObjectWidget(
                       name: 'InnerHUD',
-                      components: [ScreenTransform.new],
                       children: [
+                        ComponentWidget(ScreenTransform.new),
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () => hit = true,
@@ -95,7 +115,12 @@ void main() {
       await tester.pump();
 
       await tester.tapAt(const Offset(50, 50));
-      expect(hit, isTrue, reason: 'Nested ScreenTransform should still be hit at screen coordinates');
+      expect(
+        hit,
+        isTrue,
+        reason:
+            'Nested ScreenTransform should still be hit at screen coordinates',
+      );
     });
 
     testWidgets('should respect BoxConstraints', (tester) async {
@@ -103,17 +128,20 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Game(
-            child: GameWidget(
+            child: GameObjectWidget(
               name: 'Root',
               children: [
-                GameWidget(
+                GameObjectWidget(
                   name: 'HUD',
-                  components: [
-                    ScreenTransform.new.withParams(
-                      (c) => c.constraints = const BoxConstraints.tightFor(width: 200, height: 100),
-                    ),
-                  ],
                   children: [
+                    ComponentWidget(
+                      ScreenTransform.new,
+                      update: (c) =>
+                          c.constraints = const BoxConstraints.tightFor(
+                            width: 200,
+                            height: 100,
+                          ),
+                    ),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         reportedSize = constraints.biggest;
@@ -129,7 +157,12 @@ void main() {
       );
       await tester.pump();
 
-      expect(reportedSize, const Size(200, 100), reason: 'ScreenTransform should enforce its constraints on children when allowed by parent');
+      expect(
+        reportedSize,
+        const Size(200, 100),
+        reason:
+            'ScreenTransform should enforce its constraints on children when allowed by parent',
+      );
     });
   });
 }

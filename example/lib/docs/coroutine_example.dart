@@ -63,7 +63,7 @@ class _CoroutineWorldState extends GameState<CoroutineWorld> {
   @override
   void initState() {
     super.initState();
-    addComponent(ObjectTransform.new);
+    addComponent(ObjectTransform());
     _bossTransform.position = const Offset(0, -8);
   }
 
@@ -140,33 +140,41 @@ class _CoroutineWorldState extends GameState<CoroutineWorld> {
 
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield GameWidget(
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams((c) => c
-          ..depth = 1
-          ..backgroundColor = const Color(0xFF0F0F0F)
-          ..orthographicSize = 5),
+    yield GameObjectWidget(
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new.withInitialValues(
+            (c) => c
+              ..depth = 1
+              ..backgroundColor = const Color(0xFF0F0F0F)
+              ..orthographicSize = 5,
+          ),
+        ),
       ],
     );
 
-    yield GameWidget(
-      components: [
-        _bossTransform,
-        SpriteRenderer.new.withParams((c) => c
-          ..sprite = GameSprite(
-            texture: CoroutineExampleTexture.ship,
-            pixelsPerUnit: 32,
-          )),
+    yield GameObjectWidget(
+      children: [
+        ComponentWidget(() => _bossTransform),
+        ComponentWidget(
+          SpriteRenderer.new.withInitialValues(
+            (c) => c
+              ..sprite = GameSprite(
+                texture: CoroutineExampleTexture.ship,
+                pixelsPerUnit: 32,
+              ),
+          ),
+        ),
       ],
     );
 
     // Dynamic lasers
     yield* _lasers;
 
-    yield GameWidget(
-      components: [ScreenTransform.new],
+    yield GameObjectWidget(
       children: [
+        ComponentWidget(ScreenTransform.new),
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
@@ -220,7 +228,7 @@ class _LaserState extends GameState<Laser> {
   void initState() {
     super.initState();
     // Laser starts at the boss wing
-    addComponent(ObjectTransform.new.withParams((c) => c.position = widget.startPos));
+    addComponent(ObjectTransform()..position = widget.startPos);
     // Each laser has its own coroutine for movement!
     startCoroutine(move);
   }
@@ -240,18 +248,25 @@ class _LaserState extends GameState<Laser> {
 
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield GameWidget(
-      components: [
-        ObjectTransform.new.withParams((c) => c
-          ..scale = const Offset(0.3, 1.5)),
-        SpriteRenderer.new.withParams((c) => c
-          ..sprite = SpriteSheet.grid(
-            texture: CoroutineExampleTexture.tilesPacked,
-            rows: 10,
-            columns: 12,
-            ppu: 64.0,
-          )[(0, 0)]
-          ..color = widget.color),
+    yield GameObjectWidget(
+      children: [
+        ComponentWidget(
+          ObjectTransform.new.withInitialValues(
+            (c) => c..scale = const Offset(0.3, 1.5),
+          ),
+        ),
+        ComponentWidget(
+          SpriteRenderer.new.withInitialValues(
+            (c) => c
+              ..sprite = SpriteSheet.grid(
+                texture: CoroutineExampleTexture.tilesPacked,
+                rows: 10,
+                columns: 12,
+                ppu: 64.0,
+              )[(0, 0)]
+              ..color = widget.color,
+          ),
+        ),
       ],
     );
   }

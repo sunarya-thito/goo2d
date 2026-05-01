@@ -3,7 +3,9 @@ import 'package:goo2d/goo2d.dart';
 import 'dart:math' as math;
 
 enum CameraExampleTexture with AssetEnum, TextureAssetEnum {
-  ship;
+  ship
+  ;
+
   @override
   AssetSource get source => AssetSource.local("assets/sprites/$name.png");
 }
@@ -84,15 +86,21 @@ class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
       moveAction: moveAction,
     );
 
-    yield GameWidget(
+    yield GameObjectWidget(
       key: const GameTag('MainCamera'),
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams((c) => c
-          ..depth = 1.0
-          ..backgroundColor = Colors.black
-          ..orthographicSize = 5.0),
-        FollowPlayer.new.withParams((c) => c.targetTag = playerTag),
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new.withInitialValues(
+            (c) => c
+              ..depth = 1.0
+              ..backgroundColor = Colors.black
+              ..orthographicSize = 5.0,
+          ),
+        ),
+        ComponentWidget(
+          FollowPlayer.new.withInitialValues((c) => c.targetTag = playerTag),
+        ),
       ],
     );
 
@@ -129,15 +137,15 @@ class _PlayerShipState extends GameState<PlayerShip> {
   @override
   void initState() {
     super.initState();
+    addComponent(ObjectTransform()..position = Offset.zero);
     addComponent(
-      ObjectTransform.new.withParams((c) => c.position = Offset.zero),
-      SpriteRenderer.new.withParams((c) => c
+      SpriteRenderer()
         ..sprite = GameSprite(
           texture: CameraExampleTexture.ship,
           pixelsPerUnit: 32,
-        )),
-      ShipMovement.new.withParams((c) => c.moveAction = widget.moveAction),
+        ),
     );
+    addComponent(ShipMovement()..moveAction = widget.moveAction);
   }
 
   @override
@@ -182,9 +190,9 @@ class SimpleHUD extends StatefulGameWidget {
 class _SimpleHUDState extends GameState<SimpleHUD> {
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield GameWidget(
-      components: [ScreenTransform.new],
+    yield GameObjectWidget(
       children: [
+        ComponentWidget(ScreenTransform.new),
         Align(
           alignment: Alignment.topCenter,
           child: Padding(

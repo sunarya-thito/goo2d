@@ -4,24 +4,29 @@ import 'package:goo2d/goo2d.dart';
 import 'package:goo2d/src/component.dart';
 
 void main() {
-
   group('Camera', () {
     testWidgets('should resolve Camera.main by highest depth', (tester) async {
-      final cam1 = internalCreateComponent(Camera.new.withParams((c) => c.depth = 10)) as Camera;
-      final cam2 = internalCreateComponent(Camera.new.withParams((c) => c.depth = 20)) as Camera;
+      final cam1 = Camera()..depth = 10;
+      final cam2 = Camera()..depth = 20;
 
       await tester.pumpWidget(
         Game(
           child: Column(
             children: [
               Expanded(
-                child: GameWidget(
-                  components: [ObjectTransform.new, () => cam1],
+                child: GameObjectWidget(
+                  children: [
+                    ComponentWidget(ObjectTransform.new),
+                    ComponentWidget(() => cam1),
+                  ],
                 ),
               ),
               Expanded(
-                child: GameWidget(
-                  components: [ObjectTransform.new, () => cam2],
+                child: GameObjectWidget(
+                  children: [
+                    ComponentWidget(ObjectTransform.new),
+                    ComponentWidget(() => cam2),
+                  ],
                 ),
               ),
             ],
@@ -30,23 +35,30 @@ void main() {
       );
       await tester.pump();
 
-      final game = (tester.element(find.byType(GameWidget).first) as GameObject).game;
+      final game =
+          (tester.element(find.byType(GameObjectWidget).first) as GameObject)
+              .game;
 
       expect(game.cameras.main, same(cam2));
       expect(game.cameras.allCameras.length, equals(2));
-      
+
       // Update cam1 to have even higher depth
       cam1.depth = 30;
       game.cameras.registerCamera(cam1); // Re-trigger sorting
       expect(game.cameras.main, same(cam1));
     });
 
-    testWidgets('should calculate worldToScreenPoint correctly', (tester) async {
-      final cam = internalCreateComponent(Camera.new.withParams((c) => c.orthographicSize = 5)) as Camera;
+    testWidgets('should calculate worldToScreenPoint correctly', (
+      tester,
+    ) async {
+      final cam = Camera()..orthographicSize = 5;
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => cam, ObjectTransform.new],
+          child: GameObjectWidget(
+            children: [
+              ComponentWidget(() => cam),
+              ComponentWidget(ObjectTransform.new),
+            ],
           ),
         ),
       );
@@ -70,12 +82,17 @@ void main() {
       expect(screenPoint2.dy, closeTo(0, 0.001));
     });
 
-    testWidgets('should calculate screenToWorldPoint correctly', (tester) async {
-      final cam = internalCreateComponent(Camera.new.withParams((c) => c.orthographicSize = 5)) as Camera;
+    testWidgets('should calculate screenToWorldPoint correctly', (
+      tester,
+    ) async {
+      final cam = Camera()..orthographicSize = 5;
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => cam, ObjectTransform.new],
+          child: GameObjectWidget(
+            children: [
+              ComponentWidget(() => cam),
+              ComponentWidget(ObjectTransform.new),
+            ],
           ),
         ),
       );
@@ -89,16 +106,20 @@ void main() {
       expect(worldPoint.dy, closeTo(5, 0.001));
     });
 
-    testWidgets('should respect camera transform (camera movement)', (tester) async {
-      final cam = internalCreateComponent(Camera.new.withParams((c) => c.orthographicSize = 5)) as Camera;
-      final camTransform = internalCreateComponent(
-        ObjectTransform.new.withParams((c) => c.localPosition = const Offset(10, 0)),
-      ) as ObjectTransform;
+    testWidgets('should respect camera transform (camera movement)', (
+      tester,
+    ) async {
+      final cam = Camera()..orthographicSize = 5;
+      final camTransform = ObjectTransform()
+        ..localPosition = const Offset(10, 0);
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => cam, () => camTransform],
+          child: GameObjectWidget(
+            children: [
+              ComponentWidget(() => cam),
+              ComponentWidget(() => camTransform),
+            ],
           ),
         ),
       );

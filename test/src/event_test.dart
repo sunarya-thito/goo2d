@@ -33,13 +33,14 @@ void main() {
       final comp = TestComponent();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => comp],
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => comp)],
           ),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       gameObject.broadcastEvent(const TestEvent());
       expect(comp.eventCount, equals(1));
@@ -50,13 +51,17 @@ void main() {
       final comp2 = TestComponent2();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => comp1, () => comp2],
+          child: GameObjectWidget(
+            children: [
+              ComponentWidget(() => comp1),
+              ComponentWidget(() => comp2),
+            ],
           ),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       gameObject.broadcastEvent(const TestEvent());
       expect(comp1.eventCount, equals(1));
@@ -64,16 +69,17 @@ void main() {
     });
 
     testWidgets('should respect Behavior.enabled', (tester) async {
-      final behavior = internalCreateComponent(TestBehavior.new.withParams((c) => c.enabled = false)) as TestBehavior;
+      final behavior = TestBehavior()..enabled = false;
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => behavior],
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => behavior)],
           ),
         ),
       );
       await tester.pump();
-      final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
+      final gameObject =
+          tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       gameObject.broadcastEvent(const TestEvent());
       expect(behavior.eventCount, equals(0));
@@ -89,18 +95,19 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => parentComp],
+          child: GameObjectWidget(
             children: [
-              GameWidget(
-                components: [() => childComp],
+              ComponentWidget(() => parentComp),
+              GameObjectWidget(
+                children: [ComponentWidget(() => childComp)],
               ),
             ],
           ),
         ),
       );
       await tester.pump();
-      final parentObject = tester.element(find.byType(GameWidget).first) as GameObject;
+      final parentObject =
+          tester.element(find.byType(GameObjectWidget).first) as GameObject;
 
       parentObject.broadcastEvent(const TestEvent());
       expect(parentComp.eventCount, equals(1));
@@ -113,18 +120,19 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => parentComp],
+          child: GameObjectWidget(
             children: [
-              GameWidget(
-                components: [() => childComp],
+              ComponentWidget(() => parentComp),
+              GameObjectWidget(
+                children: [ComponentWidget(() => childComp)],
               ),
             ],
           ),
         ),
       );
       await tester.pump();
-      final parentObject = tester.element(find.byType(GameWidget).first) as GameObject;
+      final parentObject =
+          tester.element(find.byType(GameObjectWidget).first) as GameObject;
 
       parentObject.sendEvent(const TestEvent());
       expect(parentComp.eventCount, equals(0));

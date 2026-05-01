@@ -9,9 +9,11 @@ void main() {
 
   group('ObjectTransform', () {
     testWidgets('should have identity matrix by default', (tester) async {
-      final transform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
+      final transform = ObjectTransform();
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => transform])),
+        Game(
+          child: GameObjectWidget(children: [ComponentWidget(() => transform)]),
+        ),
       );
       await tester.pump();
 
@@ -25,9 +27,13 @@ void main() {
     testWidgets(
       'should calculate localMatrix correctly when properties are set',
       (tester) async {
-        final transform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
+        final transform = ObjectTransform();
         await tester.pumpWidget(
-          Game(child: GameWidget(components: [() => transform])),
+          Game(
+            child: GameObjectWidget(
+              children: [ComponentWidget(() => transform)],
+            ),
+          ),
         );
         await tester.pump();
 
@@ -53,15 +59,17 @@ void main() {
     testWidgets('should propagate worldMatrix through hierarchy', (
       tester,
     ) async {
-      final parentTransform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
-      final childTransform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
+      final parentTransform = ObjectTransform();
+      final childTransform = ObjectTransform();
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => parentTransform],
+          child: GameObjectWidget(
             children: [
-              GameWidget(components: [() => childTransform]),
+              ComponentWidget(() => parentTransform),
+              GameObjectWidget(
+                children: [ComponentWidget(() => childTransform)],
+              ),
             ],
           ),
         ),
@@ -83,15 +91,17 @@ void main() {
     testWidgets('should increment version and dirty cache on change', (
       tester,
     ) async {
-      final parentTransform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
-      final childTransform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
+      final parentTransform = ObjectTransform();
+      final childTransform = ObjectTransform();
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => parentTransform],
+          child: GameObjectWidget(
             children: [
-              GameWidget(components: [() => childTransform]),
+              ComponentWidget(() => parentTransform),
+              GameObjectWidget(
+                children: [ComponentWidget(() => childTransform)],
+              ),
             ],
           ),
         ),
@@ -114,13 +124,15 @@ void main() {
     });
 
     testWidgets('should handle deep nesting (10 levels)', (tester) async {
-      final transforms = List.generate(10, (_) => internalCreateComponent(ObjectTransform.new) as ObjectTransform);
+      final transforms = List.generate(10, (_) => ObjectTransform());
 
       Widget buildHierarchy(int index) {
         if (index >= transforms.length) return const SizedBox();
-        return GameWidget(
-          components: [() => transforms[index]],
-          children: [buildHierarchy(index + 1)],
+        return GameObjectWidget(
+          children: [
+            ComponentWidget(() => transforms[index]),
+            buildHierarchy(index + 1),
+          ],
         );
       }
 
@@ -137,9 +149,11 @@ void main() {
     testWidgets('should correctly convert localToWorld and worldToLocal', (
       tester,
     ) async {
-      final transform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
+      final transform = ObjectTransform();
       await tester.pumpWidget(
-        Game(child: GameWidget(components: [() => transform])),
+        Game(
+          child: GameObjectWidget(children: [ComponentWidget(() => transform)]),
+        ),
       );
       await tester.pump();
 
@@ -158,15 +172,17 @@ void main() {
     testWidgets('should set world-space position correctly with parent', (
       tester,
     ) async {
-      final parentTransform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
-      final childTransform = internalCreateComponent(ObjectTransform.new) as ObjectTransform;
+      final parentTransform = ObjectTransform();
+      final childTransform = ObjectTransform();
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => parentTransform],
+          child: GameObjectWidget(
             children: [
-              GameWidget(components: [() => childTransform]),
+              ComponentWidget(() => parentTransform),
+              GameObjectWidget(
+                children: [ComponentWidget(() => childTransform)],
+              ),
             ],
           ),
         ),

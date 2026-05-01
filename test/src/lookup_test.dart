@@ -15,11 +15,14 @@ void main() {
       final compA = ComponentA();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(name: 'Root', components: [() => compA]),
+          child: GameObjectWidget(
+            name: 'Root',
+            children: [ComponentWidget(() => compA)],
+          ),
         ),
       );
       await tester.pump();
-      final root = tester.element(find.byType(GameWidget)) as GameObject;
+      final root = tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       expect(root.getComponentInChildren<ComponentA>(), equals(compA));
       expect(root.tryGetComponentInChildren<ComponentA>(), equals(compA));
@@ -31,10 +34,13 @@ void main() {
       final compA = ComponentA();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             name: 'Parent',
             children: [
-              GameWidget(name: 'Child', components: [() => compA]),
+              GameObjectWidget(
+                name: 'Child',
+                children: [ComponentWidget(() => compA)],
+              ),
             ],
           ),
         ),
@@ -43,7 +49,7 @@ void main() {
       final parent =
           tester.element(
                 find.byWidgetPredicate(
-                  (w) => w is GameWidget && w.name == 'Parent',
+                  (w) => w is GameObjectWidget && w.name == 'Parent',
                 ),
               )
               as GameObject;
@@ -56,11 +62,14 @@ void main() {
       final compA = ComponentA();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(name: 'Root', components: [() => compA]),
+          child: GameObjectWidget(
+            name: 'Root',
+            children: [ComponentWidget(() => compA)],
+          ),
         ),
       );
       await tester.pump();
-      final root = tester.element(find.byType(GameWidget)) as GameObject;
+      final root = tester.element(find.byType(GameObjectWidget)) as GameObject;
 
       expect(root.getComponentInParent<ComponentA>(), equals(compA));
     });
@@ -69,10 +78,12 @@ void main() {
       final compA = ComponentA();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             name: 'Parent',
-            components: [() => compA],
-            children: [GameWidget(name: 'Child')],
+            children: [
+              ComponentWidget(() => compA),
+              GameObjectWidget(name: 'Child'),
+            ],
           ),
         ),
       );
@@ -80,7 +91,7 @@ void main() {
       final child =
           tester.element(
                 find.byWidgetPredicate(
-                  (w) => w is GameWidget && w.name == 'Child',
+                  (w) => w is GameObjectWidget && w.name == 'Child',
                 ),
               )
               as GameObject;
@@ -93,11 +104,14 @@ void main() {
       final compA2 = ComponentA();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             name: 'Parent',
-            components: [() => compA1],
             children: [
-              GameWidget(name: 'Child', components: [() => compA2]),
+              ComponentWidget(() => compA1),
+              GameObjectWidget(
+                name: 'Child',
+                children: [ComponentWidget(() => compA2)],
+              ),
             ],
           ),
         ),
@@ -106,7 +120,7 @@ void main() {
       final child =
           tester.element(
                 find.byWidgetPredicate(
-                  (w) => w is GameWidget && w.name == 'Child',
+                  (w) => w is GameObjectWidget && w.name == 'Child',
                 ),
               )
               as GameObject;
@@ -119,14 +133,14 @@ void main() {
     testWidgets('GameObject.find should find by name', (tester) async {
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             name: 'Root',
-            children: [GameWidget(name: 'Target')],
+            children: [GameObjectWidget(name: 'Target')],
           ),
         ),
       );
       await tester.pump();
-      final context = tester.element(find.byType(GameWidget).first);
+      final context = tester.element(find.byType(GameObjectWidget).first);
 
       final found = GameObject.find(context, 'Target');
       expect(found, isNotNull);
@@ -136,19 +150,19 @@ void main() {
     testWidgets('GameObject.find should find by path', (tester) async {
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             name: 'A',
             children: [
-              GameWidget(
+              GameObjectWidget(
                 name: 'B',
-                children: [GameWidget(name: 'C')],
+                children: [GameObjectWidget(name: 'C')],
               ),
             ],
           ),
         ),
       );
       await tester.pump();
-      final context = tester.element(find.byType(GameWidget).first);
+      final context = tester.element(find.byType(GameObjectWidget).first);
 
       final found = GameObject.find(context, 'A/B/C');
       expect(found, isNotNull);
@@ -158,14 +172,14 @@ void main() {
     testWidgets('GameObject.find should find absolute path', (tester) async {
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             name: 'A',
-            children: [GameWidget(name: 'B')],
+            children: [GameObjectWidget(name: 'B')],
           ),
         ),
       );
       await tester.pump();
-      final context = tester.element(find.byType(GameWidget).first);
+      final context = tester.element(find.byType(GameObjectWidget).first);
 
       final found = GameObject.find(context, '/A/B');
       expect(found, isNotNull);
@@ -175,12 +189,12 @@ void main() {
     testWidgets('findChild should handle path', (tester) async {
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             name: 'A',
             children: [
-              GameWidget(
+              GameObjectWidget(
                 name: 'B',
-                children: [GameWidget(name: 'C')],
+                children: [GameObjectWidget(name: 'C')],
               ),
             ],
           ),
@@ -189,7 +203,9 @@ void main() {
       await tester.pump();
       final a =
           tester.element(
-                find.byWidgetPredicate((w) => w is GameWidget && w.name == 'A'),
+                find.byWidgetPredicate(
+                  (w) => w is GameObjectWidget && w.name == 'A',
+                ),
               )
               as GameObject;
 
@@ -202,11 +218,11 @@ void main() {
       const tag = GameTag('Player');
       await tester.pumpWidget(
         Game(
-          child: GameWidget(key: tag, name: 'Hero'),
+          child: GameObjectWidget(key: tag, name: 'Hero'),
         ),
       );
       await tester.pump();
-      final context = tester.element(find.byType(GameWidget).first);
+      final context = tester.element(find.byType(GameObjectWidget).first);
 
       final found = GameObject.findWithTag(context, tag);
       expect(found, isNotNull);

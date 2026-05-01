@@ -21,48 +21,55 @@ void main() {
   group('Render', () {
     testWidgets('should call render on Renderable components', (tester) async {
       final renderable = MockRenderable();
-      
+
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => renderable],
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => renderable)],
           ),
         ),
       );
       await tester.pump();
-      
+
       expect(renderable.renderCount, greaterThan(0));
       expect(renderable.lastCanvas, isNotNull);
     });
 
-    testWidgets('should call render on multiple Renderable components', (tester) async {
+    testWidgets('should call render on multiple Renderable components', (
+      tester,
+    ) async {
       final r1 = MockRenderable();
       final r2 = MockRenderable2();
-      
+
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => r1, () => r2],
+          child: GameObjectWidget(
+            children: [
+              ComponentWidget(() => r1),
+              ComponentWidget(() => r2),
+            ],
           ),
         ),
       );
       await tester.pump();
-      
+
       expect(r1.renderCount, greaterThan(0));
       expect(r2.renderCount, greaterThan(0));
     });
 
-    testWidgets('should propagate canvas to children in hierarchy', (tester) async {
+    testWidgets('should propagate canvas to children in hierarchy', (
+      tester,
+    ) async {
       final parentR = MockRenderable();
       final childR = MockRenderable();
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
-            components: [() => parentR],
+          child: GameObjectWidget(
             children: [
-              GameWidget(
-                components: [() => childR],
+              ComponentWidget(() => parentR),
+              GameObjectWidget(
+                children: [ComponentWidget(() => childR)],
               ),
             ],
           ),

@@ -61,7 +61,7 @@ void main() {
               child: MockStatefulWidget(
                 onInit: () => initCalled++,
                 onDispose: () => disposeCalled++,
-                children: [const GameWidget(key: ValueKey('child'))],
+                children: [const GameObjectWidget(key: ValueKey('child'))],
               ),
             ),
           ),
@@ -91,7 +91,7 @@ void main() {
               child: MockStatefulWidget(
                 onInit: () => initCalled++,
                 onDispose: () => disposeCalled++,
-                children: [const GameWidget(key: ValueKey('child2'))],
+                children: [const GameObjectWidget(key: ValueKey('child2'))],
               ),
             ),
           ),

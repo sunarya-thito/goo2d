@@ -13,10 +13,15 @@ void main() {
     ) async {
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             key: const GameTag('test'),
-            components: [
-              SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
+            children: [
+              ComponentWidget(
+                SpriteRenderer.new.withInitialValues(
+                  (c) => c.color = const ui.Color(0xFFFF0000),
+                ),
+                update: (c) => c.color = const ui.Color(0xFFFF0000),
+              ),
             ],
           ),
         ),
@@ -30,10 +35,15 @@ void main() {
       // Update with NEW widget, different property in the factory
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             key: const GameTag('test'),
-            components: [
-              SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
+            children: [
+              ComponentWidget(
+                SpriteRenderer.new.withInitialValues(
+                  (c) => c.color = const ui.Color(0xFF00FF00),
+                ),
+                update: (c) => c.color = const ui.Color(0xFF00FF00),
+              ),
             ],
           ),
         ),
@@ -56,9 +66,9 @@ void main() {
     ) async {
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             key: const GameTag('test'),
-            components: [ObjectTransform.new.withNoParams],
+            children: [ComponentWidget(ObjectTransform.new)],
           ),
         ),
       );
@@ -81,18 +91,28 @@ void main() {
     ) async {
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             children: [
-              GameWidget(
+              GameObjectWidget(
                 key: const ValueKey('a'),
-                components: [
-                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
+                children: [
+                  ComponentWidget(
+                    SpriteRenderer.new.withInitialValues(
+                      (c) => c.color = const ui.Color(0xFFFF0000),
+                    ),
+                    update: (c) => c.color = const ui.Color(0xFFFF0000),
+                  ),
                 ],
               ),
-              GameWidget(
+              GameObjectWidget(
                 key: const ValueKey('b'),
-                components: [
-                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
+                children: [
+                  ComponentWidget(
+                    SpriteRenderer.new.withInitialValues(
+                      (c) => c.color = const ui.Color(0xFF00FF00),
+                    ),
+                    update: (c) => c.color = const ui.Color(0xFF00FF00),
+                  ),
                 ],
               ),
             ],
@@ -108,18 +128,28 @@ void main() {
       // Swap them
       await tester.pumpWidget(
         Game(
-          child: GameWidget(
+          child: GameObjectWidget(
             children: [
-              GameWidget(
+              GameObjectWidget(
                 key: const ValueKey('b'),
-                components: [
-                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
+                children: [
+                  ComponentWidget(
+                    SpriteRenderer.new.withInitialValues(
+                      (c) => c.color = const ui.Color(0xFF00FF00),
+                    ),
+                    update: (c) => c.color = const ui.Color(0xFF00FF00),
+                  ),
                 ],
               ),
-              GameWidget(
+              GameObjectWidget(
                 key: const ValueKey('a'),
-                components: [
-                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
+                children: [
+                  ComponentWidget(
+                    SpriteRenderer.new.withInitialValues(
+                      (c) => c.color = const ui.Color(0xFFFF0000),
+                    ),
+                    update: (c) => c.color = const ui.Color(0xFFFF0000),
+                  ),
                 ],
               ),
             ],
@@ -141,11 +171,16 @@ void main() {
         Game(
           child: Column(
             children: [
-              GameWidget(
+              GameObjectWidget(
                 key: const GameTag('hero'),
-                components: [
-                  ObjectTransform.new.withNoParams,
-                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF0000FF)),
+                children: [
+                  ComponentWidget(ObjectTransform.new),
+                  ComponentWidget(
+                    SpriteRenderer.new.withInitialValues(
+                      (c) => c.color = const ui.Color(0xFF0000FF),
+                    ),
+                    update: (c) => c.color = const ui.Color(0xFF0000FF),
+                  ),
                 ],
               ),
             ],
@@ -163,11 +198,16 @@ void main() {
             children: [
               // ignore: avoid_unnecessary_containers
               Container(
-                child: GameWidget(
+                child: GameObjectWidget(
                   key: const GameTag('hero'),
-                  components: [
-                    ObjectTransform.new.withNoParams,
-                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF0000FF)),
+                  children: [
+                    ComponentWidget(ObjectTransform.new),
+                    ComponentWidget(
+                      SpriteRenderer.new.withInitialValues(
+                        (c) => c.color = const ui.Color(0xFF0000FF),
+                      ),
+                      update: (c) => c.color = const ui.Color(0xFF0000FF),
+                    ),
                   ],
                 ),
               ),
@@ -189,16 +229,26 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           Game(
-            child: GameWidget(
+            child: GameObjectWidget(
               children: [
-                GameWidget(
-                  components: [
-                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
+                GameObjectWidget(
+                  children: [
+                    ComponentWidget(
+                      SpriteRenderer.new.withInitialValues(
+                        (c) => c.color = const ui.Color(0xFFFF0000),
+                      ),
+                      update: (c) => c.color = const ui.Color(0xFFFF0000),
+                    ),
                   ],
                 ),
-                GameWidget(
-                  components: [
-                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
+                GameObjectWidget(
+                  children: [
+                    ComponentWidget(
+                      SpriteRenderer.new.withInitialValues(
+                        (c) => c.color = const ui.Color(0xFF00FF00),
+                      ),
+                      update: (c) => c.color = const ui.Color(0xFF00FF00),
+                    ),
                   ],
                 ),
               ],
@@ -207,7 +257,7 @@ void main() {
         );
 
         final element0 =
-            tester.elementList(find.byType(GameWidget)).elementAt(1)
+            tester.elementList(find.byType(GameObjectWidget)).elementAt(1)
                 as GameObjectElement;
         final comp0 = element0.getComponent<SpriteRenderer>();
         expect(comp0.color, equals(const ui.Color(0xFFFF0000)));
@@ -215,16 +265,26 @@ void main() {
         // Swap them in the widget list WITHOUT keys
         await tester.pumpWidget(
           Game(
-            child: GameWidget(
+            child: GameObjectWidget(
               children: [
-                GameWidget(
-                  components: [
-                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
+                GameObjectWidget(
+                  children: [
+                    ComponentWidget(
+                      SpriteRenderer.new.withInitialValues(
+                        (c) => c.color = const ui.Color(0xFF00FF00),
+                      ),
+                      update: (c) => c.color = const ui.Color(0xFF00FF00),
+                    ),
                   ],
                 ),
-                GameWidget(
-                  components: [
-                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
+                GameObjectWidget(
+                  children: [
+                    ComponentWidget(
+                      SpriteRenderer.new.withInitialValues(
+                        (c) => c.color = const ui.Color(0xFFFF0000),
+                      ),
+                      update: (c) => c.color = const ui.Color(0xFFFF0000),
+                    ),
                   ],
                 ),
               ],
@@ -233,7 +293,7 @@ void main() {
         );
 
         final element0After =
-            tester.elementList(find.byType(GameWidget)).elementAt(1)
+            tester.elementList(find.byType(GameObjectWidget)).elementAt(1)
                 as GameObjectElement;
         final comp0After = element0After.getComponent<SpriteRenderer>();
 

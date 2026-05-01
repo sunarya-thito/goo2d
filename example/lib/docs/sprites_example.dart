@@ -67,16 +67,23 @@ class _SpriteWorldState extends GameState<SpriteWorld> with Tickable {
 
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield GameWidget(
-      components: [
-        ObjectTransform.new.withParams((c) => c.scale = const Offset(2, 2)),
-        SpriteRenderer.new.withParams((c) => c.sprite = explosionSheet[(_currentFrame, 0)]),
+    yield GameObjectWidget(
+      children: [
+        ComponentWidget(
+          ObjectTransform.new.withInitialValues(
+            (c) => c.scale = const Offset(2, 2),
+          ),
+        ),
+        ComponentWidget(
+          SpriteRenderer.new,
+          update: (c) => c.sprite = explosionSheet[(_currentFrame, 0)],
+        ),
       ],
     );
 
-    yield GameWidget(
-      components: [ScreenTransform.new],
+    yield GameObjectWidget(
       children: [
+        ComponentWidget(ScreenTransform.new),
         const Center(
           child: Padding(
             padding: EdgeInsets.only(top: 200),
@@ -89,10 +96,12 @@ class _SpriteWorldState extends GameState<SpriteWorld> with Tickable {
       ],
     );
 
-    yield GameWidget(
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams((c) => c..orthographicSize = 5.0),
+    yield GameObjectWidget(
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new.withInitialValues((c) => c..orthographicSize = 5.0),
+        ),
       ],
     );
   }

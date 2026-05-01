@@ -47,17 +47,17 @@ abstract class GameObject implements BuildContext {
 
   /// Adds one or more components to this object.
   void addComponent(
-    GameComponent component, [
-    GameComponent? a,
-    GameComponent? b,
-    GameComponent? c,
-    GameComponent? d,
-    GameComponent? e,
-    GameComponent? f,
-    GameComponent? g,
-    GameComponent? h,
-    GameComponent? i,
-    GameComponent? j,
+    Component component, [
+    Component? a,
+    Component? b,
+    Component? c,
+    Component? d,
+    Component? e,
+    Component? f,
+    Component? g,
+    Component? h,
+    Component? i,
+    Component? j,
   ]);
 
   /// Removes one or more component instances from this object.
@@ -94,7 +94,7 @@ abstract class GameObject implements BuildContext {
   void removeComponentOfType<T extends Component>();
 
   /// Adds multiple components to this object.
-  void addComponents(Iterable<GameComponent> components);
+  void addComponents(Iterable<Component> components);
 
   /// Removes all components of the specified exact runtime types.
   void removeComponents(Iterable<Type> types);

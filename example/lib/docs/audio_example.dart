@@ -23,36 +23,46 @@ class _AudioExampleState extends GameState<AudioExample> {
     const mainCamera = GameTag('MainCamera');
 
     // Background Music
-    yield GameWidget(
+    yield GameObjectWidget(
       key: const GameTag('BGM'),
-      components: [
-        ObjectTransform.new,
-        AudioSource.new.withParams((c) => c
-          ..clip = AudioExampleSound.bgm
-          ..loop = true
-          ..volume = 0.5),
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          AudioSource.new.withInitialValues(
+            (c) => c
+              ..clip = AudioExampleSound.bgm
+              ..loop = true
+              ..volume = 0.5,
+          ),
+        ),
       ],
     );
 
     // Audio Listener (attached to camera)
-    yield GameWidget(
+    yield GameObjectWidget(
       key: mainCamera,
-      components: [
-        ObjectTransform.new,
-        Camera.new.withParams((c) => c..orthographicSize = 5),
-        AudioListener.new,
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          Camera.new.withInitialValues((c) => c..orthographicSize = 5),
+        ),
+        ComponentWidget(AudioListener.new),
       ],
     );
 
     // Clickable Sound Object
-    yield GameWidget(
+    yield GameObjectWidget(
       key: const GameTag('SFX'),
-      components: [
-        ObjectTransform.new,
-        AudioSource.new.withParams((c) => c
-          ..clip = AudioExampleSound.click
-          ..playOnAwake = false),
-        _ClickToPlay.new,
+      children: [
+        ComponentWidget(ObjectTransform.new),
+        ComponentWidget(
+          AudioSource.new.withInitialValues(
+            (c) => c
+              ..clip = AudioExampleSound.click
+              ..playOnAwake = false,
+          ),
+        ),
+        ComponentWidget(_ClickToPlay.new),
       ],
     );
   }
