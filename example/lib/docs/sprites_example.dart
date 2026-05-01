@@ -25,7 +25,7 @@ class _SpriteExampleState extends State<SpriteExample> {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
         }
-        return const Game(child: SpriteWorld());
+        return Game(child: SpriteWorld());
       },
     );
   }
@@ -68,14 +68,14 @@ class _SpriteWorldState extends GameState<SpriteWorld> with Tickable {
   @override
   Iterable<Widget> build(BuildContext context) sync* {
     yield GameWidget(
-      components: () => [
-        ObjectTransform()..scale = const Offset(2, 2),
-        SpriteRenderer()..sprite = explosionSheet[(_currentFrame, 0)],
+      components: [
+        ObjectTransform.new.withParams((c) => c.scale = const Offset(2, 2)),
+        SpriteRenderer.new.withParams((c) => c.sprite = explosionSheet[(_currentFrame, 0)]),
       ],
     );
 
     yield GameWidget(
-      components: () => [ScreenTransform()],
+      components: [ScreenTransform.new],
       children: [
         const Center(
           child: Padding(
@@ -90,9 +90,9 @@ class _SpriteWorldState extends GameState<SpriteWorld> with Tickable {
     );
 
     yield GameWidget(
-      components: () => [
-        ObjectTransform(),
-        Camera()..orthographicSize = 5.0,
+      components: [
+        ObjectTransform.new,
+        Camera.new.withParams((c) => c..orthographicSize = 5.0),
       ],
     );
   }

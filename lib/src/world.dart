@@ -1,6 +1,6 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'game.dart';
+import 'package:goo2d/src/game.dart';
 
 /// A Flutter widget that serves as the root container for the 2D world space.
 /// 

@@ -28,7 +28,7 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [a, b],
+            components: [() => a, () => b],
           ),
         ),
       );
@@ -40,23 +40,22 @@ void main() {
       expect(() => gameObject.getComponent<CompC>(), throwsStateError);
     });
 
-    testWidgets('should find multiple components of the same type', (tester) async {
+    testWidgets('should only keep one component of the same type (last one wins)', (tester) async {
       final a1 = CompA();
       final a2 = CompA();
       
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [a1, a2],
+            components: [() => a1, () => a2],
           ),
         ),
       );
       final gameObject = tester.element(find.byType(GameWidget)) as GameObject;
 
       final comps = gameObject.getComponents<CompA>();
-      expect(comps.length, equals(2));
-      expect(comps, contains(a1));
-      expect(comps, contains(a2));
+      expect(comps.length, equals(1));
+      expect(comps.first, equals(a2));
     });
 
     testWidgets('should find components in children', (tester) async {
@@ -67,7 +66,7 @@ void main() {
           child: GameWidget(
             children: [
               GameWidget(
-                components: () => [a],
+                components: [() => a],
               ),
             ],
           ),
@@ -84,7 +83,7 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [a],
+            components: [() => a],
             children: [
               const GameWidget(),
             ],
@@ -104,7 +103,7 @@ void main() {
         ),
       );
       final gameObject = tester.element(find.byType(MyGameWidget)) as GameObject;
-      gameObject.addComponent(comp);
+      gameObject.addComponent(() => comp);
 
       final state = comp.stateObject<MyGameState>();
       expect(state, isA<MyGameState>());
@@ -117,12 +116,12 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [a],
+            components: [() => a],
           ),
         ),
       );
       
-      a.addComponent(b);
+      a.addComponent(() => b);
       expect(a.gameObject.getComponent<CompB>(), equals(b));
     });
   });

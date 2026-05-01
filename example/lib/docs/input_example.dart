@@ -19,7 +19,7 @@ class InputExample extends StatelessWidget {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-          return const Game(child: InputExampleWorld());
+          return Game(child: InputExampleWorld());
         },
       ),
     );
@@ -63,22 +63,22 @@ class _InputExampleWorldState extends GameState<InputExampleWorld> {
   Iterable<Widget> build(BuildContext context) sync* {
     // Player Ship
     yield GameWidget(
-      components: () => [
-        ObjectTransform()..position = Offset.zero,
-        SpriteRenderer()
+      components: [
+        ObjectTransform.new.withParams((c) => c.position = Offset.zero),
+        SpriteRenderer.new.withParams((c) => c
           ..sprite = GameSprite(
             texture: InputExampleTexture.ship,
             pixelsPerUnit: 32.0,
-          ),
-        PlayerInputMovement()..moveAction = moveAction,
+          )),
+        PlayerInputMovement.new.withParams((c) => c.moveAction = moveAction),
       ],
     );
 
     // Camera
     yield GameWidget(
-      components: () => [
-        ObjectTransform(),
-        Camera()..orthographicSize = 5.0,
+      components: [
+        ObjectTransform.new,
+        Camera.new.withParams((c) => c..orthographicSize = 5.0),
       ],
     );
   }

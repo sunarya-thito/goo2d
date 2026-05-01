@@ -13,6 +13,8 @@ class MockRenderable extends Component with Renderable {
   }
 }
 
+class MockRenderable2 extends MockRenderable {}
+
 void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -23,7 +25,7 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [renderable],
+            components: [() => renderable],
           ),
         ),
       );
@@ -35,12 +37,12 @@ void main() {
 
     testWidgets('should call render on multiple Renderable components', (tester) async {
       final r1 = MockRenderable();
-      final r2 = MockRenderable();
+      final r2 = MockRenderable2();
       
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [r1, r2],
+            components: [() => r1, () => r2],
           ),
         ),
       );
@@ -57,10 +59,10 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [parentR],
+            components: [() => parentR],
             children: [
               GameWidget(
-                components: () => [childR],
+                components: [() => childR],
               ),
             ],
           ),

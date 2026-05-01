@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
 
 mixin TestListener on Component implements EventListener {
   int eventCount = 0;
@@ -17,6 +18,8 @@ class TestComponent extends Component with TestListener {
   void onTestEvent() => eventCount++;
 }
 
+class TestComponent2 extends TestComponent {}
+
 class TestBehavior extends Behavior with TestListener {
   @override
   void onTestEvent() => eventCount++;
@@ -31,7 +34,7 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [comp],
+            components: [() => comp],
           ),
         ),
       );
@@ -44,11 +47,11 @@ void main() {
 
     testWidgets('should dispatch event to multiple components', (tester) async {
       final comp1 = TestComponent();
-      final comp2 = TestComponent();
+      final comp2 = TestComponent2();
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [comp1, comp2],
+            components: [() => comp1, () => comp2],
           ),
         ),
       );
@@ -61,11 +64,11 @@ void main() {
     });
 
     testWidgets('should respect Behavior.enabled', (tester) async {
-      final behavior = TestBehavior()..enabled = false;
+      final behavior = internalCreateComponent(TestBehavior.new.withParams((c) => c.enabled = false)) as TestBehavior;
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [behavior],
+            components: [() => behavior],
           ),
         ),
       );
@@ -87,10 +90,10 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [parentComp],
+            components: [() => parentComp],
             children: [
               GameWidget(
-                components: () => [childComp],
+                components: [() => childComp],
               ),
             ],
           ),
@@ -111,10 +114,10 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [parentComp],
+            components: [() => parentComp],
             children: [
               GameWidget(
-                components: () => [childComp],
+                components: [() => childComp],
               ),
             ],
           ),

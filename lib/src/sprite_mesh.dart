@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
-import 'sprite.dart';
+import 'package:goo2d/src/sprite.dart';
+import 'package:goo2d/src/sprite_fit.dart';
 
 /// Defines the geometric strategy for rendering a sprite.
 /// 

@@ -1,5 +1,6 @@
 import 'dart:ui';
-import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/event.dart';
+import 'package:goo2d/src/game.dart';
 
 /// A mixin that provides callbacks for when an object enters or exits the screen.
 /// 

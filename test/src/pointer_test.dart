@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
 
 class MockPointerReceiver extends Component with PointerReceiver {
   int downCount = 0;
@@ -25,18 +26,22 @@ void main() {
 
   group('Pointer', () {
     testWidgets('should dispatch events to PointerReceiver when hit', (tester) async {
-      final receiver = MockPointerReceiver();
-      final collider = BoxCollider()..size = const Size(100, 100)..offset = const Offset(50, 50);
+      final receiver = internalCreateComponent(MockPointerReceiver.new) as MockPointerReceiver;
+      final collider = internalCreateComponent(BoxCollider.new.withParams((c) {
+        c.size = const Size(100, 100);
+        c.offset = const Offset(50, 50);
+      })) as BoxCollider;
       
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [
-                ScreenTransform()
-                  ..constraints = const BoxConstraints.tightFor(width: 100, height: 100),
-                receiver,
-                collider,
+              components: [
+                ScreenTransform.new.withParams(
+                  (c) => c.constraints = const BoxConstraints.tightFor(width: 100, height: 100),
+                ),
+                () => receiver,
+                () => collider,
               ],
             ),
           ),
@@ -54,18 +59,22 @@ void main() {
     });
 
     testWidgets('should NOT dispatch events when NOT hit', (tester) async {
-      final receiver = MockPointerReceiver();
-      final collider = BoxCollider()..size = const Size(50, 50)..offset = const Offset(25, 25);
-      
+      final receiver = internalCreateComponent(MockPointerReceiver.new) as MockPointerReceiver;
+      final collider = internalCreateComponent(BoxCollider.new.withParams((c) {
+        c.size = const Size(50, 50);
+        c.offset = const Offset(25, 25);
+      })) as BoxCollider;
+
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [
-                ScreenTransform()
-                  ..constraints = const BoxConstraints.tightFor(width: 100, height: 100),
-                receiver,
-                collider,
+              components: [
+                ScreenTransform.new.withParams(
+                  (c) => c.constraints = const BoxConstraints.tightFor(width: 100, height: 100),
+                ),
+                () => receiver,
+                () => collider,
               ],
             ),
           ),
@@ -82,18 +91,22 @@ void main() {
     });
 
     testWidgets('should handle move and hover events', (tester) async {
-      final receiver = MockPointerReceiver();
-      final collider = BoxCollider()..size = const Size(100, 100)..offset = const Offset(50, 50);
+      final receiver = internalCreateComponent(MockPointerReceiver.new) as MockPointerReceiver;
+      final collider = internalCreateComponent(BoxCollider.new.withParams((c) {
+        c.size = const Size(100, 100);
+        c.offset = const Offset(50, 50);
+      })) as BoxCollider;
       
       await tester.pumpWidget(
         Game(
           child: Center(
             child: GameWidget(
-              components: () => [
-                ScreenTransform()
-                  ..constraints = const BoxConstraints.tightFor(width: 100, height: 100),
-                receiver,
-                collider,
+              components: [
+                ScreenTransform.new.withParams(
+                  (c) => c.constraints = const BoxConstraints.tightFor(width: 100, height: 100),
+                ),
+                () => receiver,
+                () => collider,
               ],
             ),
           ),

@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+// ignore: implementation_imports
+import 'package:goo2d/src/component.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // --- Assets ---
@@ -82,7 +84,7 @@ class _MyAppState extends State<MyApp> {
             }
             return DefaultTextStyle(
               style: GoogleFonts.jersey10(),
-              child: const Game(
+              child: Game(
                 child: BattleWorld(),
               ),
             );
@@ -125,13 +127,15 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     // Background & Music
     yield GameWidget(
       key: const GameTag('Background'),
-      components: () => [
-        ObjectTransform(),
-        TiledBackground(),
-        AudioSource()
-          ..clip = MyGameSound.bgm
-          ..loop = true
-          ..volume = 0.5,
+      components: [
+        ObjectTransform.new,
+        TiledBackground.new,
+        AudioSource.new.withParams(
+          (c) => c
+            ..clip = MyGameSound.bgm
+            ..loop = true
+            ..volume = 0.5,
+        ),
       ],
     );
 
@@ -144,27 +148,31 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     // Cameras
     yield GameWidget(
       key: const GameTag('MainCamera'),
-      components: () => [
-        ObjectTransform(),
-        Camera()
-          ..depth = 1.0
-          ..backgroundColor = Colors.black
-          ..orthographicSize = 2.0,
-        FollowTarget(targetTag: playerTag),
-        CameraShake(),
+      components: [
+        ObjectTransform.new,
+        Camera.new.withParams(
+          (c) => c
+            ..depth = 1.0
+            ..backgroundColor = Colors.black
+            ..orthographicSize = 2.0,
+        ),
+        FollowTarget.new.withParams((c) => c.targetTag = playerTag),
+        CameraShake.new,
       ],
     );
 
     yield GameWidget(
       key: const GameTag('MinimapCamera'),
-      components: () => [
-        ObjectTransform(),
-        Camera()
-          ..depth = 0.0
-          ..orthographicSize = 3.0
-          ..backgroundColor = Colors.black87
-          ..cullingMask = RenderLayer.world,
-        FollowTarget(targetTag: playerTag),
+      components: [
+        ObjectTransform.new,
+        Camera.new.withParams(
+          (c) => c
+            ..depth = 0.0
+            ..orthographicSize = 3.0
+            ..backgroundColor = Colors.black87
+            ..cullingMask = RenderLayer.world,
+        ),
+        FollowTarget.new.withParams((c) => c.targetTag = playerTag),
       ],
     );
 
@@ -206,17 +214,19 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
       enemies.add(
         GameWidget(
           key: GameTag(UniqueKey()),
-          components: () => [
-            ObjectTransform()..position = pos,
-            Rigidbody()..type = RigidbodyType.kinematic,
-            SpriteRenderer()
-              ..sprite = GameSprite(
-                texture: MyGameTexture.enemy,
-                pixelsPerUnit: 64.0,
-              )
-              ..filterQuality = ui.FilterQuality.none,
-            EnemyController(),
-            CircleCollider()..radius = 0.2,
+          components: [
+            ObjectTransform.new.withParams((c) => c.position = pos),
+            Rigidbody.new.withParams((c) => c.type = RigidbodyType.kinematic),
+            SpriteRenderer.new.withParams(
+              (c) => c
+                ..sprite = GameSprite(
+                  texture: MyGameTexture.enemy,
+                  pixelsPerUnit: 64.0,
+                )
+                ..filterQuality = ui.FilterQuality.none,
+            ),
+            EnemyController.new,
+            CircleCollider.new.withParams((c) => c.radius = 0.2),
           ],
         ),
       );
@@ -228,17 +238,23 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
       enemies.add(
         GameWidget(
           key: GameTag(UniqueKey()),
-          components: () => [
-            ObjectTransform()
-              ..position = position
-              ..scale = const Offset(1.0, -1.0),
-            SpriteRenderer()
-              ..sprite = explosionSheet[(0, 0)]
-              ..filterQuality = ui.FilterQuality.none,
-            ExplosionController(),
-            AudioSource()
-              ..clip = MyGameSound.explosion
-              ..volume = 1.5,
+          components: [
+            ObjectTransform.new.withParams(
+              (c) => c
+                ..position = position
+                ..scale = const Offset(1.0, -1.0),
+            ),
+            SpriteRenderer.new.withParams(
+              (c) => c
+                ..sprite = explosionSheet[(0, 0)]
+                ..filterQuality = ui.FilterQuality.none,
+            ),
+            ExplosionController.new,
+            AudioSource.new.withParams(
+              (c) => c
+                ..clip = MyGameSound.explosion
+                ..volume = 1.5,
+            ),
           ],
         ),
       );
@@ -293,21 +309,29 @@ class PlayerState extends GameState<Player> with Tickable {
     );
 
     addComponent(
-      ObjectTransform()..position = Offset.zero,
-      Rigidbody()..type = RigidbodyType.kinematic,
-      SpriteRenderer()
-        ..sprite = GameSprite(
-          texture: MyGameTexture.ship,
-          pivot: NormalizedPivot.center,
-          pixelsPerUnit: 64.0,
-        )
-        ..filterQuality = ui.FilterQuality.none,
-      CircleCollider()..radius = 0.2,
-      BlinkEffect(),
-      _audioSource = AudioSource()
-        ..clip = MyGameSound.shoot
-        ..volume = 0.4
-        ..playOnAwake = false,
+      ObjectTransform.new.withParams((c) => c.position = Offset.zero),
+      Rigidbody.new.withParams((c) => c.type = RigidbodyType.kinematic),
+      SpriteRenderer.new.withParams(
+        (c) => c
+          ..sprite = GameSprite(
+            texture: MyGameTexture.ship,
+            pivot: NormalizedPivot.center,
+            pixelsPerUnit: 64.0,
+          )
+          ..filterQuality = ui.FilterQuality.none,
+      ),
+      CircleCollider.new.withParams((c) => c.radius = 0.2),
+      BlinkEffect.new,
+      _audioSource =
+          internalCreateComponent(
+                AudioSource.new.withParams(
+                  (c) => c
+                    ..clip = MyGameSound.shoot
+                    ..volume = 0.4
+                    ..playOnAwake = false,
+                ),
+              )
+              as AudioSource,
     );
   }
 
@@ -358,17 +382,21 @@ class PlayerState extends GameState<Player> with Tickable {
       _world.addBullet(
         GameWidget(
           key: GameTag(UniqueKey()),
-          components: () => [
-            ObjectTransform()
-              ..position = trans.position + facing * 0.25
-              ..angle = trans.angle,
-            SpriteRenderer()
-              ..sprite = _bulletSprite
-              ..filterQuality = ui.FilterQuality.none,
-            BulletController()..direction = facing,
-            Rigidbody()..type = RigidbodyType.kinematic,
-            BulletOutOfScreenDestroyer(),
-            CircleCollider()..radius = 0.2,
+          components: [
+            ObjectTransform.new.withParams(
+              (c) => c
+                ..position = trans.position + facing * 0.25
+                ..angle = trans.angle,
+            ),
+            SpriteRenderer.new.withParams(
+              (c) => c
+                ..sprite = _bulletSprite
+                ..filterQuality = ui.FilterQuality.none,
+            ),
+            BulletController.new.withParams((c) => c.direction = facing),
+            Rigidbody.new.withParams((c) => c.type = RigidbodyType.kinematic),
+            BulletOutOfScreenDestroyer.new,
+            CircleCollider.new.withParams((c) => c.radius = 0.2),
           ],
         ),
       );
@@ -460,8 +488,7 @@ class EnemyController extends Behavior
 // --- Reusable Behaviors & Helpers ---
 
 class FollowTarget extends Behavior with LifecycleListener, LateTickable {
-  final GameTag targetTag;
-  FollowTarget({required this.targetTag});
+  late GameTag targetTag;
   @override
   void onLateUpdate(double dt) {
     final target = targetTag.gameObject?.tryGetComponent<ObjectTransform>();

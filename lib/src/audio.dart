@@ -1,7 +1,14 @@
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter_soloud/flutter_soloud.dart' as soloud;
-import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
+import 'package:goo2d/src/game.dart';
+import 'package:goo2d/src/object.dart';
+import 'package:goo2d/src/lifecycle.dart';
+import 'package:goo2d/src/asset.dart';
+import 'package:goo2d/src/transform.dart';
+import 'package:goo2d/src/camera.dart';
+import 'package:goo2d/src/ticker.dart';
 
 /// A component that acts as the "ears" of a game instance.
 /// 

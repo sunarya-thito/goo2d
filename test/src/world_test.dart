@@ -25,9 +25,9 @@ void main() {
             game: game, // Corrected from engine
             child: GameWidget(
               key: const GameTag('MainCamera'),
-              components: () => [
-                Camera(),
-                ObjectTransform()..position = const Offset(100, 200),
+              components: [
+                Camera.new,
+                ObjectTransform.new.withParams((c) => c.position = const Offset(100, 200)),
               ],
             ),
           ),
@@ -66,11 +66,11 @@ void main() {
           Game(
             child: GameWidget(
               key: const GameTag('MainCamera'),
-              components: () => [
-                Camera()..orthographicSize = 5.0,
-                ObjectTransform()..position = Offset.zero,
-                _MockPointerReceiver(() => hit = true),
-                BoxCollider()..size = const Size(100, 100),
+              components: [
+                Camera.new.withParams((c) => c.orthographicSize = 5.0),
+                ObjectTransform.new.withParams((c) => c.position = Offset.zero),
+                () => _MockPointerReceiver(() => hit = true),
+                BoxCollider.new.withParams((c) => c.size = const Size(100, 100)),
               ],
             ),
           ),

@@ -62,9 +62,9 @@ class PhysicsStressScene extends StatelessWidget {
     return GameWidget(
       key: polyTag,
       name: 'poly',
-      components: () => [
-        ObjectTransform(),
-        PolygonCollider()..vertices = vertices,
+      components: [
+        ObjectTransform.new,
+        PolygonCollider.new.withParams((c) => c.vertices = vertices),
       ],
     );
   }

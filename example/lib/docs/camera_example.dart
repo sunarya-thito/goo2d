@@ -34,7 +34,7 @@ class _CameraExampleState extends State<CameraExample> {
             child: CircularProgressIndicator(color: Colors.white),
           );
         }
-        return const Game(child: CameraExampleWorld());
+        return Game(child: CameraExampleWorld());
       },
     );
   }
@@ -77,7 +77,7 @@ class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
   Iterable<Widget> build(BuildContext context) sync* {
     const playerTag = GameTag('Player');
 
-    yield const WorldBackground();
+    yield WorldBackground();
 
     yield PlayerShip(
       key: playerTag,
@@ -86,17 +86,17 @@ class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
 
     yield GameWidget(
       key: const GameTag('MainCamera'),
-      components: () => [
-        ObjectTransform(),
-        Camera()
+      components: [
+        ObjectTransform.new,
+        Camera.new.withParams((c) => c
           ..depth = 1.0
           ..backgroundColor = Colors.black
-          ..orthographicSize = 5.0,
-        FollowPlayer()..targetTag = playerTag,
+          ..orthographicSize = 5.0),
+        FollowPlayer.new.withParams((c) => c.targetTag = playerTag),
       ],
     );
 
-    yield const SimpleHUD();
+    yield SimpleHUD();
   }
 }
 
@@ -130,13 +130,13 @@ class _PlayerShipState extends GameState<PlayerShip> {
   void initState() {
     super.initState();
     addComponent(
-      ObjectTransform()..position = Offset.zero,
-      SpriteRenderer()
+      ObjectTransform.new.withParams((c) => c.position = Offset.zero),
+      SpriteRenderer.new.withParams((c) => c
         ..sprite = GameSprite(
           texture: CameraExampleTexture.ship,
           pixelsPerUnit: 32,
-        ),
-      ShipMovement()..moveAction = widget.moveAction,
+        )),
+      ShipMovement.new.withParams((c) => c.moveAction = widget.moveAction),
     );
   }
 
@@ -183,7 +183,7 @@ class _SimpleHUDState extends GameState<SimpleHUD> {
   @override
   Iterable<Widget> build(BuildContext context) sync* {
     yield GameWidget(
-      components: () => [ScreenTransform()],
+      components: [ScreenTransform.new],
       children: [
         Align(
           alignment: Alignment.topCenter,

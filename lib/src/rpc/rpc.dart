@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
+import 'package:goo2d/src/ticker.dart';
 import 'package:goo2d/src/rpc/parser.dart';
 import 'package:goo2d/src/rpc/registry.dart';
 

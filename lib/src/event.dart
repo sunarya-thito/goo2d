@@ -1,4 +1,5 @@
-import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
+import 'package:goo2d/src/object.dart';
 
 /// A mixin that identifies a [Component] as a target for specific [Event]s.
 /// 

@@ -68,7 +68,7 @@ class LookupStressScene extends StatelessWidget {
       name: 'container',
       children: List.generate(total, (i) => GameWidget(
         name: 'obj_$i',
-        components: () => i % 100 == 0 ? [BoxCollider()] : [],
+        components: i % 100 == 0 ? [BoxCollider.new] : [],
       )),
     );
   }

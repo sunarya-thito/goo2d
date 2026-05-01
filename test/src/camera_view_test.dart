@@ -1,12 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
 
 void main() {
   group('CameraView', () {
     testWidgets('should render children through tagged camera', (tester) async {
       const camTag = GameTag('SecondaryCamera');
-      final cam = Camera()..backgroundColor = const Color(0xFFFF0000);
+      final cam = internalCreateComponent(Camera.new.withParams((c) => c.backgroundColor = const Color(0xFFFF0000))) as Camera;
 
       await tester.pumpWidget(
         Directionality(
@@ -16,7 +17,7 @@ void main() {
               children: [
                 GameWidget(
                   key: camTag,
-                  components: () => [ObjectTransform(), cam],
+                  components: [ObjectTransform.new, () => cam],
                 ),
                 const Positioned(
                   bottom: 0,

@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/object.dart';
 
 class MockComponent extends Component with LifecycleListener {
   bool mountedCalled = false;
@@ -49,7 +48,7 @@ void main() {
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(key: GlobalKey(), components: () => [component]),
+          child: GameWidget(key: GlobalKey(), components: [() => component]),
         ),
       );
       await tester.pump();
@@ -69,7 +68,7 @@ void main() {
       final eventComponent = EventComponent();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: () => [eventComponent])),
+        Game(child: GameWidget(components: [() => eventComponent])),
       );
       await tester.pump();
 
@@ -89,9 +88,9 @@ void main() {
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [parentEventComponent],
+            components: [() => parentEventComponent],
             children: [
-              GameWidget(components: () => [childEventComponent]),
+              GameWidget(components: [() => childEventComponent]),
             ],
           ),
         ),
@@ -116,7 +115,7 @@ void main() {
       final component = MockComponent();
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: () => [component])),
+        Game(child: GameWidget(components: [() => component])),
       );
       await tester.pump();
 
@@ -128,7 +127,7 @@ void main() {
     });
 
     testWidgets('should throw error when getComponent fails', (tester) async {
-      await tester.pumpWidget(Game(child: GameWidget(components: () => [])));
+      await tester.pumpWidget(Game(child: const GameWidget(components: [])));
       await tester.pump();
 
       final gameObject = tester.element(find.byType(GameWidget)) as GameObject;

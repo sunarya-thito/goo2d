@@ -14,7 +14,7 @@ void main() {
       }
 
       await tester.pumpWidget(
-        const Game(
+        Game(
           child: GameWidget(),
         ),
       );
@@ -39,7 +39,7 @@ void main() {
       }
 
       await tester.pumpWidget(
-        const Game(
+        Game(
           child: GameWidget(),
         ),
       );
@@ -65,7 +65,7 @@ void main() {
       }
 
       await tester.pumpWidget(
-        const Game(
+        Game(
           child: GameWidget(),
         ),
       );
@@ -93,7 +93,7 @@ void main() {
       }
 
       await tester.pumpWidget(
-        const Game(
+        Game(
           child: GameWidget(),
         ),
       );
@@ -119,7 +119,7 @@ void main() {
       }
 
       await tester.pumpWidget(
-        const Game(
+        Game(
           child: GameWidget(),
         ),
       );
@@ -133,7 +133,7 @@ void main() {
       final lastCount = count;
 
       // Unmount
-      await tester.pumpWidget(const Game(child: SizedBox()));
+      await tester.pumpWidget(Game(child: const SizedBox()));
       await tester.pump();
       await tester.idle();
       
@@ -161,7 +161,7 @@ void main() {
       }
 
       await tester.pumpWidget(
-        const Game(
+        Game(
           child: GameWidget(),
         ),
       );

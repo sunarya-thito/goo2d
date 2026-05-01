@@ -15,7 +15,7 @@ void main() {
       final compA = ComponentA();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(name: 'Root', components: () => [compA]),
+          child: GameWidget(name: 'Root', components: [() => compA]),
         ),
       );
       await tester.pump();
@@ -34,7 +34,7 @@ void main() {
           child: GameWidget(
             name: 'Parent',
             children: [
-              GameWidget(name: 'Child', components: () => [compA]),
+              GameWidget(name: 'Child', components: [() => compA]),
             ],
           ),
         ),
@@ -56,7 +56,7 @@ void main() {
       final compA = ComponentA();
       await tester.pumpWidget(
         Game(
-          child: GameWidget(name: 'Root', components: () => [compA]),
+          child: GameWidget(name: 'Root', components: [() => compA]),
         ),
       );
       await tester.pump();
@@ -71,7 +71,7 @@ void main() {
         Game(
           child: GameWidget(
             name: 'Parent',
-            components: () => [compA],
+            components: [() => compA],
             children: [GameWidget(name: 'Child')],
           ),
         ),
@@ -95,9 +95,9 @@ void main() {
         Game(
           child: GameWidget(
             name: 'Parent',
-            components: () => [compA1],
+            components: [() => compA1],
             children: [
-              GameWidget(name: 'Child', components: () => [compA2]),
+              GameWidget(name: 'Child', components: [() => compA2]),
             ],
           ),
         ),

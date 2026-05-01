@@ -83,3 +83,30 @@ class UnmountedEvent extends Event<LifecycleListener> {
     listener.onUnmounted();
   }
 }
+
+/// A mixin for objects that need to react to hot reload events.
+/// 
+/// Classes mixing in [HotReloadable] must implement [onHotReload]. This 
+/// is used by components to reset state or refresh assets when the 
+/// code is updated at runtime.
+mixin HotReloadable implements EventListener {
+  /// Invoked during Flutter's reassemble (hot reload).
+  /// 
+  /// Use this to re-fetch assets, clear caches, or reset state that 
+  /// might have been corrupted by code changes.
+  void onHotReload() {}
+}
+
+/// An event dispatched during hot reload.
+/// 
+/// Triggers the [HotReloadable.onHotReload] callback on all listeners 
+/// in the scene graph during the reassemble phase.
+class HotReloadEvent extends Event<HotReloadable> {
+  /// Creates a [HotReloadEvent] instance.
+  const HotReloadEvent();
+
+  @override
+  void dispatch(HotReloadable listener) {
+    listener.onHotReload();
+  }
+}

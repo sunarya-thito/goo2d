@@ -25,34 +25,34 @@ class _AudioExampleState extends GameState<AudioExample> {
     // Background Music
     yield GameWidget(
       key: const GameTag('BGM'),
-      components: () => [
-        ObjectTransform(),
-        AudioSource()
+      components: [
+        ObjectTransform.new,
+        AudioSource.new.withParams((c) => c
           ..clip = AudioExampleSound.bgm
           ..loop = true
-          ..volume = 0.5,
+          ..volume = 0.5),
       ],
     );
 
     // Audio Listener (attached to camera)
     yield GameWidget(
       key: mainCamera,
-      components: () => [
-        ObjectTransform(),
-        Camera()..orthographicSize = 5,
-        AudioListener(),
+      components: [
+        ObjectTransform.new,
+        Camera.new.withParams((c) => c..orthographicSize = 5),
+        AudioListener.new,
       ],
     );
 
     // Clickable Sound Object
     yield GameWidget(
       key: const GameTag('SFX'),
-      components: () => [
-        ObjectTransform(),
-        AudioSource()
+      components: [
+        ObjectTransform.new,
+        AudioSource.new.withParams((c) => c
           ..clip = AudioExampleSound.click
-          ..playOnAwake = false,
-        _ClickToPlay(),
+          ..playOnAwake = false),
+        _ClickToPlay.new,
       ],
     );
   }

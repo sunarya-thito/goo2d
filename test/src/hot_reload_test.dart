@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/object.dart';
+import 'package:goo2d/src/element.dart';
 
 void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
@@ -15,8 +15,8 @@ void main() {
         Game(
           child: GameWidget(
             key: const GameTag('test'),
-            components: () => [
-              SpriteRenderer()..color = const ui.Color(0xFFFF0000),
+            components: [
+              SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
             ],
           ),
         ),
@@ -32,8 +32,8 @@ void main() {
         Game(
           child: GameWidget(
             key: const GameTag('test'),
-            components: () => [
-              SpriteRenderer()..color = const ui.Color(0xFF00FF00),
+            components: [
+              SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
             ],
           ),
         ),
@@ -58,7 +58,7 @@ void main() {
         Game(
           child: GameWidget(
             key: const GameTag('test'),
-            components: () => [ObjectTransform()],
+            components: [ObjectTransform.new.withNoParams],
           ),
         ),
       );
@@ -85,14 +85,14 @@ void main() {
             children: [
               GameWidget(
                 key: const ValueKey('a'),
-                components: () => [
-                  SpriteRenderer()..color = const ui.Color(0xFFFF0000),
+                components: [
+                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
                 ],
               ),
               GameWidget(
                 key: const ValueKey('b'),
-                components: () => [
-                  SpriteRenderer()..color = const ui.Color(0xFF00FF00),
+                components: [
+                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
                 ],
               ),
             ],
@@ -112,14 +112,14 @@ void main() {
             children: [
               GameWidget(
                 key: const ValueKey('b'),
-                components: () => [
-                  SpriteRenderer()..color = const ui.Color(0xFF00FF00),
+                components: [
+                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
                 ],
               ),
               GameWidget(
                 key: const ValueKey('a'),
-                components: () => [
-                  SpriteRenderer()..color = const ui.Color(0xFFFF0000),
+                components: [
+                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
                 ],
               ),
             ],
@@ -143,9 +143,9 @@ void main() {
             children: [
               GameWidget(
                 key: const GameTag('hero'),
-                components: () => [
-                  ObjectTransform(),
-                  SpriteRenderer()..color = const ui.Color(0xFF0000FF),
+                components: [
+                  ObjectTransform.new.withNoParams,
+                  SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF0000FF)),
                 ],
               ),
             ],
@@ -165,9 +165,9 @@ void main() {
               Container(
                 child: GameWidget(
                   key: const GameTag('hero'),
-                  components: () => [
-                    ObjectTransform(),
-                    SpriteRenderer()..color = const ui.Color(0xFF0000FF),
+                  components: [
+                    ObjectTransform.new.withNoParams,
+                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF0000FF)),
                   ],
                 ),
               ),
@@ -192,13 +192,13 @@ void main() {
             child: GameWidget(
               children: [
                 GameWidget(
-                  components: () => [
-                    SpriteRenderer()..color = const ui.Color(0xFFFF0000),
+                  components: [
+                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
                   ],
                 ),
                 GameWidget(
-                  components: () => [
-                    SpriteRenderer()..color = const ui.Color(0xFF00FF00),
+                  components: [
+                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
                   ],
                 ),
               ],
@@ -218,13 +218,13 @@ void main() {
             child: GameWidget(
               children: [
                 GameWidget(
-                  components: () => [
-                    SpriteRenderer()..color = const ui.Color(0xFF00FF00),
+                  components: [
+                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFF00FF00)),
                   ],
                 ),
                 GameWidget(
-                  components: () => [
-                    SpriteRenderer()..color = const ui.Color(0xFFFF0000),
+                  components: [
+                    SpriteRenderer.new.withUpdateParams((c) => c.color = const ui.Color(0xFFFF0000)),
                   ],
                 ),
               ],

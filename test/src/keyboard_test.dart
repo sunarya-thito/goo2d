@@ -8,7 +8,7 @@ void main() {
 
   group('Keyboard', () {
     testWidgets('should detect key presses', (tester) async {
-      await tester.pumpWidget(const Game(child: GameWidget()));
+      await tester.pumpWidget(Game(child: const GameWidget()));
       await tester.pump();
       final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
 
@@ -24,7 +24,7 @@ void main() {
     });
 
     testWidgets('should track frame-relative state', (tester) async {
-      await tester.pumpWidget(const Game(child: GameWidget()));
+      await tester.pumpWidget(Game(child: const GameWidget()));
       await tester.pump();
       final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
 
@@ -93,7 +93,7 @@ void main() {
 
     group('InputControl', () {
       testWidgets('should report correctly', (tester) async {
-        await tester.pumpWidget(const Game(child: GameWidget()));
+        await tester.pumpWidget(Game(child: const GameWidget()));
         await tester.pump();
         final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
 

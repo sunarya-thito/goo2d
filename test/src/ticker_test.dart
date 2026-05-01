@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
 
 class MockTickable extends Component with Tickable {
   int updateCount = 0;
@@ -30,10 +31,10 @@ void main() {
     testWidgets('should increment frameCount and update deltaTime', (
       tester,
     ) async {
-      final tickable = MockTickable();
+      final tickable = internalCreateComponent(MockTickable.new) as MockTickable;
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: () => [tickable])),
+        Game(child: GameWidget(components: [() => tickable])),
       );
 
       final game = (tester.element(find.byType(GameWidget)) as GameObject).game;
@@ -51,10 +52,10 @@ void main() {
     testWidgets('should run multiple FixedUpdate ticks when delta is large', (
       tester,
     ) async {
-      final fixedTickable = MockFixedTickable();
+      final fixedTickable = internalCreateComponent(MockFixedTickable.new) as MockFixedTickable;
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: () => [fixedTickable])),
+        Game(child: GameWidget(components: [() => fixedTickable])),
       );
       await tester.pump();
 
@@ -66,10 +67,10 @@ void main() {
     });
 
     testWidgets('should respect custom fixedDeltaTime', (tester) async {
-      final fixedTickable = MockFixedTickable();
+      final fixedTickable = internalCreateComponent(MockFixedTickable.new) as MockFixedTickable;
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: () => [fixedTickable])),
+        Game(child: GameWidget(components: [() => fixedTickable])),
       );
       await tester.pump();
 
@@ -87,10 +88,10 @@ void main() {
     });
 
     testWidgets('should maintain accumulator between frames', (tester) async {
-      final fixedTickable = MockFixedTickable();
+      final fixedTickable = internalCreateComponent(MockFixedTickable.new) as MockFixedTickable;
 
       await tester.pumpWidget(
-        Game(child: GameWidget(components: () => [fixedTickable])),
+        Game(child: GameWidget(components: [() => fixedTickable])),
       );
       await tester.pump();
 

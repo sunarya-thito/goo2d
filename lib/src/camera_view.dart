@@ -1,9 +1,10 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'game.dart';
-import 'camera.dart';
-import 'object.dart';
-import 'world.dart';
+import 'package:goo2d/src/game.dart';
+import 'package:goo2d/src/camera.dart';
+import 'package:goo2d/src/object.dart';
+import 'package:goo2d/src/world.dart';
+import 'package:goo2d/src/render.dart';
 
 /// A widget that renders a specific camera's view into a sub-region of the screen.
 /// 

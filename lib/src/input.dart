@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/game.dart';
 
 part 'keyboard.dart';
 

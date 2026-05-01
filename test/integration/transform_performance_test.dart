@@ -52,7 +52,7 @@ class WorldMatrixStressScene extends StatelessWidget {
     return GameWidget(
       key: isRoot ? rootTag : (isLeaf ? leafTag : null),
       name: isRoot ? 'root' : (isLeaf ? 'leaf' : 'd_$current'),
-      components: () => [ObjectTransform()],
+      components: [ObjectTransform.new],
       children: [if (!isLeaf) _buildDepth(max, current + 1)],
     );
   }

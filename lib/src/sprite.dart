@@ -1,16 +1,18 @@
 import 'dart:ui' as ui;
-import 'package:goo2d/goo2d.dart';
-export 'sprite_mesh.dart';
-export 'sprite_pivot.dart';
-export 'sprite_fit.dart';
+import 'package:goo2d/src/asset.dart';
+import 'package:goo2d/src/sprite_pivot.dart';
+import 'package:goo2d/src/sprite_mesh.dart';
+import 'package:goo2d/src/component.dart';
+import 'package:goo2d/src/object.dart';
+import 'package:goo2d/src/render.dart';
 
 /// Represents a visual region within a [GameTexture].
-/// 
-/// A [GameSprite] defines a specific rectangle of a texture to be 
-/// rendered, along with metadata like the [pivot] point and 
-/// [pixelsPerUnit] scaling. This allows for efficient use of texture 
+///
+/// A [GameSprite] defines a specific rectangle of a texture to be
+/// rendered, along with metadata like the [pivot] point and
+/// [pixelsPerUnit] scaling. This allows for efficient use of texture
 /// atlases and consistent world-space sizing.
-/// 
+///
 /// ```dart
 /// final sprite = GameSprite(
 ///   texture: myTexture,
@@ -21,33 +23,33 @@ export 'sprite_fit.dart';
 /// ```
 class GameSprite {
   /// The source texture asset containing this sprite.
-  /// 
+  ///
   /// Provides the raw pixel data for rendering.
   final GameTexture texture;
-  
+
   /// The source rectangle within the texture.
-  /// 
+  ///
   /// Defines the pixel boundaries of the sprite within its parent texture.
   final ui.Rect? _rect;
 
   /// The point within the sprite that corresponds to its [ObjectTransform.position].
-  /// 
+  ///
   /// Defines the origin for rotation and scaling.
   final SpritePivot pivot;
 
   /// The number of pixels that correspond to one unit in the game world.
-  /// 
-  /// For example, if PPU is 100.0, a 100x100 pixel sprite will be 
+  ///
+  /// For example, if PPU is 100.0, a 100x100 pixel sprite will be
   /// exactly 1.0x1.0 units in world space.
   final double pixelsPerUnit;
 
   /// The mesh used to render this sprite.
-  /// 
+  ///
   /// Determines the geometry and UV mapping. Defaults to a standard quad.
   final SpriteMesh mesh;
 
   /// Creates a [GameSprite].
-  /// 
+  ///
   /// Initializes the sprite with a texture and optional region/pivot/ppu.
   ///
   /// * [texture]: The source image asset.
@@ -64,12 +66,12 @@ class GameSprite {
   }) : _rect = rect;
 
   /// The underlying [GameTexture] asset.
-  /// 
+  ///
   /// Direct accessor for the source texture.
   GameTexture get textureAsset => texture;
 
   /// The source rectangle within the texture (in pixels).
-  /// 
+  ///
   /// If no rect is specified, the entire texture dimensions are used.
   ui.Rect get rect =>
       _rect ??
@@ -81,22 +83,22 @@ class GameSprite {
       );
 
   /// Alias for [rect] to maintain Unity-parity.
-  /// 
+  ///
   /// Returns the same source region as [rect].
   ui.Rect get textureRect => rect;
 
   /// The logical pixel dimensions of the sprite.
-  /// 
+  ///
   /// Returns the size of the [rect].
   ui.Size get size => rect.size;
 
   /// The calculated pixel offset of the pivot point relative to the top-left.
-  /// 
+  ///
   /// Computed based on the [pivot] strategy and the current [size].
   ui.Offset get pivotOffset => pivot.compute(rect.size);
 
   /// The world-space bounds of the sprite relative to its pivot.
-  /// 
+  ///
   /// These bounds are used for collision detection and culling.
   ui.Rect get bounds {
     final p = pivotOffset;
@@ -111,11 +113,11 @@ class GameSprite {
 }
 
 /// A component that renders a [GameSprite] in the game world.
-/// 
-/// [SpriteRenderer] handles the transformation from pixel space to 
-/// world space and applies coloring, flipping, and blending effects. 
+///
+/// [SpriteRenderer] handles the transformation from pixel space to
+/// world space and applies coloring, flipping, and blending effects.
 /// It must be attached to a [GameObject] with an [ObjectTransform].
-/// 
+///
 /// ```dart
 /// gameObject.addComponent(SpriteRenderer())
 ///   ..sprite = mySprite
@@ -124,40 +126,40 @@ class GameSprite {
 /// ```
 class SpriteRenderer extends Behavior with Renderable {
   /// The sprite to be rendered.
-  /// 
+  ///
   /// Defines the source image and region for the renderer.
   GameSprite? sprite;
 
-  /// The tint color applied to the sprite. 
-  /// 
-  /// Defaults to opaque white. The [blendMode] determines how this color is 
+  /// The tint color applied to the sprite.
+  ///
+  /// Defaults to opaque white. The [blendMode] determines how this color is
   /// mixed with the texture pixels.
   ui.Color color = const ui.Color(0xFFFFFFFF);
 
   /// Whether to horizontally flip the sprite.
-  /// 
+  ///
   /// If true, the texture will be mirrored across the vertical axis.
   bool flipX = false;
 
   /// Whether to vertically flip the sprite.
-  /// 
+  ///
   /// If true, the texture will be mirrored across the horizontal axis.
   bool flipY = false;
 
   /// The quality of filtering when scaling the sprite.
-  /// 
+  ///
   /// Affects the visual smoothness of scaled textures.
   ui.FilterQuality filterQuality = ui.FilterQuality.low;
 
   /// The blend mode used when applying the [color] tint.
-  /// 
+  ///
   /// Determines the mathematical operation for combining the tint and texture.
   ui.BlendMode blendMode = ui.BlendMode.modulate;
 
   /// Legacy setter for [GameTexture].
-  /// 
+  ///
   /// Automatically wraps the texture in a [GameSprite] with default settings.
-  /// 
+  ///
   /// * [tex]: The texture to assign.
   set texture(GameTexture? tex) {
     if (tex != null) {
@@ -201,28 +203,28 @@ class SpriteRenderer extends Behavior with Renderable {
 }
 
 /// A coordinate type used for grid-based sprite lookups.
-/// 
+///
 /// Consists of an (x, y) integer pair representing the tile position.
 typedef TileCoord = (int x, int y);
 
 /// Represents a single entry in a [TaggedSpriteSheet].
-/// 
+///
 /// ```dart
 /// const entry = SheetEntry(key: 'player', rect: Rect.fromLTWH(0, 0, 32, 32));
 /// ```
 class SheetEntry<T> {
   /// The unique identifier for this sprite.
-  /// 
+  ///
   /// Usually a [String] tag or an [Enum] value.
   final T key;
 
   /// The pixel rectangle within the sheet.
-  /// 
+  ///
   /// Defines the source area to be extracted for this entry.
   final ui.Rect rect;
 
   /// Creates a [SheetEntry].
-  /// 
+  ///
   /// Initializes the entry with a key and source area.
   ///
   /// * [key]: The identifier for this sprite.
@@ -231,43 +233,43 @@ class SheetEntry<T> {
 }
 
 /// A collection of sprites packed into a single texture.
-/// 
-/// Sprite sheets are an optimization that reduces draw calls and 
-/// simplifies asset management. [SpriteSheet] provides factory 
+///
+/// Sprite sheets are an optimization that reduces draw calls and
+/// simplifies asset management. [SpriteSheet] provides factory
 /// methods for grid-based (uniform) and tagged (non-uniform) layouts.
-/// 
+///
 /// ```dart
 /// final sheet = SpriteSheet.grid(texture: tex, rows: 2, columns: 2);
 /// ```
 abstract class SpriteSheet<K> {
   /// The source texture for the sheet.
-  /// 
+  ///
   /// Contains all individual sprites packed into one image asset.
   final GameTexture texture;
 
   /// Internal constructor for [SpriteSheet].
-  /// 
+  ///
   /// Initializes the base sheet with a texture.
   ///
   /// * [texture]: The source image for all sprites.
   const SpriteSheet({required this.texture});
 
   /// Retrieves a [GameSprite] from the sheet.
-  /// 
+  ///
   /// Performs a lookup based on the key [K] and returns a configured sprite.
-  /// 
+  ///
   /// * [key]: The identifier for the desired sprite.
   GameSprite getTileAt(K key);
 
   /// Convenience operator for [getTileAt].
-  /// 
+  ///
   /// Allows for `sheet[key]` syntax to retrieve sprites.
-  /// 
+  ///
   /// * [key]: The identifier for the desired sprite.
   GameSprite operator [](K key) => getTileAt(key);
 
   /// Creates a sheet where sprites are identified by unique tags.
-  /// 
+  ///
   /// Allows for non-uniform packing of sprites.
   ///
   /// * [texture]: The source texture.
@@ -284,7 +286,7 @@ abstract class SpriteSheet<K> {
   }) = TaggedSpriteSheet<K>;
 
   /// Creates a sheet where sprites are arranged in a uniform grid.
-  /// 
+  ///
   /// Automates the slicing of a texture into equal-sized tiles.
   ///
   /// * [texture]: The source texture.
@@ -321,7 +323,7 @@ abstract class SpriteSheet<K> {
   }
 
   /// Utility method to slice a texture into a flat list of sprites.
-  /// 
+  ///
   /// Returns all generated sprites as a simple [List].
   ///
   /// * [texture]: The source texture.
@@ -371,33 +373,33 @@ abstract class SpriteSheet<K> {
 }
 
 /// A [SpriteSheet] implementation that uses explicit keys for lookups.
-/// 
+///
 /// ```dart
 /// final sheet = TaggedSpriteSheet(texture: tex, entries: [entry]);
 /// ```
 class TaggedSpriteSheet<T> extends SpriteSheet<T> {
   /// The metadata for all sprites in this sheet.
-  /// 
+  ///
   /// A list of entries mapping keys to rectangles.
   final List<SheetEntry<T>> entries;
 
   /// The default pivot for all generated sprites.
-  /// 
+  ///
   /// Applied to every sprite retrieved from this sheet.
   final SpritePivot pivot;
 
   /// The default scaling factor for all generated sprites.
-  /// 
+  ///
   /// Applied to every sprite retrieved from this sheet.
   final double pixelsPerUnit;
 
   /// The mesh used by all generated sprites.
-  /// 
+  ///
   /// Applied to every sprite retrieved from this sheet.
   final SpriteMesh mesh;
 
   /// Creates a [TaggedSpriteSheet].
-  /// 
+  ///
   /// Initializes the sheet with a set of tagged entries.
   ///
   /// * [texture]: The source texture.
@@ -431,53 +433,53 @@ class TaggedSpriteSheet<T> extends SpriteSheet<T> {
 }
 
 /// A [SpriteSheet] implementation that uses grid coordinates for lookups.
-/// 
+///
 /// ```dart
 /// final sheet = GridSpriteSheet(texture: tex, rows: 2, columns: 2);
 /// ```
 class GridSpriteSheet extends SpriteSheet<TileCoord> {
   /// The number of rows in the grid.
-  /// 
+  ///
   /// Determines the vertical segmentation of the texture.
   final int rows;
 
   /// The number of columns in the grid.
-  /// 
+  ///
   /// Determines the horizontal segmentation of the texture.
   final int columns;
 
   /// The initial padding from the top-left.
-  /// 
+  ///
   /// Defines where the grid starts within the source texture.
   final ui.Offset offset;
 
   /// The gaps between individual cells.
-  /// 
+  ///
   /// Pixel spacing added between each tile in the grid.
   final ui.Offset spacing;
 
   /// The explicit pixel size of each cell.
-  /// 
+  ///
   /// If provided, this overrides calculations based on texture dimensions.
   final ui.Size? spriteSize;
 
   /// The default pivot for all generated sprites.
-  /// 
+  ///
   /// Applied to every sprite retrieved from this grid.
   final SpritePivot pivot;
 
   /// The default scaling factor for all generated sprites.
-  /// 
+  ///
   /// Applied to every sprite retrieved from this grid.
   final double pixelsPerUnit;
 
   /// The mesh used by all generated sprites.
-  /// 
+  ///
   /// Applied to every sprite retrieved from this grid.
   final SpriteMesh mesh;
 
   /// Creates a [GridSpriteSheet].
-  /// 
+  ///
   /// Initializes the sheet with grid dimensions and padding.
   ///
   /// * [texture]: The source texture.

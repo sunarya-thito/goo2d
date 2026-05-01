@@ -2,14 +2,14 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:meta/meta.dart';
-import 'input.dart';
-import 'physics/physics_system.dart';
-import 'camera.dart';
-import 'screen.dart';
-import 'ticker.dart';
+import 'package:goo2d/src/input.dart';
+import 'package:goo2d/src/physics/physics_system.dart';
+import 'package:goo2d/src/camera.dart';
+import 'package:goo2d/src/screen.dart';
+import 'package:goo2d/src/ticker.dart';
 
-import 'world.dart';
-import 'object.dart';
+import 'package:goo2d/src/world.dart';
+import 'package:goo2d/src/object.dart';
 
 /// Defines the contract for modular systems attached to the [GameEngine].
 /// 

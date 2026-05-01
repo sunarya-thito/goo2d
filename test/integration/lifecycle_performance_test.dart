@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
 
 void main() {
   if (!const bool.fromEnvironment('INTEGRATION_TEST')) {
@@ -18,11 +19,11 @@ void main() {
         await tester.pumpWidget(MaterialApp(home: Game(child: GameWidget(key: rootTag, name: 'root'))));
         await tester.pump();
         final rootObject = rootTag.gameObject!;
-        final colliders = List.generate(n, (_) => BoxCollider());
+        final colliders = List.generate(n, (_) => internalCreateComponent(BoxCollider.new) as BoxCollider);
 
         await binding.traceAction(() async {
           for (final c in colliders) {
-            rootObject.addComponent(c);
+            rootObject.addComponent(() => c);
           }
           for (final c in colliders) {
             rootObject.removeComponent(c);
@@ -45,7 +46,7 @@ void main() {
                 name: 'scene_b',
                 children: List.generate(n, (i) => GameWidget(
                   name: 'obj_$i',
-                  components: () => [ObjectTransform(), BoxCollider()],
+                  components: [ObjectTransform.new, BoxCollider.new],
                 )),
               ),
             ),

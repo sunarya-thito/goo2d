@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:goo2d/goo2d.dart';
+// ignore: implementation_imports
+import 'package:goo2d/src/component.dart';
 import 'dart:math' as math;
 
 enum CollisionExampleTexture with AssetEnum, TextureAssetEnum {
@@ -46,7 +48,7 @@ class _CollisionExampleState extends State<CollisionExample> {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
         }
-        return const Game(child: CollisionExampleWorld());
+        return Game(child: CollisionExampleWorld());
       },
     );
   }
@@ -63,7 +65,7 @@ class CollisionExampleWorld extends StatefulGameWidget {
 class _CollisionExampleWorldState extends GameState<CollisionExampleWorld> {
   @override
   Iterable<Widget> build(BuildContext context) sync* {
-    yield const MovingBox();
+    yield MovingBox();
 
     // Denser grid fully contained within the visible area (orthographicSize 5.0)
     for (double x = -8; x <= 8; x += 2.0) {
@@ -75,11 +77,13 @@ class _CollisionExampleWorldState extends GameState<CollisionExampleWorld> {
     }
 
     yield GameWidget(
-      components: () => [
-        ObjectTransform(),
-        Camera()
-          ..orthographicSize = 5.0
-          ..depth = 1.0,
+      components: [
+        ObjectTransform.new,
+        Camera.new.withParams(
+          (c) => c
+            ..orthographicSize = 5.0
+            ..depth = 1.0,
+        ),
       ],
     );
   }
@@ -104,9 +108,9 @@ class _MovingBoxState extends GameState<MovingBox> {
   void initState() {
     super.initState();
     addComponent(
-      ObjectTransform()..position = const Offset(-2, 0),
-      BoxCollider()..size = const Size(0.5, 0.5),
-      BouncingBehavior(),
+      ObjectTransform.new.withParams((c) => c.position = const Offset(-2, 0)),
+      BoxCollider.new.withParams((c) => c.size = const Size(0.5, 0.5)),
+      BouncingBehavior.new,
     );
   }
 }
@@ -118,11 +122,17 @@ class BouncingBehavior extends Behavior
 
   @override
   void onMounted() {
-    _renderer = SpriteRenderer()
-      ..sprite = GameSprite(
-        texture: CollisionExampleTexture.enemy,
-        pixelsPerUnit: 32.0,
-      );
+    _renderer =
+        internalCreateComponent(
+              SpriteRenderer.new.withParams(
+                (c) => c
+                  ..sprite = GameSprite(
+                    texture: CollisionExampleTexture.enemy,
+                    pixelsPerUnit: 32.0,
+                  ),
+              ),
+            )
+            as SpriteRenderer;
     addComponent(_renderer);
   }
 
@@ -260,14 +270,16 @@ class _StationaryTargetState extends GameState<StationaryTarget> {
   void initState() {
     super.initState();
     addComponent(
-      ObjectTransform()..position = widget.position,
-      BoxCollider()..size = const Size(0.5, 0.5),
-      SpriteRenderer()
-        ..sprite = GameSprite(
-          texture: CollisionExampleTexture.ship,
-          pixelsPerUnit: 32.0,
-        )
-        ..color = Colors.blue.withValues(alpha: 0.5),
+      ObjectTransform.new.withParams((c) => c.position = widget.position),
+      BoxCollider.new.withParams((c) => c.size = const Size(0.5, 0.5)),
+      SpriteRenderer.new.withParams(
+        (c) => c
+          ..sprite = GameSprite(
+            texture: CollisionExampleTexture.ship,
+            pixelsPerUnit: 32.0,
+          )
+          ..color = Colors.blue.withValues(alpha: 0.5),
+      ),
     );
   }
 }

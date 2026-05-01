@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
 import 'package:flutter/widgets.dart';
 
 // Mocking GameAudio to avoid actual file loading
@@ -48,7 +49,7 @@ void main() {
       tester,
     ) async {
       final mockAudio = MockGameAudio('test_sound');
-      final audioSource = AudioSource()..clip = mockAudio;
+      final audioSource = internalCreateComponent(AudioSource.new.withParams((c) => c.clip = mockAudio)) as AudioSource;
 
       // We manually call play() here.
       // Note: It will still attempt to call SoLoud.instance.play,
@@ -65,11 +66,11 @@ void main() {
     testWidgets('should clean up handle registration on unmount', (
       tester,
     ) async {
-      final audioSource = AudioSource();
+      final audioSource = internalCreateComponent(AudioSource.new) as AudioSource;
 
       await tester.pumpWidget(
         Game(
-          child: GameWidget(components: () => [audioSource, ObjectTransform()]),
+          child: GameWidget(components: [() => audioSource, ObjectTransform.new]),
         ),
       );
       await tester.pump();
@@ -85,16 +86,16 @@ void main() {
     testWidgets('should be detected by AudioSource for 3D spatialization', (
       tester,
     ) async {
-      final listener = AudioListener();
-      final audioSource = AudioSource();
+      final listener = internalCreateComponent(AudioListener.new) as AudioListener;
+      final audioSource = internalCreateComponent(AudioSource.new) as AudioSource;
 
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [
-              listener,
-              audioSource,
-              ObjectTransform()..position = const Offset(100, 0),
+            components: [
+              () => listener,
+              () => audioSource,
+              ObjectTransform.new.withParams((c) => c.position = const Offset(100, 0)),
             ],
           ),
         ),

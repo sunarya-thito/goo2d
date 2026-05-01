@@ -56,7 +56,7 @@ class _DocsRouterAppState extends State<DocsRouterApp> {
               }
               return DefaultTextStyle(
                 style: GoogleFonts.jersey10(letterSpacing: 2),
-                child: const Game(
+                child: Game(
                   child: app.BattleWorld(),
                 ),
               );
@@ -65,27 +65,27 @@ class _DocsRouterAppState extends State<DocsRouterApp> {
         );
       case '/input':
         return PlayableExample(
-          builder: (context) => const Game(child: InputExample()),
+          builder: (context) => Game(child: InputExample()),
         );
       case '/collision':
         return PlayableExample(
-          builder: (context) => const Game(child: CollisionExample()),
+          builder: (context) => Game(child: CollisionExample()),
         );
       case '/camera':
         return PlayableExample(
-          builder: (context) => const Game(child: CameraExample()),
+          builder: (context) => Game(child: CameraExample()),
         );
       case '/coroutine':
         return PlayableExample(
-          builder: (context) => const Game(child: CoroutineExample()),
+          builder: (context) => Game(child: CoroutineExample()),
         );
       case '/sprites':
         return PlayableExample(
-          builder: (context) => const Game(child: SpriteExample()),
+          builder: (context) => Game(child: SpriteExample()),
         );
       case '/audio':
         return PlayableExample(
-          builder: (context) => const Game(child: AudioExample()),
+          builder: (context) => Game(child: AudioExample()),
         );
       default:
         return const Center(

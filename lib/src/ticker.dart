@@ -1,9 +1,9 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
-import 'game.dart';
-import 'event.dart';
-import 'camera.dart';
+import 'package:goo2d/src/game.dart';
+import 'package:goo2d/src/event.dart';
+import 'package:goo2d/src/camera.dart';
 
 /// A mixin that allows a [Component] to receive per-frame update ticks.
 /// 

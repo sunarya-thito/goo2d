@@ -15,23 +15,19 @@ void main() {
                 GameWidget(
                   name: 'CameraObject',
                   key: const GameTag('MainCamera'),
-                  components: () => [
-                    Camera()..orthographicSize = 1000.0,
-                    ObjectTransform()..position = const Offset(5000, 5000),
+                  components: [
+                    Camera.new.withParams((c) => c.orthographicSize = 1000.0),
+                    ObjectTransform.new.withParams((c) => c.position = const Offset(5000, 5000)),
                   ],
                 ),
                 // HUD object in screen space
                 GameWidget(
                   name: 'HUDObject',
-                  components: () => [
-                    ScreenTransform(),
-                  ],
+                  components: [ScreenTransform.new],
                   children: [
                     GameWidget(
                       name: 'Button',
-                      components: () => [
-                        ObjectTransform(),
-                      ],
+                      components: [ObjectTransform.new],
                       children: [
                         // Use a native Flutter widget for hit testing
                         GestureDetector(
@@ -69,18 +65,18 @@ void main() {
               children: [
                 GameWidget(
                   key: const GameTag('MainCamera'),
-                  components: () => [
-                    Camera()..orthographicSize = 1000.0,
-                    ObjectTransform()..position = const Offset(5000, 5000),
+                  components: [
+                    Camera.new.withParams((c) => c.orthographicSize = 1000.0),
+                    ObjectTransform.new.withParams((c) => c.position = const Offset(5000, 5000)),
                   ],
                 ),
                 GameWidget(
                   name: 'OuterHUD',
-                  components: () => [ScreenTransform()],
+                  components: [ScreenTransform.new],
                   children: [
                     GameWidget(
                       name: 'InnerHUD',
-                      components: () => [ScreenTransform()],
+                      components: [ScreenTransform.new],
                       children: [
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
@@ -112,9 +108,10 @@ void main() {
               children: [
                 GameWidget(
                   name: 'HUD',
-                  components: () => [
-                    ScreenTransform()
-                      ..constraints = const BoxConstraints.tightFor(width: 200, height: 100),
+                  components: [
+                    ScreenTransform.new.withParams(
+                      (c) => c.constraints = const BoxConstraints.tightFor(width: 200, height: 100),
+                    ),
                   ],
                   children: [
                     LayoutBuilder(

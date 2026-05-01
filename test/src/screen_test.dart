@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/component.dart';
 
 class MockScreenReceiver extends Component with ScreenCollidable, OuterScreenCollidable {
   int enterCount = 0;
@@ -23,9 +24,9 @@ void main() {
 
   group('Screen', () {
     testWidgets('should detect onEnterScreen and onExitScreen based on camera view', (tester) async {
-      final receiver = MockScreenReceiver();
-      final collider = BoxCollider()..size = const Size(2, 2);
-      final transform = ObjectTransform()..localPosition = const Offset(100, 0);
+      final receiver = internalCreateComponent(MockScreenReceiver.new) as MockScreenReceiver;
+      final collider = internalCreateComponent(BoxCollider.new.withParams((c) => c.size = const Size(2, 2))) as BoxCollider;
+      final transform = internalCreateComponent(ObjectTransform.new.withParams((c) => c.localPosition = const Offset(100, 0))) as ObjectTransform;
 
       await tester.pumpWidget(
         Game(
@@ -34,12 +35,12 @@ void main() {
               Expanded(
                 child: GameWidget(
                   key: const GameTag('MainCamera'),
-                  components: () => [Camera(), ObjectTransform()],
+                  components: [Camera.new, ObjectTransform.new],
                 ),
               ),
               Expanded(
                 child: GameWidget(
-                  components: () => [receiver, collider, transform],
+                  components: [() => receiver, () => collider, () => transform],
                 ),
               ),
             ],
@@ -66,9 +67,9 @@ void main() {
     });
 
     testWidgets('should detect OuterScreen events when partially exiting', (tester) async {
-      final receiver = MockScreenReceiver();
-      final collider = BoxCollider()..size = const Size(4, 4);
-      final transform = ObjectTransform()..localPosition = Offset.zero;
+      final receiver = internalCreateComponent(MockScreenReceiver.new) as MockScreenReceiver;
+      final collider = internalCreateComponent(BoxCollider.new.withParams((c) => c.size = const Size(4, 4))) as BoxCollider;
+      final transform = internalCreateComponent(ObjectTransform.new.withParams((c) => c.localPosition = Offset.zero)) as ObjectTransform;
 
       await tester.pumpWidget(
         Game(
@@ -77,12 +78,12 @@ void main() {
               Expanded(
                 child: GameWidget(
                   key: const GameTag('MainCamera'),
-                  components: () => [Camera(), ObjectTransform()],
+                  components: [Camera.new, ObjectTransform.new],
                 ),
               ),
               Expanded(
                 child: GameWidget(
-                  components: () => [receiver, collider, transform],
+                  components: [() => receiver, () => collider, () => transform],
                 ),
               ),
             ],
@@ -110,14 +111,17 @@ void main() {
     });
 
     testWidgets('should fallback to screen space if no camera is enabled', (tester) async {
-      final receiver = MockScreenReceiver();
-      final collider = BoxCollider()..size = const Size(10, 10)..offset = const Offset(5, 5);
-      final transform = ObjectTransform()..localPosition = const Offset(-20, -20);
+      final receiver = internalCreateComponent(MockScreenReceiver.new) as MockScreenReceiver;
+      final collider = internalCreateComponent(BoxCollider.new.withParams((c) {
+        c.size = const Size(10, 10);
+        c.offset = const Offset(5, 5);
+      })) as BoxCollider;
+      final transform = internalCreateComponent(ObjectTransform.new.withParams((c) => c.localPosition = const Offset(-20, -20))) as ObjectTransform;
 
       await tester.pumpWidget(
         Game(
           child: GameWidget(
-            components: () => [receiver, collider, transform],
+            components: [() => receiver, () => collider, () => transform],
           ),
         ),
       );
