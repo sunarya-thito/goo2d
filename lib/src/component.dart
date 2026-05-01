@@ -207,6 +207,14 @@ class ComponentFactoryWithParams<T extends Component> with ComponentFuture<T> {
 ///   }
 /// }
 /// ```
+/// A mixin that marks a [Component] as allowing multiple instances on the same [GameObject].
+/// 
+/// By default, [GameObject] prevents adding multiple components of the same 
+/// runtime type to avoid unintended behavior and optimize lookups. 
+/// Components that need to support multiple instances (like colliders) 
+/// should implement this mixin.
+mixin MultiComponent on Component {}
+
 abstract class Component with ComponentFuture {
   GameObject? _gameObject;
 

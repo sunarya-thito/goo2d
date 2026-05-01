@@ -90,6 +90,12 @@ class PhysicsPacket {
   /// 
   /// Triggers integration and collision resolution for the specified duration.
   static const int step = 0x10;
+  
+  /// Command to add a [Joint] to the simulation.
+  static const int addJoint = 0x11;
+  
+  /// Command to remove a [Joint].
+  static const int removeJoint = 0x12;
 
   /// Response containing the updated state of all dynamic bodies.
   /// 
@@ -100,6 +106,24 @@ class PhysicsPacket {
   /// 
   /// Returns intersection data or a null indicator back to the requesting system.
   static const int raycastResult = 0x81;
+
+  // Joint Types
+  static const int jointDistance = 0;
+  static const int jointHinge = 1;
+  static const int jointSpring = 2;
+  static const int jointSlider = 3;
+  static const int jointWheel = 4;
+  static const int jointFixed = 5;
+  static const int jointFriction = 6;
+  static const int jointRelative = 7;
+  static const int jointTarget = 8;
+
+  // Shape Types
+  static const int shapeBox = 0;
+  static const int shapeCircle = 1;
+  static const int shapePolygon = 2;
+  static const int shapeCapsule = 3;
+  static const int shapeComposite = 4;
 }
 
 /// Helper for reading and writing binary physics data in a stream-like fashion.

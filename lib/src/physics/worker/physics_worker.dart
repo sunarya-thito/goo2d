@@ -1,8 +1,11 @@
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:flutter/painting.dart';
-import 'physics_world.dart';
-import 'physics_protocol.dart';
+import 'package:goo2d/src/physics/core/physics_world.dart';
+import 'package:goo2d/src/physics/core/physics_body.dart';
+import 'package:goo2d/src/physics/core/physics_shape.dart';
+import 'package:goo2d/src/physics/core/physics_joint.dart';
+import 'package:goo2d/src/physics/worker/physics_protocol.dart';
 
 /// Manages multiple physics worlds within a background Isolate.
 /// 
@@ -87,38 +90,53 @@ class PhysicsWorkerManager {
       case PhysicsPacket.addShape:
         final shapeId = buffer.readInt32();
         final bodyId = buffer.readInt32();
+        final body = world.bodies[bodyId];
+        if (body == null) break;
+
         final isTrigger = buffer.readBool();
         final offsetX = buffer.readFloat32();
         final offsetY = buffer.readFloat32();
         final bounciness = buffer.readFloat32();
         final friction = buffer.readFloat32();
+        final isOneWay = buffer.readBool();
+        final oneWayAngle = buffer.readFloat32();
+        final oneWayArc = buffer.readFloat32();
         final shapeType = buffer.readUint8();
 
-        PhysicsShape shape;
-        if (shapeType == 0) { // Box
-          shape = PhysicsBox(buffer.readFloat32(), buffer.readFloat32());
-        } else if (shapeType == 1) { // Circle
-          shape = PhysicsCircle(buffer.readFloat32());
-        } else if (shapeType == 2) { // Polygon
+        if (shapeType == PhysicsPacket.shapeComposite) {
           final count = buffer.readInt32();
-          final verts = <Offset>[];
           for (int i = 0; i < count; i++) {
-            verts.add(Offset(buffer.readFloat32(), buffer.readFloat32()));
+            final sOffX = buffer.readFloat32();
+            final sOffY = buffer.readFloat32();
+            final sB = buffer.readFloat32();
+            final sF = buffer.readFloat32();
+            final sTrig = buffer.readBool();
+            final sOW = buffer.readBool();
+            final sOWAngle = buffer.readFloat32();
+            final sOWArc = buffer.readFloat32();
+            final sType = buffer.readUint8();
+
+            final shape = _readShape(buffer, sType);
+            shape.id = shapeId;
+            shape.isTrigger = sTrig;
+            shape.localOffset = Offset(sOffX, sOffY) + Offset(offsetX, offsetY);
+            shape.bounciness = sB;
+            shape.friction = sF;
+            shape.isOneWay = sOW;
+            shape.oneWayAngle = sOWAngle;
+            shape.oneWayArc = sOWArc;
+            shape.body = body;
           }
-          shape = PhysicsPolygon(verts);
-        } else { // Capsule
-          shape = PhysicsCapsule(
-              buffer.readFloat32(), buffer.readFloat32(), buffer.readUint8() == 1);
-        }
-
-        shape.id = shapeId;
-        shape.isTrigger = isTrigger;
-        shape.localOffset = Offset(offsetX, offsetY);
-        shape.bounciness = bounciness;
-        shape.friction = friction;
-
-        final body = world.bodies[bodyId];
-        if (body != null) {
+        } else {
+          final shape = _readShape(buffer, shapeType);
+          shape.id = shapeId;
+          shape.isTrigger = isTrigger;
+          shape.localOffset = Offset(offsetX, offsetY);
+          shape.bounciness = bounciness;
+          shape.friction = friction;
+          shape.isOneWay = isOneWay;
+          shape.oneWayAngle = oneWayAngle;
+          shape.oneWayArc = oneWayArc;
           shape.body = body;
         }
         break;
@@ -128,6 +146,109 @@ class PhysicsWorkerManager {
         for (final body in world.bodies.values) {
           body.shapes.removeWhere((s) => s.id == id);
         }
+        break;
+
+      case PhysicsPacket.addJoint:
+        final id = buffer.readInt32();
+        final bodyAId = buffer.readInt32();
+        final bodyBId = buffer.readInt32();
+        final jointType = buffer.readUint8();
+
+        Joint joint;
+        if (jointType == PhysicsPacket.jointDistance) {
+          joint = DistanceJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            length: buffer.readFloat32(),
+          );
+        } else if (jointType == PhysicsPacket.jointHinge) {
+          joint = HingeJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
+          );
+        } else if (jointType == PhysicsPacket.jointSpring) {
+          joint = SpringJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            restLength: buffer.readFloat32(),
+            stiffness: buffer.readFloat32(),
+            damping: buffer.readFloat32(),
+          );
+        } else if (jointType == PhysicsPacket.jointSlider) {
+          joint = SliderJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            axis: Offset(buffer.readFloat32(), buffer.readFloat32()),
+          );
+        } else if (jointType == PhysicsPacket.jointWheel) {
+          joint = WheelJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            suspensionAxis: Offset(buffer.readFloat32(), buffer.readFloat32()),
+          );
+        } else if (jointType == PhysicsPacket.jointFixed) {
+          joint = FixedJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            localAnchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            localAnchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            referenceAngle: buffer.readFloat32(),
+          );
+        } else if (jointType == PhysicsPacket.jointFriction) {
+          joint = FrictionJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            localAnchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            localAnchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            maxForce: buffer.readFloat32(),
+            maxTorque: buffer.readFloat32(),
+          );
+        } else if (jointType == PhysicsPacket.jointRelative) {
+          joint = RelativeJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            linearOffset: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            angularOffset: buffer.readFloat32(),
+            maxForce: buffer.readFloat32(),
+            maxTorque: buffer.readFloat32(),
+          );
+        } else if (jointType == PhysicsPacket.jointTarget) {
+          joint = TargetJoint(
+            id: id,
+            bodyAId: bodyAId,
+            bodyBId: bodyBId,
+            target: Offset(buffer.readFloat32(), buffer.readFloat32()),
+            maxForce: buffer.readFloat32(),
+            frequency: buffer.readFloat32(),
+            dampingRatio: buffer.readFloat32(),
+          );
+        } else {
+          break;
+        }
+
+        world.joints[id] = joint;
+        break;
+
+      case PhysicsPacket.removeJoint:
+        world.joints.remove(buffer.readInt32());
         break;
 
       case PhysicsPacket.applyForce:
@@ -247,6 +368,29 @@ class PhysicsWorkerManager {
 
         onResponse(respBuf.data);
         break;
+    }
+  }
+
+  PhysicsShape _readShape(PhysicsBuffer buffer, int shapeType) {
+    if (shapeType == 0) {
+      // Box
+      return PhysicsBox(buffer.readFloat32(), buffer.readFloat32());
+    } else if (shapeType == 1) {
+      // Circle
+      return PhysicsCircle(buffer.readFloat32());
+    } else if (shapeType == 2) {
+      // Polygon
+      final count = buffer.readInt32();
+      final verts = List.generate(
+          count, (_) => Offset(buffer.readFloat32(), buffer.readFloat32()));
+      return PhysicsPolygon(verts);
+    } else {
+      return PhysicsCapsule(
+          buffer.readFloat32(),
+          buffer.readFloat32(),
+          buffer.readUint8() == 1
+              ? CapsuleDirection.vertical
+              : CapsuleDirection.horizontal);
     }
   }
 }

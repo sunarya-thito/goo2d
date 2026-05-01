@@ -5,7 +5,7 @@ import 'package:goo2d/src/game.dart';
 import 'package:goo2d/src/event.dart';
 import 'package:goo2d/src/pointer.dart';
 import 'package:goo2d/src/transform.dart';
-import 'package:goo2d/src/physics/collider.dart';
+import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:goo2d/src/camera.dart';
 import 'package:goo2d/src/object.dart';
 

@@ -18,7 +18,7 @@ import 'package:goo2d/goo2d.dart';
 ///   }
 /// }
 /// ```
-abstract class Collider extends Component with LifecycleListener {
+abstract class Collider extends Component with LifecycleListener, MultiComponent {
   /// The local offset of the collider relative to its parent center.
   /// 
   /// This allows you to shift the collision volume without moving the 
@@ -38,6 +38,18 @@ abstract class Collider extends Component with LifecycleListener {
   /// Defines how the surface interacts with others in terms of friction 
   /// (sliding resistance) and bounciness (energy restitution).
   PhysicsMaterial material = PhysicsMaterial.defaultMaterial;
+
+  /// Whether this collider behaves as a one-way platform.
+  /// 
+  /// If true, collisions are only resolved from a specific direction.
+  /// This is typically configured via a [PlatformEffector].
+  bool isOneWay = false;
+
+  /// The local angle (in radians) of the one-way pass-through direction.
+  double oneWayAngle = -1.57079632679; // -PI/2 (Up)
+
+  /// The angular width of the arc where collisions are active.
+  double oneWayArc = 3.14159265359; // PI (180 degrees)
 
   /// A bitmask used to determine which other objects this collider can hit.
   /// 
@@ -229,17 +241,6 @@ class CircleCollider extends Collider {
   }
 }
 
-/// The orientation of a [CapsuleCollider].
-/// 
-/// This defines whether the pill shape is elongated along the vertical (Y) 
-/// or horizontal (X) axis relative to the [GameObject]'s local rotation.
-enum CapsuleDirection { 
-  /// Stretches along the Y axis.
-  vertical, 
-  
-  /// Stretches along the X axis.
-  horizontal 
-}
 
 /// A pill-shaped physical volume.
 /// 
@@ -490,7 +491,8 @@ class SpriteCollider extends PolygonCollider {
   /// [PhysicsSystem] with the new vertices.
   void _tryGenerate() async {
     if (_isGenerating) return;
-    final renderer = gameObject.getComponent<SpriteRenderer>();
+    final renderer = gameObject.tryGetComponent<SpriteRenderer>();
+    if (renderer == null) return;
     final sprite = renderer.sprite;
     if (sprite == null) return;
 
@@ -507,5 +509,255 @@ class SpriteCollider extends PolygonCollider {
     } finally {
       _isGenerating = false;
     }
+  }
+}
+
+/// A collider that hosts multiple geometric shapes.
+/// 
+/// This allows creating complex collision volumes that move as a single 
+/// physical unit. It is also a way to group multiple shapes under 
+/// a single [Component].
+class CompositeCollider extends Collider {
+  /// The list of shapes contained within this composite.
+  final List<ColliderGeometry> shapes = [];
+
+  @override
+  Rect get worldBounds {
+    if (shapes.isEmpty) return Rect.zero;
+    Rect? bounds;
+    for (final shape in shapes) {
+      final b = shape.getWorldBounds(tryTransform, offset);
+      if (bounds == null) {
+        bounds = b;
+      } else {
+        bounds = bounds.expandToInclude(b);
+      }
+    }
+    return bounds ?? Rect.zero;
+  }
+
+  @override
+  bool containsPoint(Offset worldPoint) {
+    final t = tryTransform;
+    if (t == null) return false;
+    for (final shape in shapes) {
+      if (shape.containsPoint(worldPoint, t, offset)) return true;
+    }
+    return false;
+  }
+}
+
+/// Base class for geometric shapes used within a [CompositeCollider].
+abstract class ColliderGeometry {
+  /// Local offset relative to the parent [CompositeCollider].
+  Offset offset = Offset.zero;
+
+  /// Material properties for this specific shape.
+  PhysicsMaterial material = PhysicsMaterial.defaultMaterial;
+
+  /// Whether this shape acts as a trigger.
+  bool isTrigger = false;
+
+  /// Whether this shape allows one-way collisions.
+  bool isOneWay = false;
+
+  /// The local angle (in radians) of the one-way pass-through direction.
+  double oneWayAngle = -1.57079632679; // -PI/2 (Up)
+
+  /// The angular width of the arc where collisions are active.
+  double oneWayArc = 3.14159265359; // PI (180 degrees)
+
+  /// Returns the world-space bounding box for this geometry.
+  Rect getWorldBounds(ObjectTransform? transform, Offset compositeOffset);
+
+  /// Checks if the geometry contains the given world-space point.
+  bool containsPoint(
+    Offset worldPoint,
+    ObjectTransform transform,
+    Offset compositeOffset,
+  );
+}
+
+/// A circular shape for use in a [CompositeCollider].
+class CircleGeometry extends ColliderGeometry {
+  /// The radius of the circle.
+  double radius = 50.0;
+
+  @override
+  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
+    if (t == null) return Rect.zero;
+    final worldCenter = t.localToWorld(offset + compositeOffset);
+    final worldScale = t.scale;
+    final maxScale =
+        worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy;
+    return Rect.fromCircle(center: worldCenter, radius: radius * maxScale);
+  }
+
+  @override
+  bool containsPoint(Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+    final worldCenter = t.localToWorld(offset + compositeOffset);
+    final distSq = (worldPoint - worldCenter).distanceSquared;
+    final worldScale = t.scale;
+    final maxScale =
+        worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy;
+    final worldRadius = radius * maxScale;
+    return distSq <= worldRadius * worldRadius;
+  }
+}
+
+/// A rectangular shape for use in a [CompositeCollider].
+class BoxGeometry extends ColliderGeometry {
+  /// The size of the box.
+  Size size = const Size(100, 100);
+
+  @override
+  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
+    if (t == null) return Rect.zero;
+    final halfW = size.width / 2;
+    final halfH = size.height / 2;
+    final corners = [
+      Offset(offset.dx + compositeOffset.dx - halfW,
+          offset.dy + compositeOffset.dy - halfH),
+      Offset(offset.dx + compositeOffset.dx + halfW,
+          offset.dy + compositeOffset.dy - halfH),
+      Offset(offset.dx + compositeOffset.dx - halfW,
+          offset.dy + compositeOffset.dy + halfH),
+      Offset(offset.dx + compositeOffset.dx + halfW,
+          offset.dy + compositeOffset.dy + halfH),
+    ];
+
+    double? minX, maxX, minY, maxY;
+    for (final corner in corners) {
+      final world = t.localToWorld(corner);
+      if (minX == null || world.dx < minX) minX = world.dx;
+      if (maxX == null || world.dx > maxX) maxX = world.dx;
+      if (minY == null || world.dy < minY) minY = world.dy;
+      if (maxY == null || world.dy > maxY) maxY = world.dy;
+    }
+    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  }
+
+  @override
+  bool containsPoint(Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+    final localPoint = t.worldToLocal(worldPoint);
+    final halfW = size.width / 2;
+    final halfH = size.height / 2;
+    final localCenter = offset + compositeOffset;
+    return localPoint.dx >= localCenter.dx - halfW &&
+        localPoint.dx <= localCenter.dx + halfW &&
+        localPoint.dy >= localCenter.dy - halfH &&
+        localPoint.dy <= localCenter.dy + halfH;
+  }
+}
+
+/// A pill shape for use in a [CompositeCollider].
+class CapsuleGeometry extends ColliderGeometry {
+  /// The radius of the caps.
+  double radius = 25.0;
+
+  /// The total height.
+  double height = 100.0;
+
+  /// The stretching direction.
+  CapsuleDirection direction = CapsuleDirection.vertical;
+
+  @override
+  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
+    if (t == null) return Rect.zero;
+    double capOffset = (height / 2) - radius;
+    if (capOffset < 0) capOffset = 0;
+
+    final localCenter = offset + compositeOffset;
+    List<Offset> centers;
+    if (direction == CapsuleDirection.vertical) {
+      centers = [
+        Offset(localCenter.dx, localCenter.dy - capOffset),
+        Offset(localCenter.dx, localCenter.dy + capOffset),
+      ];
+    } else {
+      centers = [
+        Offset(localCenter.dx - capOffset, localCenter.dy),
+        Offset(localCenter.dx + capOffset, localCenter.dy),
+      ];
+    }
+
+    double? minX, maxX, minY, maxY;
+    for (final p in centers) {
+      final world = t.localToWorld(p);
+      final worldScale = t.scale;
+      final worldR = radius *
+          (worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy);
+
+      final b = Rect.fromCircle(center: world, radius: worldR);
+      if (minX == null || b.left < minX) minX = b.left;
+      if (maxX == null || b.right > maxX) maxX = b.right;
+      if (minY == null || b.top < minY) minY = b.top;
+      if (maxY == null || b.bottom > maxY) maxY = b.bottom;
+    }
+
+    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  }
+
+  @override
+  bool containsPoint(
+      Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+    final localPoint = t.worldToLocal(worldPoint);
+    final relativePoint = localPoint - (offset + compositeOffset);
+
+    double halfHeight = (height - radius * 2) / 2;
+    if (halfHeight < 0) halfHeight = 0;
+
+    double distSq;
+    if (direction == CapsuleDirection.vertical) {
+      double y = relativePoint.dy.clamp(-halfHeight, halfHeight);
+      distSq = (relativePoint - Offset(0, y)).distanceSquared;
+    } else {
+      double x = relativePoint.dx.clamp(-halfHeight, halfHeight);
+      distSq = (relativePoint - Offset(x, 0)).distanceSquared;
+    }
+
+    return distSq <= radius * radius;
+  }
+}
+
+/// A polygonal shape for use in a [CompositeCollider].
+class PolygonGeometry extends ColliderGeometry {
+  /// The local vertices.
+  List<Offset> vertices = [];
+
+  @override
+  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
+    if (t == null) return Rect.zero;
+    double? minX, maxX, minY, maxY;
+    final localCenter = offset + compositeOffset;
+    for (final v in vertices) {
+      final world = t.localToWorld(v + localCenter);
+      if (minX == null || world.dx < minX) minX = world.dx;
+      if (maxX == null || world.dx > maxX) maxX = world.dx;
+      if (minY == null || world.dy < minY) minY = world.dy;
+      if (maxY == null || world.dy > maxY) maxY = world.dy;
+    }
+    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  }
+
+  @override
+  bool containsPoint(
+      Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+    final localPoint = t.worldToLocal(worldPoint) - (offset + compositeOffset);
+    if (vertices.length < 3) return false;
+
+    bool inside = false;
+    for (int i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+      if (((vertices[i].dy > localPoint.dy) !=
+              (vertices[j].dy > localPoint.dy)) &&
+          (localPoint.dx <
+              (vertices[j].dx - vertices[i].dx) *
+                      (localPoint.dy - vertices[i].dy) /
+                      (vertices[j].dy - vertices[i].dy) +
+                  vertices[i].dx)) {
+        inside = !inside;
+      }
+    }
+    return inside;
   }
 }

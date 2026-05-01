@@ -138,6 +138,24 @@ abstract class GameObject implements BuildContext {
   /// Finds all components of type [T] in the parent hierarchy.
   Iterable<T> getComponentsInParent<T extends Component>();
 
+  /// Checks if a component of type [T] is attached to this object.
+  bool hasComponent<T extends Component>();
+
+  /// Checks if a component of exact [type] is attached to this object.
+  bool hasComponentOfType(Type type);
+
+  /// Returns the component at the specified [index] in the components list.
+  Component getComponentAt(int index);
+
+  /// Returns the total number of components attached to this object.
+  int getComponentsCount();
+
+  /// Finds all components of type [T] and returns them as a list.
+  List<T> getComponentsOfType<T extends Component>();
+
+  /// Returns the index of a specific [component] instance, or -1 if not found.
+  int getComponentIndex(Component component);
+
   /// Finds a child object by its relative or absolute [name].
   GameObject? findChild(String name);
 

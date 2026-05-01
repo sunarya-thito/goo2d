@@ -12,14 +12,39 @@ import 'package:goo2d/src/render.dart';
 
 /// A concrete implementation of [GameObject] that integrates with
 /// the Flutter element tree.
+/// 
+/// [GameObjectElement] acts as the bridge between the declarative Flutter 
+/// UI and the imperative game engine logic. It manages a collection of 
+/// [Component]s and handles the lifecycle of the object within the scene graph.
+/// 
+/// Why: Flutter's element tree is the source of truth for widget hierarchy, 
+/// and [GameObjectElement] leverages this to provide automatic parenting 
+/// and resource management for game objects.
+/// 
+/// How: By extending [RenderObjectElement], it participates in the layout 
+/// and paint phases while exposing a high-level API for component management 
+/// and coroutine execution.
 ///
-/// It implements both state management (like [StatefulElement]) and
-/// multi-child reconciliation (like [MultiChildRenderObjectElement]).
+/// ```dart
+/// final element = GameObjectElement(myWidget);
+/// element.addComponent(SpriteRenderer(sprite));
+/// ```
 class GameObjectElement extends RenderObjectElement implements GameObject {
   /// Creates a [GameObjectElement] for the given [widget].
+  /// 
+  /// This constructor initializes the element within the Flutter framework 
+  /// and prepares it for mounting into the game's scene graph.
+  /// 
+  /// Why: Every game object needs a reference to its configuration widget 
+  /// to correctly handle updates and lifecycle events.
+  /// 
+  /// How: The widget is passed to the super constructor, and the engine 
+  /// later populates the game and parent references during the mount phase.
+  /// 
+  /// * [widget]: The configuration widget for this game object.
   GameObjectElement(GameObjectWidget super.widget);
 
-  final Map<Type, Component> _components = {};
+  final List<Component> _components = [];
   final List<CoroutineFuture> _runningCoroutines = [];
   GameObject? _parentObject;
   GameEngine? _game;
@@ -65,7 +90,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   }
 
   @override
-  Iterable<Component> get components => _components.values;
+  Iterable<Component> get components => _components;
 
   /// The [GameState] currently associated with this element.
   GameState? get state => _state;
@@ -73,8 +98,22 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   void _addComponentInternal(Component component) {
     assert(!component.isAttached, 'Component is already attached to ${component.isAttached ? component.gameObject : "another object"}.');
     assert(component is! GameState || _state == component, 'GameState components are managed by the engine and cannot be added manually.');
+
+    // Enforce MultiComponent rule
+    if (component is! MultiComponent) {
+      final type = component.runtimeType;
+      for (var c in _components) {
+        if (c.runtimeType == type) {
+          throw AssertionError(
+            'Only one component of type $type is allowed on GameObject "$name". '
+            'To allow multiple instances, the component must implement MultiComponent.'
+          );
+        }
+      }
+    }
+
     component.internalAttach(this);
-    _components[component.runtimeType] = component;
+    _components.add(component);
     if (active && component is LifecycleListener) {
       component.onMounted();
     }
@@ -110,7 +149,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   void _removeComponentInternal(Component component) {
     assert(component is! GameState, 'GameState components are managed by the engine and cannot be removed manually.');
     assert(component.gameObject == this, 'Cannot remove component that is not attached to this GameObject');
-    if (_components.remove(component.runtimeType) != null) {
+    if (_components.remove(component)) {
       _onComponentRemoved(component);
     }
   }
@@ -177,16 +216,17 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   }
 
   void _removeExactTypeInternal(Type type) {
-    final component = _components.remove(type);
-    if (component != null) {
-      _onComponentRemoved(component);
+    final toRemove = _components.where((c) => c.runtimeType == type).toList();
+    for (final c in toRemove) {
+      _components.remove(c);
+      _onComponentRemoved(c);
     }
   }
 
   @override
   void removeComponentOfType<T extends Component>() {
     final removed = <Component>[];
-    _components.removeWhere((type, component) {
+    _components.removeWhere((component) {
       if (component is T) {
         removed.add(component);
         return true;
@@ -202,8 +242,8 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   void removeComponents(Iterable<Type> types) {
     final typeSet = types.toSet();
     final removed = <Component>[];
-    _components.removeWhere((type, component) {
-      if (typeSet.contains(type)) {
+    _components.removeWhere((component) {
+      if (typeSet.contains(component.runtimeType)) {
         removed.add(component);
         return true;
       }
@@ -223,14 +263,19 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   void removeComponentAt(int index) {
-    final component = _components.values.elementAt(index);
+    final component = _components[index];
     _removeComponentInternal(component);
   }
 
   @override
   void removeAllComponents() {
-    _components.forEach((type, component) => _onComponentRemoved(component));
-    _components.clear();
+    final toRemove = List<Component>.from(_components);
+    for (final component in toRemove) {
+      if (component is! GameState) {
+        _onComponentRemoved(component);
+        _components.remove(component);
+      }
+    }
   }
 
   @override
@@ -265,9 +310,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   T? tryGetComponent<T extends Component>() {
-    final exact = _components[T];
-    if (exact != null) return exact as T;
-    for (var component in _components.values) {
+    for (var component in _components) {
       if (component is T) return component;
     }
     return null;
@@ -275,8 +318,32 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   Iterable<T> getComponents<T extends Component>() {
-    return _components.values.whereType<T>();
+    return _components.whereType<T>();
   }
+
+  @override
+  bool hasComponent<T extends Component>() => tryGetComponent<T>() != null;
+
+  @override
+  bool hasComponentOfType(Type type) {
+    for (var c in _components) {
+      if (c.runtimeType == type) return true;
+    }
+    return false;
+  }
+
+  @override
+  Component getComponentAt(int index) => _components[index];
+
+  @override
+  int getComponentsCount() => _components.length;
+
+  @override
+  List<T> getComponentsOfType<T extends Component>() =>
+      _components.whereType<T>().toList();
+
+  @override
+  int getComponentIndex(Component component) => _components.indexOf(component);
 
   @override
   T getComponentInChildren<T extends Component>() {
@@ -312,7 +379,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   Iterable<T> getComponentsInChildren<T extends Component>() sync* {
-    yield* _components.values.whereType<T>();
+    yield* _components.whereType<T>();
     List<T> collected = [];
     for (var child in _children) {
       _collectComponentsInChildren(child, collected);
@@ -560,7 +627,9 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   void unmount() {
-    _components.forEach((type, component) => _onComponentRemoved(component));
+    for (final component in _components) {
+      _onComponentRemoved(component);
+    }
     _components.clear();
     _state?.dispose();
     _state?._element = null;

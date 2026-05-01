@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/input.dart';
-import 'package:goo2d/src/physics/physics_system.dart';
+import 'package:goo2d/src/physics/components/physics_system.dart';
 import 'package:goo2d/src/camera.dart';
 import 'package:goo2d/src/screen.dart';
 import 'package:goo2d/src/ticker.dart';

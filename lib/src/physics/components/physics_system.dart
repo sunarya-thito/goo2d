@@ -2,7 +2,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
-import 'physics_bridge.dart';
+import 'package:goo2d/src/physics/bridge/physics_bridge.dart';
+import 'package:goo2d/src/physics/bridge/direct_physics_bridge.dart';
+import 'package:goo2d/src/physics/bridge/worker_physics_bridge.dart';
+import 'package:goo2d/src/physics/bridge/physics_bridge_data.dart';
+import 'package:goo2d/src/physics/components/joint.dart' as comp;
+import 'package:goo2d/src/physics/core/physics_joint.dart' as core;
 
 /// The central system responsible for physical simulation and collision detection.
 /// 
@@ -22,6 +27,7 @@ class PhysicsSystem implements GameSystem {
 
   final Map<int, Rigidbody> _rigidbodies = {};
   final Map<int, Collider> _colliders = {};
+  final Map<int, comp.Joint> _joints = {};
   final Map<GameObject, int> _standaloneBodyIds = {};
   final Map<int, int> _bodyColliderCount = {};
   final Map<int, Completer<RaycastHit?>> _raycastCompleters = {};
@@ -431,6 +437,37 @@ class PhysicsSystem implements GameSystem {
       }
 
       _bridge.removeShape(id);
+    }
+  }
+
+  /// Registers a [Joint] into the physical simulation.
+  /// 
+  /// * [joint]: The component to register.
+  void registerJoint(comp.Joint joint) {
+    final id = _nextId++;
+    joint.internalId = id;
+    _joints[id] = joint;
+
+    final rbA = joint.rigidbody;
+    final rbB = joint.connectedBody;
+
+    final idA = _rigidbodies.keys.firstWhere((k) => _rigidbodies[k] == rbA, orElse: () => -1);
+    final idB = rbB != null ? _rigidbodies.keys.firstWhere((k) => _rigidbodies[k] == rbB, orElse: () => -1) : -1;
+
+    if (idA != -1) {
+      final core.Joint coreJoint = joint.createCoreJoint(id, idA, idB);
+      _bridge.addJoint(id, coreJoint);
+    }
+  }
+
+  /// Removes a [Joint] from the simulation.
+  /// 
+  /// * [joint]: The component to remove.
+  void unregisterJoint(comp.Joint joint) {
+    if (joint.internalId != null) {
+      _joints.remove(joint.internalId);
+      _bridge.removeJoint(joint.internalId!);
+      joint.internalId = null;
     }
   }
 
