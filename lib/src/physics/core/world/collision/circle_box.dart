@@ -79,7 +79,7 @@ ContactManifold? checkCircleBox(
   }
 
   return ContactManifold(
-    normal: worldNormal * -1.0,
+    normal: worldNormal,
     depth: depth,
     contactPoint: contactPoint,
   );

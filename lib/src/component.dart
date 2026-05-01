@@ -12,23 +12,12 @@ import 'package:meta/meta.dart';
 
 typedef GameComponent<T extends Component> = FutureOr<ComponentFactory<T>>;
 
-class ComponentFactoryWithParams<T extends Component>
+mixin _FakeComponentFuture<T extends Component>
     implements Future<ComponentFactory<T>> {
-  // we implement Future so that we can use FutureOr type-union
-  final ComponentFactory<T> factory;
-  final ComponentParameterHandler<T>? params;
-
-  ComponentFactoryWithParams(this.factory, {this.params});
-
-  T create() {
-    final component = factory();
-    params?.call(component);
-    return component;
-  }
-
+  T _create();
   @override
   Stream<ComponentFactory<T>> asStream() {
-    return Stream.value(create);
+    return Stream.value(_create);
   }
 
   @override
@@ -44,7 +33,7 @@ class ComponentFactoryWithParams<T extends Component>
     FutureOr<R> Function(ComponentFactory<T> value) onValue, {
     Function? onError,
   }) {
-    return Future.value(onValue(create));
+    return Future.value(onValue(_create));
   }
 
   @override
@@ -61,6 +50,22 @@ class ComponentFactoryWithParams<T extends Component>
   ) {
     action();
     return this;
+  }
+}
+
+class ComponentFactoryWithParams<T extends Component>
+    with _FakeComponentFuture<T> {
+  // we implement Future so that we can use FutureOr type-union
+  final ComponentFactory<T> factory;
+  final ComponentParameterHandler<T>? params;
+
+  ComponentFactoryWithParams(this.factory, {this.params});
+
+  @override
+  T _create() {
+    final component = factory();
+    params?.call(component);
+    return component;
   }
 }
 
@@ -170,9 +175,9 @@ class _ComponentElement<T extends Component> extends Element {
       'Component $widget must be added to a GameObject.',
     );
     switch (widget.factory) {
-      case ComponentFactoryWithParams<T> withParams:
+      case _FakeComponentFuture<T> withParams:
         _registration = _ComponentRegistration(
-          component: widget.apply(withParams.create()),
+          component: widget.apply(withParams._create()),
           gameObject: gameObject!,
         );
         break;

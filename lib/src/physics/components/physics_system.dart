@@ -50,6 +50,9 @@ class PhysicsSystem implements GameSystem {
   /// participating in the simulation.
   Iterable<Collider> get activeColliders => _colliders.values;
 
+  /// Returns all currently registered joints in the system.
+  Iterable<comp.Joint> get activeJoints => _joints.values;
+
   /// The frequency of physics updates (default is 50Hz).
   /// 
   /// Smaller values result in higher precision but increase the 
