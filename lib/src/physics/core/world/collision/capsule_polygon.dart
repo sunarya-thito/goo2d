@@ -5,7 +5,6 @@ import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/core/physics_contact.dart';
 import 'package:goo2d/src/physics/core/world/collision/utils.dart';
 
-/// Checks for collision between a capsule and a polygon.
 ContactManifold? checkCapsulePolygon(
   PhysicsCapsule sA,
   PhysicsBody bA,
@@ -51,7 +50,7 @@ ContactManifold? checkCapsulePolygon(
   if (minDistSq > radius * radius) {
     // We also need to check if the segment is fully inside the polygon
     if (containsPoint(getPolygonCenter(vertices), segment[0], segment[1], 0)) {
-        // This is a simplification. For SAT, we'd need more work.
+      // This is a simplification. For SAT, we'd need more work.
     }
     return null;
   }
@@ -69,7 +68,7 @@ ContactManifold? checkCapsulePolygon(
 }
 
 bool containsPoint(Offset p, Offset a, Offset b, double radius) {
-    // Helper to check if a point is inside a thickened segment (capsule)
-    final closest = getClosestPointOnSegment(p, a, b);
-    return (p - closest).distanceSquared <= radius * radius;
+  // Helper to check if a point is inside a thickened segment (capsule)
+  final closest = getClosestPointOnSegment(p, a, b);
+  return (p - closest).distanceSquared <= radius * radius;
 }

@@ -1,7 +1,6 @@
 import 'package:goo2d/src/physics/core/physics_body.dart';
 import 'package:goo2d/src/physics/core/physics_joint.dart';
 
-/// Resolves velocity constraints for all joints in the world.
 void resolveJointConstraints(
   Map<int, Joint> joints,
   Map<int, PhysicsBody> bodies,

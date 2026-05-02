@@ -9,38 +9,7 @@ import 'package:goo2d/src/component.dart';
 import 'package:goo2d/src/widget.dart';
 import 'package:goo2d/src/render.dart';
 
-/// A concrete implementation of [GameObject] that integrates with
-/// the Flutter element tree.
-///
-/// [GameObjectElement] acts as the bridge between the declarative Flutter
-/// UI and the imperative game engine logic. It manages a collection of
-/// [Component]s and handles the lifecycle of the object within the scene graph.
-///
-/// Why: Flutter's element tree is the source of truth for widget hierarchy,
-/// and [GameObjectElement] leverages this to provide automatic parenting
-/// and resource management for game objects.
-///
-/// How: By extending [RenderObjectElement], it participates in the layout
-/// and paint phases while exposing a high-level API for component management
-/// and coroutine execution.
-///
-/// ```dart
-/// final element = GameObjectElement(myWidget);
-/// element.addComponent(SpriteRenderer(sprite));
-/// ```
 class GameObjectElement extends RenderObjectElement implements GameObject {
-  /// Creates a [GameObjectElement] for the given [widget].
-  ///
-  /// This constructor initializes the element within the Flutter framework
-  /// and prepares it for mounting into the game's scene graph.
-  ///
-  /// Why: Every game object needs a reference to its configuration widget
-  /// to correctly handle updates and lifecycle events.
-  ///
-  /// How: The widget is passed to the super constructor, and the engine
-  /// later populates the game and parent references during the mount phase.
-  ///
-  /// * [widget]: The configuration widget for this game object.
   GameObjectElement(GameWidget super.widget);
 
   final List<Component> _components = [];
@@ -93,8 +62,6 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   Iterable<Component> get components => _components;
-
-  /// The [GameState] currently associated with this element.
   GameState? get state => _state;
 
   void _addComponentInternal(Component component) {
@@ -757,56 +724,34 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   }
 }
 
-/// The logic and internal state for a [StatefulGameWidget].
 abstract class GameState<T extends GameWidget> extends Component {
   GameObjectElement? _element;
 
   @override
   GameObject get gameObject => _element!;
-
-  /// The widget configuration currently associated with this state.
   T get widget => _element!.widget as T;
-
-  /// The location in the scene graph where this state is mounted.
   BuildContext get context => _element!;
-
-  /// Whether the state is currently mounted in the scene graph.
   bool get mounted => _element != null;
-
-  /// Build the UI for this state.
-
-  /// Notifies the engine that the internal state has changed.
   void setState(VoidCallback fn) {
     assert(_element != null, 'Cannot call setState on an unmounted widget');
     fn();
     _element!.markNeedsBuild();
   }
 
-  /// Called when this object is inserted into the scene graph.
   @mustCallSuper
   void initState() {}
-
-  /// Called whenever the widget configuration changes.
   @mustCallSuper
   void didUpdateWidget(T oldWidget) {}
-
-  /// Called when a dependency of this state changes.
   @mustCallSuper
   void didChangeDependencies() {}
-
-  /// Called during hot reload to re-initialize state.
   @mustCallSuper
   void reassemble() {}
-
-  /// Called when this object is removed from the scene graph.
   @mustCallSuper
   void dispose() {
     _element = null;
   }
 
-  /// Returns a collection of child widgets to be rendered as part of this object.
   Iterable<Widget> build(BuildContext context) => const [];
 }
 
-/// Typedef for [GameObjectElement] for backward compatibility.
 typedef GameElement = GameObjectElement;

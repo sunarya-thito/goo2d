@@ -8,12 +8,6 @@ import 'package:goo2d/src/physics/core/physics_joint.dart';
 import 'package:goo2d/src/physics/bridge/physics_bridge.dart';
 import 'package:goo2d/src/physics/bridge/physics_bridge_data.dart';
 
-/// Implementation of [PhysicsBridge] that calls [PhysicsWorld] directly.
-/// 
-/// This bridge is designed for environments where [Isolate]s are either 
-/// unavailable (Flutter Web) or where the overhead of message serialization 
-/// outweighs the benefits of parallel execution. It executes all physics 
-/// logic on the caller's thread.
 class DirectPhysicsBridge implements PhysicsBridge {
   late final PhysicsWorld _world;
   late void Function(PhysicsStepResult) _onStepResult;
@@ -21,9 +15,10 @@ class DirectPhysicsBridge implements PhysicsBridge {
 
   @override
   Future<void> init(
-      int worldId,
-      void Function(PhysicsStepResult) onStepResult,
-      void Function(int, bool, PhysicsRaycastHitData?) onRaycastResult) {
+    int worldId,
+    void Function(PhysicsStepResult) onStepResult,
+    void Function(int, bool, PhysicsRaycastHitData?) onRaycastResult,
+  ) {
     _onStepResult = onStepResult;
     _onRaycastResult = onRaycastResult;
     _world = PhysicsWorld();
@@ -41,14 +36,17 @@ class DirectPhysicsBridge implements PhysicsBridge {
   }
 
   @override
-  void addBody(int id, RigidbodyType type,
-      {double mass = 1.0,
-      double drag = 0.0,
-      double angularDrag = 0.05,
-      bool freezeRotation = false,
-      double gravityScale = 1.0,
-      Offset position = Offset.zero,
-      double rotation = 0.0}) {
+  void addBody(
+    int id,
+    RigidbodyType type, {
+    double mass = 1.0,
+    double drag = 0.0,
+    double angularDrag = 0.05,
+    bool freezeRotation = false,
+    double gravityScale = 1.0,
+    Offset position = Offset.zero,
+    double rotation = 0.0,
+  }) {
     final body = PhysicsBody(id: id, type: type.index);
     body.setMass(mass);
     body.drag = drag;
@@ -66,12 +64,14 @@ class DirectPhysicsBridge implements PhysicsBridge {
   }
 
   @override
-  void updateBody(int id,
-      {double mass = 1.0,
-      double drag = 0.0,
-      double angularDrag = 0.05,
-      bool freezeRotation = false,
-      double gravityScale = 1.0}) {
+  void updateBody(
+    int id, {
+    double mass = 1.0,
+    double drag = 0.0,
+    double angularDrag = 0.05,
+    bool freezeRotation = false,
+    double gravityScale = 1.0,
+  }) {
     final body = _world.bodies[id];
     if (body != null) {
       body.setMass(mass);
@@ -96,7 +96,10 @@ class DirectPhysicsBridge implements PhysicsBridge {
       shape = PhysicsPolygon(collider.vertices);
     } else if (collider is CapsuleCollider) {
       shape = PhysicsCapsule(
-          collider.radius, collider.height, collider.direction);
+        collider.radius,
+        collider.height,
+        collider.direction,
+      );
     } else if (collider is CompositeCollider) {
       for (final geometry in collider.shapes) {
         PhysicsShape subShape;
@@ -108,7 +111,10 @@ class DirectPhysicsBridge implements PhysicsBridge {
           subShape = PhysicsPolygon(geometry.vertices);
         } else if (geometry is CapsuleGeometry) {
           subShape = PhysicsCapsule(
-              geometry.radius, geometry.height, geometry.direction);
+            geometry.radius,
+            geometry.height,
+            geometry.direction,
+          );
         } else {
           continue;
         }
@@ -213,14 +219,16 @@ class DirectPhysicsBridge implements PhysicsBridge {
 
     // 3. Prepare response
     final contacts = result.contacts
-        .map((c) => PhysicsContactData(
-              shapeAId: c.shapeAId,
-              shapeBId: c.shapeBId,
-              contactPoint: c.manifold.contactPoint,
-              normal: c.manifold.normal,
-              depth: c.manifold.depth,
-              impulse: c.impulse,
-            ))
+        .map(
+          (c) => PhysicsContactData(
+            shapeAId: c.shapeAId,
+            shapeBId: c.shapeBId,
+            contactPoint: c.manifold.contactPoint,
+            normal: c.manifold.normal,
+            depth: c.manifold.depth,
+            impulse: c.impulse,
+          ),
+        )
         .toList();
 
     final dynamicBodies = <int, PhysicsBodyState>{};
@@ -236,27 +244,34 @@ class DirectPhysicsBridge implements PhysicsBridge {
       }
     }
 
-    _onStepResult(PhysicsStepResult(
-      contacts: contacts,
-      dynamicBodies: dynamicBodies,
-    ));
+    _onStepResult(
+      PhysicsStepResult(
+        contacts: contacts,
+        dynamicBodies: dynamicBodies,
+      ),
+    );
   }
 
   @override
   void raycast(
-      int requestId, Offset origin, Offset direction, double maxDistance) {
+    int requestId,
+    Offset origin,
+    Offset direction,
+    double maxDistance,
+  ) {
     final hit = _world.raycast(origin, direction, maxDistance);
     if (hit != null) {
       _onRaycastResult(
-          requestId,
-          true,
-          PhysicsRaycastHitData(
-            shapeId: hit.shapeId,
-            point: hit.point,
-            normal: hit.normal,
-            distance: hit.distance,
-            fraction: hit.fraction,
-          ));
+        requestId,
+        true,
+        PhysicsRaycastHitData(
+          shapeId: hit.shapeId,
+          point: hit.point,
+          normal: hit.normal,
+          distance: hit.distance,
+          fraction: hit.fraction,
+        ),
+      );
     } else {
       _onRaycastResult(requestId, false, null);
     }

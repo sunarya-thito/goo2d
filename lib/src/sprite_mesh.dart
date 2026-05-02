@@ -2,36 +2,8 @@ import 'dart:ui' as ui;
 import 'package:goo2d/src/sprite.dart';
 import 'package:goo2d/src/sprite_fit.dart';
 
-/// Defines the geometric strategy for rendering a sprite.
-/// 
-/// [SpriteMesh] determines how a [GameSprite]'s texture rectangle is 
-/// mapped to a destination area on the canvas. Subclasses can 
-/// implement simple quads, 9-slice tiling, or complex custom meshes.
-/// 
-/// ```dart
-/// class MyMesh extends SpriteMesh {
-///   @override
-///   void render(ui.Canvas canvas, GameSprite sprite, ui.Size size, ui.Paint paint) {
-///     // Custom rendering logic
-///   }
-/// }
-/// ```
 abstract class SpriteMesh {
-  /// Base constructor for all sprite meshes.
-  /// 
-  /// This constructor initializes the mesh instance used for defining 
-  /// the geometric strategy of sprite rendering.
   const SpriteMesh();
-
-  /// Renders the [sprite] onto the [canvas].
-  /// 
-  /// Uses the specified [destinationSize] and [paint] settings to map 
-  /// the texture rectangle to the screen.
-  ///
-  /// * [canvas]: The target rendering surface.
-  /// * [sprite]: The sprite metadata containing texture and source rect.
-  /// * [destinationSize]: The pixel dimensions to fill on the canvas.
-  /// * [paint]: The painting settings (color, filter, etc.).
   void render(
     ui.Canvas canvas,
     GameSprite sprite,
@@ -40,27 +12,8 @@ abstract class SpriteMesh {
   );
 }
 
-/// A simple rectangular mesh that draws a single quad.
-/// 
-/// [SimpleMesh] is the default mesh for all sprites. It uses a [SpriteFit] 
-/// strategy (like Stretch or Fixed) to map the source rect to the 
-/// destination bounds.
-/// 
-/// ```dart
-/// const mesh = SimpleMesh(fit: StretchFit());
-/// ```
 class SimpleMesh extends SpriteMesh {
-  /// The fitting strategy used to map the texture.
-  /// 
-  /// Determines how pixels are scaled or tiled within the destination.
   final SpriteFit fit;
-
-  /// Creates a [SimpleMesh] with an optional fitting strategy.
-  /// 
-  /// Defaults to [FixedFit] if no strategy is provided. It provides a 
-  /// basic quad-based rendering approach.
-  ///
-  /// * [fit]: The scaling strategy to use for the single quad.
   const SimpleMesh({this.fit = const SpriteFit.fixed()});
 
   @override
@@ -80,58 +33,15 @@ class SimpleMesh extends SpriteMesh {
   }
 }
 
-/// A mesh that divides the sprite into a grid for advanced scaling (e.g., 9-slicing).
-/// 
-/// [GridMesh] allows for "non-uniform scaling" where certain parts of 
-/// a sprite (like corners) remain fixed in size while other parts 
-/// (like the center or edges) stretch or tile. This is essential 
-/// for high-quality UI elements.
-/// 
-/// ```dart
-/// const mesh = GridMesh.nineSlice(left: 10, top: 10, right: 10, bottom: 10);
-/// ```
 class GridMesh extends SpriteMesh {
-  /// Horizontal border positions in pixels relative to the left edge.
-  /// 
-  /// Defines the split points for the columns in the grid.
   final List<double> xBorders;
-
-  /// Vertical border positions in pixels relative to the top edge.
-  /// 
-  /// Defines the split points for the rows in the grid.
   final List<double> yBorders;
-
-  /// A function that returns the [SpriteFit] strategy for a specific cell.
-  /// 
-  /// Allows for dynamic fitting strategies based on the grid position.
   final SpriteFit Function(int row, int col) fitProvider;
-
-  /// Creates a [GridMesh] with explicit borders and a fit provider.
-  /// 
-  /// This constructor initializes the grid with specified split points 
-  /// and fitting logic for advanced sprite deformation.
-  ///
-  /// * [xBorders]: Horizontal split positions in pixels.
-  /// * [yBorders]: Vertical split positions in pixels.
-  /// * [fitProvider]: The logic to select fitting for each grid cell.
   const GridMesh({
     required this.xBorders,
     required this.yBorders,
     required this.fitProvider,
   });
-
-  /// Convenient constructor for 9-slice (3x3) rendering.
-  /// 
-  /// Borders [left, top, right, bottom] are defined in pixels. This 
-  /// allows for high-quality scaling of UI panels and buttons.
-  ///
-  /// * [left]: Pixel offset from the left edge.
-  /// * [top]: Pixel offset from the top edge.
-  /// * [right]: Pixel offset from the right edge.
-  /// * [bottom]: Pixel offset from the bottom edge.
-  /// * [centerFit]: Scaling strategy for the middle cell.
-  /// * [edgeFit]: Scaling strategy for the top/bottom/left/right cells.
-  /// * [cornerFit]: Scaling strategy for the four corner cells.
   factory GridMesh.nineSlice({
     required double left,
     required double top,
@@ -153,24 +63,6 @@ class GridMesh extends SpriteMesh {
       },
     );
   }
-
-  /// Convenient constructor for 25-slice (5x5) rendering.
-  /// 
-  /// Used for complex UI elements that have multiple distinct scaling zones. 
-  /// This provides even more control over corner and edge preservation.
-  ///
-  /// * [leftOuter]: Outer left border pixel offset.
-  /// * [leftInner]: Inner left border pixel offset.
-  /// * [topOuter]: Outer top border pixel offset.
-  /// * [topInner]: Inner top border pixel offset.
-  /// * [rightOuter]: Outer right border pixel offset.
-  /// * [rightInner]: Inner right border pixel offset.
-  /// * [bottomOuter]: Outer bottom border pixel offset.
-  /// * [bottomInner]: Inner bottom border pixel offset.
-  /// * [centerFit]: Scaling strategy for the middle cell.
-  /// * [edgeCenterFit]: Scaling strategy for the edge-adjacent cells.
-  /// * [edgeFit]: Scaling strategy for the outer edge cells.
-  /// * [cornerFit]: Scaling strategy for the four corner cells.
   factory GridMesh.twentyFiveSlice({
     required double leftOuter,
     required double leftInner,
@@ -248,13 +140,6 @@ class GridMesh extends SpriteMesh {
     }
   }
 
-  /// Calculates the pixel coordinates of the grid lines in source space.
-  /// 
-  /// Transforms the relative borders into absolute pixel offsets within the 
-  /// source rectangle. It handles mirroring for symmetric grid definitions.
-  /// 
-  /// * [borders]: The relative border offsets in pixels.
-  /// * [total]: The total width or height of the source area.
   List<double> _computeSourceLines(List<double> borders, double total) {
     final int half = borders.length ~/ 2;
     final List<double> lines = [0.0];
@@ -277,13 +162,6 @@ class GridMesh extends SpriteMesh {
     return lines;
   }
 
-  /// Calculates the pixel coordinates of the grid lines in destination space.
-  /// 
-  /// Maps the source grid lines to the destination dimensions while 
-  /// preserving fixed-size borders and distributing middle sections.
-  /// 
-  /// * [srcLines]: The previously calculated source pixel coordinates.
-  /// * [destTotal]: The total width or height of the destination area.
   List<double> _computeDestLines(List<double> srcLines, double destTotal) {
     final count = srcLines.length;
     final List<double> dst = List.filled(count, 0.0);

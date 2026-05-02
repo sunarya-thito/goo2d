@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
@@ -7,7 +6,9 @@ void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Input Binding Refactor', () {
-    testWidgets('should support Keyboard.key pattern (late binding)', (tester) async {
+    testWidgets('should support Keyboard.key pattern (late binding)', (
+      tester,
+    ) async {
       final action = InputAction()
         ..name = 'test'
         ..bindings = [Keyboard.space];
@@ -20,8 +21,9 @@ void main() {
         ),
       );
       await tester.pump();
-      
-      final game = (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
+
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
 
       // Initially not pressed
       expect(action.inProgress, isFalse);
@@ -30,14 +32,22 @@ void main() {
       await simulateKeyDownEvent(LogicalKeyboardKey.space);
       game.input.update();
 
-      expect(action.inProgress, isTrue, reason: 'Action should be in progress after key down');
+      expect(
+        action.inProgress,
+        isTrue,
+        reason: 'Action should be in progress after key down',
+      );
       expect(action.wasPressedThisFrame, isTrue);
 
       // Simulate release
       await simulateKeyUpEvent(LogicalKeyboardKey.space);
       game.input.update();
 
-      expect(action.inProgress, isFalse, reason: 'Action should not be in progress after key up');
+      expect(
+        action.inProgress,
+        isFalse,
+        reason: 'Action should not be in progress after key up',
+      );
       expect(action.wasCanceledThisFrame, isTrue);
     });
 
@@ -62,8 +72,9 @@ void main() {
         ),
       );
       await tester.pump();
-      
-      final game = (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
+
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
 
       // Press W
       await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
@@ -82,7 +93,9 @@ void main() {
       expect(val2.dx, equals(1.0));
     });
 
-    testWidgets('should maintain backward compatibility with InputControl', (tester) async {
+    testWidgets('should maintain backward compatibility with InputControl', (
+      tester,
+    ) async {
       final action = InputAction()..name = 'legacy';
 
       await tester.pumpWidget(
@@ -93,11 +106,12 @@ void main() {
         ),
       );
       await tester.pump();
-      final game = (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
+      final game =
+          (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
 
       // Manually add binding after mount to test binding update
       action.bindings = [Keyboard.space];
-      
+
       await simulateKeyDownEvent(LogicalKeyboardKey.space);
       game.input.update();
 

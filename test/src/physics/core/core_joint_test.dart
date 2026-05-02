@@ -26,7 +26,7 @@ void main() {
       // Current distance is 100. Length is 50.
       // After one step, bodies should move towards each other.
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
+
       expect(bodies[1]!.velocity.dx, greaterThan(0));
       expect(bodies[2]!.velocity.dx, lessThan(0));
     });
@@ -40,9 +40,12 @@ void main() {
         anchorB: const Offset(-10, 0),
       );
 
-      bodies[2]!.position = const Offset(30, 0); // Distance between anchors is 10.
+      bodies[2]!.position = const Offset(
+        30,
+        0,
+      ); // Distance between anchors is 10.
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
+
       expect(bodies[1]!.velocity.dx, greaterThan(0));
       expect(bodies[2]!.velocity.dx, lessThan(0));
     });
@@ -60,7 +63,7 @@ void main() {
       );
 
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
+
       expect(bodies[1]!.velocity.dx, greaterThan(0));
       expect(bodies[2]!.velocity.dx, lessThan(0));
     });
@@ -77,7 +80,7 @@ void main() {
 
       bodies[2]!.velocity = const Offset(10, 10);
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
+
       // Y velocity should be zeroed out (roughly)
       expect(bodies[2]!.velocity.dy, lessThan(10.0));
     });
@@ -94,7 +97,7 @@ void main() {
 
       bodies[2]!.rotation = 0.5;
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
+
       expect(bodies[2]!.angularVelocity, lessThan(0));
     });
 
@@ -111,7 +114,7 @@ void main() {
 
       bodies[2]!.velocity = const Offset(10, 0);
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
+
       expect(bodies[2]!.velocity.dx, lessThan(10.0));
     });
 
@@ -127,8 +130,8 @@ void main() {
       );
 
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
-      // bodies are at 0 and 100. Offset is 50. 
+
+      // bodies are at 0 and 100. Offset is 50.
       // bodyB should move towards 50.
       expect(bodies[2]!.velocity.dx, lessThan(0));
     });
@@ -145,7 +148,7 @@ void main() {
       );
 
       joint.solveVelocityConstraints(bodies, 1.0 / 60.0);
-      
+
       expect(bodies[1]!.velocity.dx, greaterThan(0));
     });
   });

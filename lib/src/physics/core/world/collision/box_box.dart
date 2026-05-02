@@ -4,7 +4,6 @@ import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/core/physics_contact.dart';
 import 'package:goo2d/src/physics/core/world/collision/utils.dart';
 
-/// Checks for collision between two oriented boxes (OBB).
 ContactManifold? checkBoxBox(
   PhysicsBox sA,
   PhysicsBody bA,

@@ -7,7 +7,6 @@ import 'package:goo2d/src/physics/core/physics_world.dart';
 import 'package:goo2d/src/physics/core/world/collision/narrow_phase.dart';
 import 'package:goo2d/src/physics/core/world/collision/utils.dart';
 
-/// Resolves all collisions in the physics world.
 void resolveWorldCollisions(PhysicsWorld world, double dt) {
   final allShapesList = world.allShapes.toList();
   for (int i = 0; i < allShapesList.length; i++) {
@@ -47,7 +46,6 @@ void resolveWorldCollisions(PhysicsWorld world, double dt) {
   }
 }
 
-/// Calculates and applies contact impulses between two bodies.
 double applyImpulse(
   PhysicsBody bA,
   PhysicsBody bB,
@@ -58,9 +56,11 @@ double applyImpulse(
   final rA = manifold.contactPoint - bA.position;
   final rB = manifold.contactPoint - bB.position;
 
-  final vA = bA.velocity +
+  final vA =
+      bA.velocity +
       Offset(-bA.angularVelocity * rA.dy, bA.angularVelocity * rA.dx);
-  final vB = bB.velocity +
+  final vB =
+      bB.velocity +
       Offset(-bB.angularVelocity * rB.dy, bB.angularVelocity * rB.dx);
   final relativeVelocity = vB - vA;
 
@@ -72,7 +72,8 @@ double applyImpulse(
   final raCrossN = rA.dx * manifold.normal.dy - rA.dy * manifold.normal.dx;
   final rbCrossN = rB.dx * manifold.normal.dy - rB.dy * manifold.normal.dx;
 
-  final invMassSum = bA.invMass +
+  final invMassSum =
+      bA.invMass +
       bB.invMass +
       (raCrossN * raCrossN * bA.invInertia) +
       (rbCrossN * rbCrossN * bB.invInertia);
@@ -97,7 +98,8 @@ double applyImpulse(
     final t = tangent / tangentMag;
     final raCrossT = rA.dx * t.dy - rA.dy * t.dx;
     final rbCrossT = rB.dx * t.dy - rB.dy * t.dx;
-    final invMassSumT = bA.invMass +
+    final invMassSumT =
+        bA.invMass +
         bB.invMass +
         (raCrossT * raCrossT * bA.invInertia) +
         (rbCrossT * rbCrossT * bB.invInertia);
@@ -117,7 +119,8 @@ double applyImpulse(
 
   const percent = 0.2;
   const slop = 0.01;
-  final correction = manifold.normal *
+  final correction =
+      manifold.normal *
       (math.max(manifold.depth - slop, 0.0) /
           (bA.invMass + bB.invMass) *
           percent);
@@ -127,8 +130,13 @@ double applyImpulse(
   return j;
 }
 
-bool _shouldSuppressOneWay(PhysicsShape sA, PhysicsBody bA, PhysicsShape sB,
-    PhysicsBody bB, ContactManifold manifold) {
+bool _shouldSuppressOneWay(
+  PhysicsShape sA,
+  PhysicsBody bA,
+  PhysicsShape sB,
+  PhysicsBody bB,
+  ContactManifold manifold,
+) {
   if (sA.isOneWay) {
     if (_isIgnoredByOneWay(sA, bA, sB, bB, manifold)) return true;
   }
@@ -143,11 +151,18 @@ bool _shouldSuppressOneWay(PhysicsShape sA, PhysicsBody bA, PhysicsShape sB,
   return false;
 }
 
-bool _isIgnoredByOneWay(PhysicsShape platform, PhysicsBody pBody,
-    PhysicsShape other, PhysicsBody oBody, ContactManifold manifold) {
+bool _isIgnoredByOneWay(
+  PhysicsShape platform,
+  PhysicsBody pBody,
+  PhysicsShape other,
+  PhysicsBody oBody,
+  ContactManifold manifold,
+) {
   // platformNormal points towards the collision side (e.g. up)
-  final pNormal =
-      Offset(math.cos(platform.oneWayAngle), math.sin(platform.oneWayAngle));
+  final pNormal = Offset(
+    math.cos(platform.oneWayAngle),
+    math.sin(platform.oneWayAngle),
+  );
 
   // Check if objects are moving towards each other from the right side
   final relVel = oBody.velocity - pBody.velocity;
@@ -158,8 +173,7 @@ bool _isIgnoredByOneWay(PhysicsShape platform, PhysicsBody pBody,
   if (velDot > 0.1) return true;
 
   // Angle check: Is the contact normal within the allowed arc?
-  final dot =
-      manifold.normal.dx * pNormal.dx + manifold.normal.dy * pNormal.dy;
+  final dot = manifold.normal.dx * pNormal.dx + manifold.normal.dy * pNormal.dy;
   final angle = math.acos(dot.clamp(-1.0, 1.0));
 
   if (angle > platform.oneWayArc / 2.0) return true;

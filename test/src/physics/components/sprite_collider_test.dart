@@ -10,8 +10,8 @@ class MockTexture extends GameTexture {
   final Uint32List pixels;
   final ui.Image? dummyImage;
 
-  MockTexture(this.w, this.h, this.pixels, {this.dummyImage}) : super(AssetSource.local('mock')) {
-  }
+  MockTexture(this.w, this.h, this.pixels, {this.dummyImage})
+    : super(AssetSource.local('mock'));
 
   @override
   int get width => w;
@@ -23,7 +23,7 @@ class MockTexture extends GameTexture {
   Future<void> load() async {}
   @override
   Uint32List getPixels32() => pixels;
-  
+
   @override
   ui.Image get image => dummyImage!;
 }
@@ -59,21 +59,25 @@ void main() {
       // Box is from (3,3) to (6,6) (inclusive of pixels).
       // So vertices should be around (3,3), (6,3), (6,6), (3,6).
       expect(vertices.length, 4);
-      
+
       // Pivot is at center (5,5) for a 10x10 sprite.
       // Offset from pivot: (3-5, 3-5) = (-2, -2)
       expect(vertices, contains(const Offset(-2, -2)));
       expect(vertices, contains(const Offset(1, -2))); // (6-5, 3-5) = (1, -2)
-      expect(vertices, contains(const Offset(1, 1)));  // (6-5, 6-5) = (1, 1)
+      expect(vertices, contains(const Offset(1, 1))); // (6-5, 6-5) = (1, 1)
       expect(vertices, contains(const Offset(-2, 1))); // (3-5, 6-5) = (-2, 1)
     });
 
     testWidgets('SpriteCollider automatic generation', (tester) async {
-      final ui.Image dummyImage = await tester.runAsync(() async {
-        final recorder = ui.PictureRecorder();
-        ui.Canvas(recorder).drawPoints(ui.PointMode.points, [Offset.zero], Paint());
-        return recorder.endRecording().toImage(1, 1);
-      }) as ui.Image;
+      final ui.Image dummyImage =
+          await tester.runAsync(() async {
+                final recorder = ui.PictureRecorder();
+                ui.Canvas(
+                  recorder,
+                ).drawPoints(ui.PointMode.points, [Offset.zero], Paint());
+                return recorder.endRecording().toImage(1, 1);
+              })
+              as ui.Image;
 
       final pixels = Uint32List(10 * 10);
       for (int y = 3; y < 7; y++) {
@@ -83,7 +87,7 @@ void main() {
       }
       final texture = MockTexture(10, 10, pixels, dummyImage: dummyImage);
       final sprite = GameSprite(texture: texture);
-      
+
       final renderer = SpriteRenderer()..sprite = sprite;
       final collider = SpriteCollider()..autoGenerate = true;
 
@@ -104,9 +108,11 @@ void main() {
       );
 
       // Wait for the async generation to complete
-      await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 100)));
+      await tester.runAsync(
+        () => Future.delayed(const Duration(milliseconds: 100)),
+      );
       await tester.pump();
-      
+
       expect(collider.vertices, isNotEmpty);
       expect(collider.vertices.length, 4);
     });

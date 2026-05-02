@@ -17,11 +17,28 @@ class MockPhysicsBridge implements PhysicsBridge {
   @override
   void destroyWorld() {}
   @override
-  void addBody(id, type, {mass = 1.0, drag = 0.0, angularDrag = 0.05, freezeRotation = false, gravityScale = 1.0, position = Offset.zero, rotation = 0.0}) {}
+  void addBody(
+    id,
+    type, {
+    mass = 1.0,
+    drag = 0.0,
+    angularDrag = 0.05,
+    freezeRotation = false,
+    gravityScale = 1.0,
+    position = Offset.zero,
+    rotation = 0.0,
+  }) {}
   @override
   void removeBody(id) {}
   @override
-  void updateBody(id, {mass = 1.0, drag = 0.0, angularDrag = 0.05, freezeRotation = false, gravityScale = 1.0}) {}
+  void updateBody(
+    id, {
+    mass = 1.0,
+    drag = 0.0,
+    angularDrag = 0.05,
+    freezeRotation = false,
+    gravityScale = 1.0,
+  }) {}
   @override
   void addShape(id, bodyId, collider) {}
   @override
@@ -70,7 +87,7 @@ void main() {
         ..forceMagnitude = 1000.0
         ..forceAngle = 0.0
         ..useGlobalAngle = true;
-      
+
       await tester.pumpWidget(
         Game(
           game: engine,
@@ -87,7 +104,9 @@ void main() {
               GameObjectWidget(
                 name: 'TargetObj',
                 children: [
-                  ComponentWidget(() => ObjectTransform()..position = const Offset(100, 100)),
+                  ComponentWidget(
+                    () => ObjectTransform()..position = const Offset(100, 100),
+                  ),
                   ComponentWidget(() => rb),
                   ComponentWidget(() => collider),
                 ],
@@ -99,7 +118,7 @@ void main() {
 
       // Manually trigger the effector logic
       effector.onTriggerStay(collider);
-      
+
       // Verify force was applied to the body.
       expect(mockBridge.appliedForces, isNotEmpty);
       final forces = mockBridge.appliedForces.values.first;
@@ -112,7 +131,7 @@ void main() {
         ..useOneWay = true
         ..oneWayArc = 1.0
         ..rotationalOffset = 0.5;
-      
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(

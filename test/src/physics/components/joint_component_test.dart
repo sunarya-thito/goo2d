@@ -11,7 +11,7 @@ void main() {
       final joint = DistanceJoint()
         ..connectedBody = rb2
         ..distance = 50.0;
-      
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
@@ -36,15 +36,16 @@ void main() {
         ),
       );
 
-      final engine = GameEngine.of(tester.element(find.byType(GameObjectWidget).first));
+      final engine = GameEngine.of(
+        tester.element(find.byType(GameObjectWidget).first),
+      );
       expect(engine.physics?.activeJoints, contains(joint));
     });
 
     testWidgets('HingeJoint registration', (tester) async {
       final rb1 = Rigidbody();
-      final joint = HingeJoint()
-        ..anchor = const Offset(10, 10);
-      
+      final joint = HingeJoint()..anchor = const Offset(10, 10);
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
@@ -61,7 +62,9 @@ void main() {
         ),
       );
 
-      final engine = GameEngine.of(tester.element(find.byType(GameObjectWidget).first));
+      final engine = GameEngine.of(
+        tester.element(find.byType(GameObjectWidget).first),
+      );
       expect(engine.physics?.activeJoints, contains(joint));
     });
   });

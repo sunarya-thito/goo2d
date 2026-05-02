@@ -8,13 +8,15 @@ void main() {
   group('Collider Components', () {
     testWidgets('BoxCollider bounds', (tester) async {
       final collider = BoxCollider()..size = const Size(100, 50);
-      
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
             children: [
-              ComponentWidget(() => ObjectTransform()..position = const Offset(200, 100)),
-              ComponentWidget(() => collider)
+              ComponentWidget(
+                () => ObjectTransform()..position = const Offset(200, 100),
+              ),
+              ComponentWidget(() => collider),
             ],
           ),
         ),
@@ -26,13 +28,15 @@ void main() {
 
     testWidgets('CircleCollider bounds', (tester) async {
       final collider = CircleCollider()..radius = 50.0;
-      
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
             children: [
-              ComponentWidget(() => ObjectTransform()..position = const Offset(200, 100)),
-              ComponentWidget(() => collider)
+              ComponentWidget(
+                () => ObjectTransform()..position = const Offset(200, 100),
+              ),
+              ComponentWidget(() => collider),
             ],
           ),
         ),
@@ -46,13 +50,15 @@ void main() {
         ..radius = 10.0
         ..height = 40.0
         ..direction = CapsuleDirection.vertical;
-      
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
             children: [
-              ComponentWidget(() => ObjectTransform()..position = const Offset(100, 100)),
-              ComponentWidget(() => collider)
+              ComponentWidget(
+                () => ObjectTransform()..position = const Offset(100, 100),
+              ),
+              ComponentWidget(() => collider),
             ],
           ),
         ),
@@ -64,19 +70,22 @@ void main() {
     });
 
     testWidgets('PolygonCollider bounds', (tester) async {
-      final collider = PolygonCollider()..vertices = [
-        const Offset(-10, -10),
-        const Offset(10, -10),
-        const Offset(10, 10),
-        const Offset(-10, 10),
-      ];
-      
+      final collider = PolygonCollider()
+        ..vertices = [
+          const Offset(-10, -10),
+          const Offset(10, -10),
+          const Offset(10, 10),
+          const Offset(-10, 10),
+        ];
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
             children: [
-              ComponentWidget(() => ObjectTransform()..position = const Offset(100, 100)),
-              ComponentWidget(() => collider)
+              ComponentWidget(
+                () => ObjectTransform()..position = const Offset(100, 100),
+              ),
+              ComponentWidget(() => collider),
             ],
           ),
         ),
@@ -87,15 +96,25 @@ void main() {
 
     testWidgets('CompositeCollider bounds', (tester) async {
       final composite = CompositeCollider();
-      composite.shapes.add(BoxGeometry()..size = const Size(20, 20)..offset = const Offset(-20, 0));
-      composite.shapes.add(CircleGeometry()..radius = 10.0..offset = const Offset(20, 0));
-      
+      composite.shapes.add(
+        BoxGeometry()
+          ..size = const Size(20, 20)
+          ..offset = const Offset(-20, 0),
+      );
+      composite.shapes.add(
+        CircleGeometry()
+          ..radius = 10.0
+          ..offset = const Offset(20, 0),
+      );
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
             children: [
-              ComponentWidget(() => ObjectTransform()..position = const Offset(100, 100)),
-              ComponentWidget(() => composite)
+              ComponentWidget(
+                () => ObjectTransform()..position = const Offset(100, 100),
+              ),
+              ComponentWidget(() => composite),
             ],
           ),
         ),
@@ -109,7 +128,7 @@ void main() {
 
     testWidgets('Collider registration with PhysicsSystem', (tester) async {
       final collider = BoxCollider();
-      
+
       await tester.pumpWidget(
         Game(
           child: GameObjectWidget(
@@ -117,8 +136,10 @@ void main() {
           ),
         ),
       );
-      
-      final engine = GameEngine.of(tester.element(find.byType(GameObjectWidget)));
+
+      final engine = GameEngine.of(
+        tester.element(find.byType(GameObjectWidget)),
+      );
       expect(engine.physics?.activeColliders, contains(collider));
     });
   });

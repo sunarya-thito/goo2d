@@ -7,38 +7,10 @@ import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/core/physics_joint.dart';
 import 'package:goo2d/src/physics/worker/physics_protocol.dart';
 
-/// Manages multiple physics worlds within a background Isolate.
-/// 
-/// [PhysicsWorkerManager] processes binary messages from the main thread, 
-/// routes them to the correct [PhysicsWorld] instance, and sends back 
-/// simulation results. It acts as the orchestration layer for all background 
-/// physical simulations.
-/// 
-/// ```dart
-/// final worker = PhysicsWorkerManager(onResponse: (data) => print('Sent!'));
-/// ```
 class PhysicsWorkerManager {
-  /// Map of world IDs to their respective physics simulations.
-  /// 
-  /// Each ID corresponds to a [PhysicsWorld] instance managed by this worker.
   final Map<int, PhysicsWorld> worlds = {};
-  
-  /// Callback used to send serialized responses back to the main thread.
-  /// 
-  /// This typically wraps a [SendPort] to communicate across Isolate boundaries.
   final void Function(ByteData) onResponse;
-
-  /// Creates a [PhysicsWorkerManager].
-  /// 
-  /// * [onResponse]: The handler for sending binary packets back to the main thread.
   PhysicsWorkerManager({required this.onResponse});
-
-  /// Decodes and executes a binary [message].
-  /// 
-  /// This is the main entry point for commands sent from the [WorkerPhysicsBridge]. 
-  /// It uses a [PhysicsBuffer] to parse the opcode and data payload.
-  /// 
-  /// * [message]: The raw binary data received from the main thread.
   void handleMessage(ByteData message) {
     final buffer = PhysicsBuffer(message);
     final packetId = buffer.readUint8();
@@ -332,8 +304,9 @@ class PhysicsWorkerManager {
         final result = world.step(dt);
 
         // Encode step result
-        final dynamicBodies =
-            world.bodies.values.where((b) => b.type == 0).toList(); // dynamic
+        final dynamicBodies = world.bodies.values
+            .where((b) => b.type == 0)
+            .toList(); // dynamic
         final respSize =
             1 +
             4 +
@@ -382,25 +355,22 @@ class PhysicsWorkerManager {
       // Polygon
       final count = buffer.readInt32();
       final verts = List.generate(
-          count, (_) => Offset(buffer.readFloat32(), buffer.readFloat32()));
+        count,
+        (_) => Offset(buffer.readFloat32(), buffer.readFloat32()),
+      );
       return PhysicsPolygon(verts);
     } else {
       return PhysicsCapsule(
-          buffer.readFloat32(),
-          buffer.readFloat32(),
-          buffer.readUint8() == 1
-              ? CapsuleDirection.vertical
-              : CapsuleDirection.horizontal);
+        buffer.readFloat32(),
+        buffer.readFloat32(),
+        buffer.readUint8() == 1
+            ? CapsuleDirection.vertical
+            : CapsuleDirection.horizontal,
+      );
     }
   }
 }
 
-/// The entry point for the physics Isolate.
-/// 
-/// This function is called by [Isolate.spawn] and establishes the 
-/// communication channel with the main thread.
-/// 
-/// * [mainSendPort]: The port used to communicate back to the main isolate.
 void physicsWorkerEntry(SendPort mainSendPort) {
   final workerReceivePort = ReceivePort();
   mainSendPort.send(workerReceivePort.sendPort);

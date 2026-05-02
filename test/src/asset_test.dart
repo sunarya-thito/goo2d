@@ -35,7 +35,8 @@ class MockAsset extends GameAsset {
 
 enum TestAssets with AssetEnum {
   assetA,
-  assetB;
+  assetB
+  ;
 
   @override
   GameAsset register() => MockAsset(name);

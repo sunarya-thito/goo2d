@@ -45,7 +45,9 @@ void main() {
       image = await createTestImage();
     });
 
-    testWidgets('StretchFit should draw exactly from src to dst', (tester) async {
+    testWidgets('StretchFit should draw exactly from src to dst', (
+      tester,
+    ) async {
       const fit = StretchFit();
       const src = ui.Rect.fromLTWH(0, 0, 10, 10);
       const dst = ui.Rect.fromLTWH(0, 0, 100, 100);
@@ -58,15 +60,17 @@ void main() {
       const fit = FixedFit(alignment: Alignment.topLeft);
       const src = ui.Rect.fromLTWH(0, 0, 50, 50);
       const dst = ui.Rect.fromLTWH(0, 0, 100, 100);
-      
+
       fit.draw(canvas, image, src, dst, paint);
-      
+
       expect(canvas.lastSrc, src);
       // TopLeft of 50x50 in 100x100 is LTWH(0, 0, 50, 50)
       expect(canvas.lastDst, const ui.Rect.fromLTWH(0, 0, 50, 50));
     });
 
-    testWidgets('CoverFit should scale and crop to fill destination', (tester) async {
+    testWidgets('CoverFit should scale and crop to fill destination', (
+      tester,
+    ) async {
       const fit = CoverFit();
       const src = ui.Rect.fromLTWH(0, 0, 200, 100);
       const dst = ui.Rect.fromLTWH(0, 0, 100, 100);
@@ -75,13 +79,15 @@ void main() {
       expect(canvas.lastDst, const ui.Rect.fromLTWH(0, 0, 100, 100));
     });
 
-    testWidgets('ContainFit should respect alignment (bottomRight)', (tester) async {
+    testWidgets('ContainFit should respect alignment (bottomRight)', (
+      tester,
+    ) async {
       const fit = ContainFit(alignment: Alignment.bottomRight);
       const src = ui.Rect.fromLTWH(0, 0, 200, 100); // 2:1
       const dst = ui.Rect.fromLTWH(0, 0, 100, 100); // 1:1
-      
+
       fit.draw(canvas, image, src, dst, paint);
-      
+
       // For BoxFit.contain (2:1 src into 1:1 dst):
       // Destination is 100x50. With bottomRight, it should be at (0, 50, 100, 50)
       expect(canvas.lastSrc, src);
@@ -93,9 +99,9 @@ void main() {
       // Scaling should be 4x.
       const src = ui.Rect.fromLTWH(0, 0, 32, 32);
       const dst = ui.Rect.fromLTWH(0, 0, 128, 128);
-      
+
       final matrix = TileFit.computeMatrix(src, dst);
-      
+
       // Check scale (index 0 and 5 in column-major Matrix4)
       expect(matrix.storage[0], 4.0);
       expect(matrix.storage[5], 4.0);
@@ -107,9 +113,9 @@ void main() {
     test('TileFit should handle offset source and destination', () {
       const src = ui.Rect.fromLTWH(10, 10, 10, 10);
       const dst = ui.Rect.fromLTWH(100, 100, 100, 100);
-      
+
       final matrix = TileFit.computeMatrix(src, dst);
-      
+
       // Scale is 10x
       expect(matrix.storage[0], 10.0);
       expect(matrix.storage[5], 10.0);

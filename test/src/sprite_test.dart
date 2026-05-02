@@ -91,7 +91,7 @@ void main() {
         // Texture 256x128. 2x2 grid with 10px gap.
         // (256 - 10) / 2 = 123 width
         // (128 - 10) / 2 = 59 height
-        
+
         final sprite00 = spacedSheet[(0, 0)];
         expect(sprite00.rect, const ui.Rect.fromLTWH(0, 0, 123, 59));
 

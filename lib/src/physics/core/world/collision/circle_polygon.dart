@@ -5,7 +5,6 @@ import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/core/physics_contact.dart';
 import 'package:goo2d/src/physics/core/world/collision/utils.dart';
 
-/// Checks for collision between a circle and a polygon.
 ContactManifold? checkCirclePolygon(
   PhysicsCircle sA,
   PhysicsBody bA,
@@ -32,8 +31,7 @@ ContactManifold? checkCirclePolygon(
     ];
     final projB = projectPolygon(verts, axis);
 
-    final overlap =
-        math.min(projA[1], projB[1]) - math.max(projA[0], projB[0]);
+    final overlap = math.min(projA[1], projB[1]) - math.max(projA[0], projB[0]);
     if (overlap <= 0) return null;
 
     if (overlap < minOverlap) {

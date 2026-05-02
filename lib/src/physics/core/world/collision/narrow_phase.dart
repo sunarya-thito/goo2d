@@ -12,7 +12,6 @@ import 'package:goo2d/src/physics/core/world/collision/capsule_capsule.dart';
 import 'package:goo2d/src/physics/core/world/collision/capsule_box.dart';
 import 'package:goo2d/src/physics/core/world/collision/capsule_polygon.dart';
 
-/// The narrow-phase dispatcher that checks for collisions between any two shapes.
 ContactManifold? checkCollision(
   PhysicsShape sA,
   PhysicsBody bA,

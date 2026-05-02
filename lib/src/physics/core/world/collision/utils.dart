@@ -4,7 +4,6 @@ import 'package:goo2d/src/physics/core/physics_body.dart';
 import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/core/physics_contact.dart';
 
-/// Flips the normal of a [ContactManifold].
 ContactManifold? flipManifold(ContactManifold? manifold) {
   if (manifold == null) return null;
   return ContactManifold(
@@ -14,7 +13,6 @@ ContactManifold? flipManifold(ContactManifold? manifold) {
   );
 }
 
-/// Converts a [PhysicsBox] to a [PhysicsPolygon] for SAT collision detection.
 PhysicsPolygon boxToPolygon(PhysicsBox box, PhysicsBody body) {
   final halfW = box.size.width / 2;
   final halfH = box.size.height / 2;
@@ -29,7 +27,6 @@ PhysicsPolygon boxToPolygon(PhysicsBox box, PhysicsBody body) {
     ..localOffset = box.localOffset;
 }
 
-/// Transforms polygon vertices from local to world space.
 List<Offset> getTransformedVertices(PhysicsPolygon poly, PhysicsBody body) {
   final cos = math.cos(body.rotation);
   final sin = math.sin(body.rotation);
@@ -43,7 +40,6 @@ List<Offset> getTransformedVertices(PhysicsPolygon poly, PhysicsBody body) {
   }).toList();
 }
 
-/// Calculates the face normals (axes) for a list of vertices.
 List<Offset> getPolygonAxes(List<Offset> verts) {
   final axes = <Offset>[];
   for (int i = 0; i < verts.length; i++) {
@@ -58,7 +54,6 @@ List<Offset> getPolygonAxes(List<Offset> verts) {
   return axes;
 }
 
-/// Projects vertices onto an axis and returns [min, max].
 List<double> projectPolygon(List<Offset> verts, Offset axis) {
   double min = double.infinity;
   double max = -double.infinity;
@@ -70,7 +65,6 @@ List<double> projectPolygon(List<Offset> verts, Offset axis) {
   return [min, max];
 }
 
-/// Calculates the centroid of a set of vertices.
 Offset getPolygonCenter(List<Offset> verts) {
   Offset sum = Offset.zero;
   for (final v in verts) {
@@ -79,7 +73,6 @@ Offset getPolygonCenter(List<Offset> verts) {
   return sum / verts.length.toDouble();
 }
 
-/// Finds the vertex closest to a given point.
 Offset getClosestVertex(Offset point, List<Offset> verts) {
   double minDist = double.infinity;
   Offset closest = verts[0];
@@ -93,14 +86,12 @@ Offset getClosestVertex(Offset point, List<Offset> verts) {
   return closest;
 }
 
-/// Gets the local X and Y axes for a box based on its rotation.
 List<Offset> getBoxAxes(double rotation) {
   final cos = math.cos(rotation);
   final sin = math.sin(rotation);
   return [Offset(cos, sin), Offset(-sin, cos)];
 }
 
-/// Calculates overlap between two oriented boxes on a specific axis.
 double getOverlap(
   Offset posA,
   List<Offset> axesA,
@@ -122,7 +113,6 @@ double getOverlap(
   return math.min(maxA, maxB) - math.max(minA, minB);
 }
 
-/// Projects an OBB onto an axis.
 List<double> projectBox(
   Offset pos,
   List<Offset> axes,
@@ -136,7 +126,6 @@ List<double> projectBox(
   return [centerProj - r, centerProj + r];
 }
 
-/// Transforms a local point to world space based on body transform.
 Offset getTransformedPoint(Offset local, PhysicsBody body) {
   if (local == Offset.zero) return body.position;
   final cos = math.cos(body.rotation);
@@ -148,7 +137,6 @@ Offset getTransformedPoint(Offset local, PhysicsBody body) {
       );
 }
 
-/// Returns the world-space endpoints of a capsule's central segment.
 List<Offset> getCapsuleSegment(PhysicsCapsule s, PhysicsBody b) {
   double capOffset = (s.height / 2) - s.radius;
   if (capOffset < 0) capOffset = 0;
@@ -163,7 +151,6 @@ List<Offset> getCapsuleSegment(PhysicsCapsule s, PhysicsBody b) {
   return [getTransformedPoint(localA, b), getTransformedPoint(localB, b)];
 }
 
-/// Returns the closest point on segment [a, b] to point [p].
 Offset getClosestPointOnSegment(Offset p, Offset a, Offset b) {
   final ab = b - a;
   final distSq = ab.distanceSquared;
@@ -175,9 +162,12 @@ Offset getClosestPointOnSegment(Offset p, Offset a, Offset b) {
   return a + ab * t;
 }
 
-/// Returns the two closest points between segment [p1, p2] and [q1, q2].
 List<Offset> getClosestPointsBetweenSegments(
-    Offset p1, Offset p2, Offset q1, Offset q2) {
+  Offset p1,
+  Offset p2,
+  Offset q1,
+  Offset q2,
+) {
   final d1 = p2 - p1;
   final d2 = q2 - q1;
   final r = p1 - q1;

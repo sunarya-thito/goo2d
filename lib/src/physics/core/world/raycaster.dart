@@ -6,7 +6,6 @@ import 'package:goo2d/src/physics/core/physics_raycast_hit.dart';
 import 'package:goo2d/src/physics/core/physics_world.dart';
 import 'package:goo2d/src/physics/core/world/collision/utils.dart';
 
-/// Performs a spatial query for ray intersections in the world.
 PhysicsRaycastHit? raycastWorld(
   PhysicsWorld world,
   Offset origin,

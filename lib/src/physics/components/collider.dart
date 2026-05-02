@@ -2,105 +2,27 @@ import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/goo2d.dart';
 
-/// The base class for all physical shapes in the Goo2D engine.
-/// 
-/// Colliders define the volume of a [GameObject] for the purpose of 
-/// physical collisions and trigger events. They must be attached to 
-/// a [GameObject] that has an [ObjectTransform] to be correctly positioned 
-/// in the [PhysicsWorld].
-/// 
-/// ```dart
-/// class MyBouncyBall extends GameObject {
-///   @override
-///   void onAwake() {
-///     addComponent(CircleCollider()..radius = 50);
-///     addComponent(Rigidbody()..type = RigidbodyType.dynamic);
-///   }
-/// }
-/// ```
-abstract class Collider extends Component with LifecycleListener, MultiComponent {
-  /// The local offset of the collider relative to its parent center.
-  /// 
-  /// This allows you to shift the collision volume without moving the 
-  /// entire [GameObject]. Useful for offset centers of mass or 
-  /// multi-collider objects.
+abstract class Collider extends Component
+    with LifecycleListener, MultiComponent {
   Offset offset = Offset.zero;
-
-  /// If true, this collider will not block other objects.
-  /// 
-  /// Triggers are used for region detection, such as power-ups, 
-  /// area-of-effect zones, or checkpoint markers. They do not participate 
-  /// in physical resolution but still generate collision events.
   bool isTrigger = false;
-
-  /// The material properties of the collider surface.
-  /// 
-  /// Defines how the surface interacts with others in terms of friction 
-  /// (sliding resistance) and bounciness (energy restitution).
   PhysicsMaterial material = PhysicsMaterial.defaultMaterial;
-
-  /// Whether this collider behaves as a one-way platform.
-  /// 
-  /// If true, collisions are only resolved from a specific direction.
-  /// This is typically configured via a [PlatformEffector].
   bool isOneWay = false;
-
-  /// The local angle (in radians) of the one-way pass-through direction.
   double oneWayAngle = -1.57079632679; // -PI/2 (Up)
-
-  /// The angular width of the arc where collisions are active.
   double oneWayArc = 3.14159265359; // PI (180 degrees)
-
-  /// A bitmask used to determine which other objects this collider can hit.
-  /// 
-  /// The engine performs a bitwise AND between the [layerMask] of two 
-  /// objects. If the result is non-zero, they can collide. This is the 
-  /// primary way to optimize physics by skipping unnecessary checks.
-  /// 
-  /// ```dart
-  /// collider.layerMask = 0x1; // Only collide with layer 1
-  /// ```
   int layerMask = 0xFFFFFFFF;
 
   bool _wasOverlappingScreen = false;
   bool _wasFullyInsideScreen = false;
-
-  /// Internal tracking for screen visibility events.
-  /// 
-  /// This state is managed by the [PhysicsSystem] to determine when 
-  /// a collider enters or exits the viewport.
   @internal
   bool get wasOverlappingScreen => _wasOverlappingScreen;
-  
-  /// Internal tracking for screen visibility events.
-  /// 
-  /// * [value]: Whether the collider is currently overlapping the screen.
   @internal
   set wasOverlappingScreen(bool value) => _wasOverlappingScreen = value;
-  
-  /// Internal tracking for screen visibility events.
-  /// 
-  /// This state is used to trigger onWillEnterScreen and onWillExitScreen 
-  /// lifecycle events.
   @internal
   bool get wasFullyInsideScreen => _wasFullyInsideScreen;
-  
-  /// Internal tracking for screen visibility events.
-  /// 
-  /// * [value]: Whether the collider is fully contained within the screen.
   @internal
   set wasFullyInsideScreen(bool value) => _wasFullyInsideScreen = value;
-
-  /// Retrieves the transform component of the parent object.
-  /// 
-  /// Accessing this property will throw an error if the [GameObject] 
-  /// does not have an [ObjectTransform]. Use [tryTransform] for safe access.
   ObjectTransform get transform => gameObject.getComponent<ObjectTransform>();
-
-  /// Safely attempts to retrieve the transform component.
-  /// 
-  /// Returns null if the parent [GameObject] lacks an [ObjectTransform], 
-  /// allowing for graceful degradation in non-physical contexts.
   ObjectTransform? get tryTransform =>
       gameObject.tryGetComponent<ObjectTransform>();
 
@@ -114,40 +36,11 @@ abstract class Collider extends Component with LifecycleListener, MultiComponent
     game.getSystem<PhysicsSystem>()?.unregisterCollider(this);
   }
 
-  /// The Axis-Aligned Bounding Box (AABB) of the collider in world space.
-  /// 
-  /// This rectangle represents the minimum and maximum extents of the shape 
-  /// after taking into account the object's position, rotation, and scale.
   Rect get worldBounds;
-
-  /// Checks if a specific point in world space is inside the collider.
-  /// 
-  /// This is used for high-level hit testing, such as mouse clicks or 
-  /// targeted spell effects. The implementation varies by collider type.
-  /// 
-  /// * [worldPoint]: The position to test in absolute world coordinates.
   bool containsPoint(Offset worldPoint);
 }
 
-/// A rectangular physical volume.
-/// 
-/// Box colliders are the most common shape used for platforms, walls, and 
-/// simple props. They are computationally efficient because their overlap 
-/// checks involve simple coordinate comparisons.
-/// 
-/// See also:
-/// * [CircleCollider] for spherical objects.
-/// * [CapsuleCollider] for characters.
-/// 
-/// ```dart
-/// final ground = GameObject()
-///   ..addComponent(BoxCollider()..size = Size(1000, 20));
-/// ```
 class BoxCollider extends Collider {
-  /// The width and height of the box in local world units.
-  /// 
-  /// The size is centered on the [offset]. If the parent [ObjectTransform] 
-  /// is scaled, this size will be multiplied by that scale in world space.
   Size size = const Size(100, 100);
 
   @override
@@ -191,24 +84,7 @@ class BoxCollider extends Collider {
   }
 }
 
-/// A circular physical volume.
-/// 
-/// Circle colliders are ideal for projectiles, spheres, and characters that 
-/// need to roll or have isotropic collision behavior. They are the most 
-/// performance-efficient collider for narrow-phase detection.
-/// 
-/// See also:
-/// * [BoxCollider] for rectangular shapes.
-/// 
-/// ```dart
-/// final bullet = GameObject()
-///   ..addComponent(CircleCollider()..radius = 10);
-/// ```
 class CircleCollider extends Collider {
-  /// The radius of the circle in local world units.
-  /// 
-  /// The effective world-space radius will be [radius] multiplied by the 
-  /// maximum scale component of the parent [ObjectTransform].
   double radius = 50.0;
 
   @override
@@ -241,38 +117,9 @@ class CircleCollider extends Collider {
   }
 }
 
-
-/// A pill-shaped physical volume.
-/// 
-/// Capsules are the industry-standard choice for character controllers because 
-/// they slide smoothly over step-up geometry (like stairs) and prevent 
-/// "catching" on sharp corners that would trap a [BoxCollider].
-/// 
-/// See also:
-/// * [CircleCollider] for simple round objects.
-/// 
-/// ```dart
-/// final player = GameObject()
-///   ..addComponent(CapsuleCollider()
-///     ..radius = 20
-///     ..height = 80
-///     ..direction = CapsuleDirection.vertical);
-/// ```
 class CapsuleCollider extends Collider {
-  /// The radius of the hemispherical caps at each end.
-  /// 
-  /// The width/thickness of the capsule is twice this value.
   double radius = 25.0;
-  
-  /// The total length of the capsule from cap-tip to cap-tip.
-  /// 
-  /// If the [height] is less than or equal to `radius * 2`, the collider 
-  /// effectively becomes a [CircleCollider].
   double height = 100.0;
-  
-  /// The orientation of the capsule's primary axis.
-  /// 
-  /// Determines whether the capsule stretches along the local X or Y axis.
   CapsuleDirection direction = CapsuleDirection.vertical;
 
   @override
@@ -336,24 +183,7 @@ class CapsuleCollider extends Collider {
   }
 }
 
-/// A collider defined by an arbitrary list of [vertices].
-/// 
-/// [PolygonCollider] supports concave shapes and is ideal for 
-/// complex static geometry like rocky terrain or room outlines. 
-/// Vertices should be defined in local space relative to [offset].
-/// 
-/// ```dart
-/// final triangle = GameObject()
-///   ..addComponent(PolygonCollider()..vertices = [
-///     Offset(0, -50), Offset(50, 50), Offset(-50, 50)
-///   ]);
-/// ```
 class PolygonCollider extends Collider {
-  /// The local vertices defining the polygon shape.
-  /// 
-  /// The polygon is automatically closed by connecting the last vertex 
-  /// to the first. Vertices should be provided in clockwise or 
-  /// counter-clockwise order.
   List<Offset> vertices = [];
 
   @override
@@ -395,50 +225,13 @@ class PolygonCollider extends Collider {
   }
 }
 
-/// A specialized [PolygonCollider] that generates its shape from a [GameSprite].
-/// 
-/// This component analyzes the alpha channel of a sprite to find 
-/// its contours and automatically generates a matching polygon. This 
-/// is extremely useful for pixel-perfect collisions on complex character 
-/// sprites without manual vertex placement.
-/// 
-/// ```dart
-/// final hero = GameObject()
-///   ..addComponent(SpriteRenderer(heroSprite))
-///   ..addComponent(SpriteCollider()..tolerance = 2.0);
-/// ```
 class SpriteCollider extends PolygonCollider {
   static final Map<GameSprite, List<Offset>> _cache = {};
-
-  /// Minimum alpha value (0.0 to 1.0) required to consider a pixel "solid".
-  /// 
-  /// Lower values make the collider more sensitive to semi-transparent 
-  /// edge pixels.
   double alphaThreshold = 0.1;
-
-  /// Tolerance for the Ramer-Douglas-Peucker simplification algorithm.
-  /// 
-  /// Higher values result in fewer vertices and better performance, 
-  /// but less accurate shapes. A value of 1.0 is usually a good balance.
   double tolerance = 1.0;
-
-  /// If true, the polygon is generated automatically as soon as 
-  /// the sprite is loaded.
-  /// 
-  /// This requires a [SpriteRenderer] to be present on the same [GameObject].
   bool autoGenerate = true;
 
   bool _isGenerating = false;
-
-  /// Generates and caches collision vertices for a specific [sprite].
-  /// 
-  /// This method decodes the sprite texture, traces its edges, 
-  /// simplifies the resulting path, and scales it into world units based 
-  /// on the sprite's PPU and pivot.
-  /// 
-  /// * [sprite]: The sprite to analyze.
-  /// * [alphaThreshold]: Transparency cutoff for solidity.
-  /// * [tolerance]: Simplification aggressive level.
   static Future<List<Offset>> bake(
     GameSprite sprite, {
     double alphaThreshold = 0.1,
@@ -485,10 +278,6 @@ class SpriteCollider extends PolygonCollider {
     }
   }
 
-  /// Asynchronously triggers the baking process.
-  /// 
-  /// Locates the [SpriteRenderer], calls [bake], and updates the 
-  /// [PhysicsSystem] with the new vertices.
   void _tryGenerate() async {
     if (_isGenerating) return;
     final renderer = gameObject.tryGetComponent<SpriteRenderer>();
@@ -512,13 +301,7 @@ class SpriteCollider extends PolygonCollider {
   }
 }
 
-/// A collider that hosts multiple geometric shapes.
-/// 
-/// This allows creating complex collision volumes that move as a single 
-/// physical unit. It is also a way to group multiple shapes under 
-/// a single [Component].
 class CompositeCollider extends Collider {
-  /// The list of shapes contained within this composite.
   final List<ColliderGeometry> shapes = [];
 
   @override
@@ -547,30 +330,14 @@ class CompositeCollider extends Collider {
   }
 }
 
-/// Base class for geometric shapes used within a [CompositeCollider].
 abstract class ColliderGeometry {
-  /// Local offset relative to the parent [CompositeCollider].
   Offset offset = Offset.zero;
-
-  /// Material properties for this specific shape.
   PhysicsMaterial material = PhysicsMaterial.defaultMaterial;
-
-  /// Whether this shape acts as a trigger.
   bool isTrigger = false;
-
-  /// Whether this shape allows one-way collisions.
   bool isOneWay = false;
-
-  /// The local angle (in radians) of the one-way pass-through direction.
   double oneWayAngle = -1.57079632679; // -PI/2 (Up)
-
-  /// The angular width of the arc where collisions are active.
   double oneWayArc = 3.14159265359; // PI (180 degrees)
-
-  /// Returns the world-space bounding box for this geometry.
   Rect getWorldBounds(ObjectTransform? transform, Offset compositeOffset);
-
-  /// Checks if the geometry contains the given world-space point.
   bool containsPoint(
     Offset worldPoint,
     ObjectTransform transform,
@@ -578,9 +345,7 @@ abstract class ColliderGeometry {
   );
 }
 
-/// A circular shape for use in a [CompositeCollider].
 class CircleGeometry extends ColliderGeometry {
-  /// The radius of the circle.
   double radius = 50.0;
 
   @override
@@ -588,26 +353,30 @@ class CircleGeometry extends ColliderGeometry {
     if (t == null) return Rect.zero;
     final worldCenter = t.localToWorld(offset + compositeOffset);
     final worldScale = t.scale;
-    final maxScale =
-        worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy;
+    final maxScale = worldScale.dx > worldScale.dy
+        ? worldScale.dx
+        : worldScale.dy;
     return Rect.fromCircle(center: worldCenter, radius: radius * maxScale);
   }
 
   @override
-  bool containsPoint(Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+  bool containsPoint(
+    Offset worldPoint,
+    ObjectTransform t,
+    Offset compositeOffset,
+  ) {
     final worldCenter = t.localToWorld(offset + compositeOffset);
     final distSq = (worldPoint - worldCenter).distanceSquared;
     final worldScale = t.scale;
-    final maxScale =
-        worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy;
+    final maxScale = worldScale.dx > worldScale.dy
+        ? worldScale.dx
+        : worldScale.dy;
     final worldRadius = radius * maxScale;
     return distSq <= worldRadius * worldRadius;
   }
 }
 
-/// A rectangular shape for use in a [CompositeCollider].
 class BoxGeometry extends ColliderGeometry {
-  /// The size of the box.
   Size size = const Size(100, 100);
 
   @override
@@ -616,14 +385,22 @@ class BoxGeometry extends ColliderGeometry {
     final halfW = size.width / 2;
     final halfH = size.height / 2;
     final corners = [
-      Offset(offset.dx + compositeOffset.dx - halfW,
-          offset.dy + compositeOffset.dy - halfH),
-      Offset(offset.dx + compositeOffset.dx + halfW,
-          offset.dy + compositeOffset.dy - halfH),
-      Offset(offset.dx + compositeOffset.dx - halfW,
-          offset.dy + compositeOffset.dy + halfH),
-      Offset(offset.dx + compositeOffset.dx + halfW,
-          offset.dy + compositeOffset.dy + halfH),
+      Offset(
+        offset.dx + compositeOffset.dx - halfW,
+        offset.dy + compositeOffset.dy - halfH,
+      ),
+      Offset(
+        offset.dx + compositeOffset.dx + halfW,
+        offset.dy + compositeOffset.dy - halfH,
+      ),
+      Offset(
+        offset.dx + compositeOffset.dx - halfW,
+        offset.dy + compositeOffset.dy + halfH,
+      ),
+      Offset(
+        offset.dx + compositeOffset.dx + halfW,
+        offset.dy + compositeOffset.dy + halfH,
+      ),
     ];
 
     double? minX, maxX, minY, maxY;
@@ -638,7 +415,11 @@ class BoxGeometry extends ColliderGeometry {
   }
 
   @override
-  bool containsPoint(Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+  bool containsPoint(
+    Offset worldPoint,
+    ObjectTransform t,
+    Offset compositeOffset,
+  ) {
     final localPoint = t.worldToLocal(worldPoint);
     final halfW = size.width / 2;
     final halfH = size.height / 2;
@@ -650,15 +431,9 @@ class BoxGeometry extends ColliderGeometry {
   }
 }
 
-/// A pill shape for use in a [CompositeCollider].
 class CapsuleGeometry extends ColliderGeometry {
-  /// The radius of the caps.
   double radius = 25.0;
-
-  /// The total height.
   double height = 100.0;
-
-  /// The stretching direction.
   CapsuleDirection direction = CapsuleDirection.vertical;
 
   @override
@@ -685,7 +460,8 @@ class CapsuleGeometry extends ColliderGeometry {
     for (final p in centers) {
       final world = t.localToWorld(p);
       final worldScale = t.scale;
-      final worldR = radius *
+      final worldR =
+          radius *
           (worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy);
 
       final b = Rect.fromCircle(center: world, radius: worldR);
@@ -700,7 +476,10 @@ class CapsuleGeometry extends ColliderGeometry {
 
   @override
   bool containsPoint(
-      Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+    Offset worldPoint,
+    ObjectTransform t,
+    Offset compositeOffset,
+  ) {
     final localPoint = t.worldToLocal(worldPoint);
     final relativePoint = localPoint - (offset + compositeOffset);
 
@@ -720,9 +499,7 @@ class CapsuleGeometry extends ColliderGeometry {
   }
 }
 
-/// A polygonal shape for use in a [CompositeCollider].
 class PolygonGeometry extends ColliderGeometry {
-  /// The local vertices.
   List<Offset> vertices = [];
 
   @override
@@ -742,7 +519,10 @@ class PolygonGeometry extends ColliderGeometry {
 
   @override
   bool containsPoint(
-      Offset worldPoint, ObjectTransform t, Offset compositeOffset) {
+    Offset worldPoint,
+    ObjectTransform t,
+    Offset compositeOffset,
+  ) {
     final localPoint = t.worldToLocal(worldPoint) - (offset + compositeOffset);
     if (vertices.length < 3) return false;
 

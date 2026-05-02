@@ -10,12 +10,6 @@ import 'package:goo2d/src/physics/core/physics_joint.dart';
 import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/bridge/physics_bridge_data.dart';
 
-/// Implementation of [PhysicsBridge] that uses an [Isolate] worker.
-/// 
-/// This bridge is the preferred implementation for high-performance native 
-/// applications. It offloads the entire simulation (integration, collision 
-/// detection, and resolution) to a background thread to prevent "jank" on 
-/// the UI thread. Data is synchronized via high-performance binary serialization.
 class WorkerPhysicsBridge extends PhysicsBridge {
   late int _worldId;
   late void Function(PhysicsStepResult) _onStepResult;
@@ -27,8 +21,11 @@ class WorkerPhysicsBridge extends PhysicsBridge {
   final List<ByteData> _pendingMessages = [];
 
   @override
-  Future<void> init(int worldId, void Function(PhysicsStepResult) onStepResult,
-      void Function(int, bool, PhysicsRaycastHitData?) onRaycastResult) async {
+  Future<void> init(
+    int worldId,
+    void Function(PhysicsStepResult) onStepResult,
+    void Function(int, bool, PhysicsRaycastHitData?) onRaycastResult,
+  ) async {
     _worldId = worldId;
     _onStepResult = onStepResult;
     _onRaycastResult = onRaycastResult;
@@ -93,20 +90,24 @@ class WorkerPhysicsBridge extends PhysicsBridge {
       final nx = buffer.readFloat32();
       final ny = buffer.readFloat32();
       final impulse = buffer.readFloat32();
-      contacts.add(PhysicsContactData(
-        shapeAId: sAId,
-        shapeBId: sBId,
-        contactPoint: Offset(px, py),
-        normal: Offset(nx, ny),
-        depth: 0, // Not currently sent back by worker, but could be added
-        impulse: impulse,
-      ));
+      contacts.add(
+        PhysicsContactData(
+          shapeAId: sAId,
+          shapeBId: sBId,
+          contactPoint: Offset(px, py),
+          normal: Offset(nx, ny),
+          depth: 0, // Not currently sent back by worker, but could be added
+          impulse: impulse,
+        ),
+      );
     }
 
-    _onStepResult(PhysicsStepResult(
-      contacts: contacts,
-      dynamicBodies: dynamicBodies,
-    ));
+    _onStepResult(
+      PhysicsStepResult(
+        contacts: contacts,
+        dynamicBodies: dynamicBodies,
+      ),
+    );
   }
 
   void _handleRaycastResult(PhysicsBuffer buffer) {
@@ -121,15 +122,16 @@ class WorkerPhysicsBridge extends PhysicsBridge {
       final dist = buffer.readFloat32();
       final frac = buffer.readFloat32();
       _onRaycastResult(
-          requestId,
-          true,
-          PhysicsRaycastHitData(
-            shapeId: shapeId,
-            point: Offset(px, py),
-            normal: Offset(nx, ny),
-            distance: dist,
-            fraction: frac,
-          ));
+        requestId,
+        true,
+        PhysicsRaycastHitData(
+          shapeId: shapeId,
+          point: Offset(px, py),
+          normal: Offset(nx, ny),
+          distance: dist,
+          fraction: frac,
+        ),
+      );
     } else {
       _onRaycastResult(requestId, false, null);
     }
@@ -160,14 +162,17 @@ class WorkerPhysicsBridge extends PhysicsBridge {
   }
 
   @override
-  void addBody(int id, RigidbodyType type,
-      {double mass = 1.0,
-      double drag = 0.0,
-      double angularDrag = 0.05,
-      bool freezeRotation = false,
-      double gravityScale = 1.0,
-      Offset position = Offset.zero,
-      double rotation = 0.0}) {
+  void addBody(
+    int id,
+    RigidbodyType type, {
+    double mass = 1.0,
+    double drag = 0.0,
+    double angularDrag = 0.05,
+    bool freezeRotation = false,
+    double gravityScale = 1.0,
+    Offset position = Offset.zero,
+    double rotation = 0.0,
+  }) {
     final buf = PhysicsBuffer.fixed(42);
     buf.writeUint8(PhysicsPacket.addBody);
     buf.writeInt32(_worldId);
@@ -194,12 +199,14 @@ class WorkerPhysicsBridge extends PhysicsBridge {
   }
 
   @override
-  void updateBody(int id,
-      {double mass = 1.0,
-      double drag = 0.0,
-      double angularDrag = 0.05,
-      bool freezeRotation = false,
-      double gravityScale = 1.0}) {
+  void updateBody(
+    int id, {
+    double mass = 1.0,
+    double drag = 0.0,
+    double angularDrag = 0.05,
+    bool freezeRotation = false,
+    double gravityScale = 1.0,
+  }) {
     final buf = PhysicsBuffer.fixed(26);
     buf.writeUint8(PhysicsPacket.updateBody);
     buf.writeInt32(_worldId);
@@ -215,7 +222,20 @@ class WorkerPhysicsBridge extends PhysicsBridge {
   @override
   void addShape(int id, int bodyId, Collider collider) {
     // Calculate required size
-    int size = 1 + 4 + 4 + 4 + 1 + 4 + 4 + 4 + 4 + 1 + 4 + 4 + 1; // Base fields + oneWay + shape type
+    int size =
+        1 +
+        4 +
+        4 +
+        4 +
+        1 +
+        4 +
+        4 +
+        4 +
+        4 +
+        1 +
+        4 +
+        4 +
+        1; // Base fields + oneWay + shape type
     if (collider is BoxCollider) {
       size += 8;
     } else if (collider is CircleCollider) {
@@ -227,7 +247,12 @@ class WorkerPhysicsBridge extends PhysicsBridge {
     } else if (collider is CompositeCollider) {
       size += 4; // count
       for (final shape in collider.shapes) {
-        size += 8 + 8 + 1 + 1 + 9; // offset, material, trigger, sub-type + oneWay(9)
+        size +=
+            8 +
+            8 +
+            1 +
+            1 +
+            9; // offset, material, trigger, sub-type + oneWay(9)
         if (shape is BoxGeometry) {
           size += 8;
         } else if (shape is CircleGeometry) {
@@ -505,8 +530,7 @@ class WorkerPhysicsBridge extends PhysicsBridge {
 
   @override
   void step(double dt, Map<int, PhysicsTransformSync> sync) {
-    final buf =
-        PhysicsBuffer.fixed(13 + (sync.length * 16));
+    final buf = PhysicsBuffer.fixed(13 + (sync.length * 16));
     buf.writeUint8(PhysicsPacket.step);
     buf.writeInt32(_worldId);
     buf.writeFloat32(dt);
@@ -522,7 +546,11 @@ class WorkerPhysicsBridge extends PhysicsBridge {
 
   @override
   void raycast(
-      int requestId, Offset origin, Offset direction, double maxDistance) {
+    int requestId,
+    Offset origin,
+    Offset direction,
+    double maxDistance,
+  ) {
     final buf = PhysicsBuffer.fixed(25);
     buf.writeUint8(PhysicsPacket.raycast);
     buf.writeInt32(_worldId);

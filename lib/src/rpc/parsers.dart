@@ -13,13 +13,6 @@ enum _LengthType {
 
   final int size;
   const _LengthType(this.size);
-
-  /// Determines the appropriate length type based on the given [limit].
-  /// 
-  /// This mapping ensures that the smallest sufficient unsigned integer 
-  /// type is used for length prefixing in variable-length fields.
-  /// 
-  /// * [limit]: The maximum value that needs to be represented.
   static _LengthType fromLimit(int limit) => switch (limit) {
     <= 255 => _LengthType.uint8,
     <= 65535 => _LengthType.uint16,
@@ -65,18 +58,7 @@ void _writeLength(Uint8Buffer buffer, int length, _LengthType type) {
   });
 }
 
-/// Parser for 8-bit signed integers.
-/// 
-/// Handles values in the range [-128, 127]. Links to [TypeParser.int8]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Int8Parser();
-/// ```
 class Int8Parser extends TypeParser {
-  /// Creates an [Int8Parser].
-  /// 
-  /// Initializes the 8-bit signed integer parser.
   const Int8Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -88,18 +70,7 @@ class Int8Parser extends TypeParser {
   );
 }
 
-/// Parser for 8-bit unsigned integers.
-/// 
-/// Handles values in the range [0, 255]. Links to [TypeParser.uint8]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Uint8Parser();
-/// ```
 class Uint8Parser extends TypeParser {
-  /// Creates a [Uint8Parser].
-  /// 
-  /// Initializes the 8-bit unsigned integer parser.
   const Uint8Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -111,18 +82,7 @@ class Uint8Parser extends TypeParser {
   );
 }
 
-/// Parser for 16-bit signed integers.
-/// 
-/// Handles values in the range [-32,768, 32,767]. Links to [TypeParser.int16]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Int16Parser();
-/// ```
 class Int16Parser extends TypeParser {
-  /// Creates an [Int16Parser].
-  /// 
-  /// Initializes the 16-bit signed integer parser.
   const Int16Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -134,18 +94,7 @@ class Int16Parser extends TypeParser {
   );
 }
 
-/// Parser for 16-bit unsigned integers.
-/// 
-/// Handles values in the range [0, 65,535]. Links to [TypeParser.uint16]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Uint16Parser();
-/// ```
 class Uint16Parser extends TypeParser {
-  /// Creates a [Uint16Parser].
-  /// 
-  /// Initializes the 16-bit unsigned integer parser.
   const Uint16Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -157,18 +106,7 @@ class Uint16Parser extends TypeParser {
   );
 }
 
-/// Parser for 32-bit signed integers.
-/// 
-/// Handles standard Dart integers. Links to [TypeParser.int32]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Int32Parser();
-/// ```
 class Int32Parser extends TypeParser {
-  /// Creates an [Int32Parser].
-  /// 
-  /// Initializes the 32-bit signed integer parser.
   const Int32Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -180,18 +118,7 @@ class Int32Parser extends TypeParser {
   );
 }
 
-/// Parser for 32-bit unsigned integers.
-/// 
-/// Handles positive 32-bit integers. Links to [TypeParser.uint32]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Uint32Parser();
-/// ```
 class Uint32Parser extends TypeParser {
-  /// Creates a [Uint32Parser].
-  /// 
-  /// Initializes the 32-bit unsigned integer parser.
   const Uint32Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -203,18 +130,7 @@ class Uint32Parser extends TypeParser {
   );
 }
 
-/// Parser for 64-bit signed integers.
-/// 
-/// Handles large integers. Links to [TypeParser.int64]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Int64Parser();
-/// ```
 class Int64Parser extends TypeParser {
-  /// Creates an [Int64Parser].
-  /// 
-  /// Initializes the 64-bit signed integer parser.
   const Int64Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -226,18 +142,7 @@ class Int64Parser extends TypeParser {
   );
 }
 
-/// Parser for 64-bit unsigned integers.
-/// 
-/// Handles large positive integers. Links to [TypeParser.uint64]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Uint64Parser();
-/// ```
 class Uint64Parser extends TypeParser {
-  /// Creates a [Uint64Parser].
-  /// 
-  /// Initializes the 64-bit unsigned integer parser.
   const Uint64Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -249,18 +154,7 @@ class Uint64Parser extends TypeParser {
   );
 }
 
-/// Parser for 32-bit floating point numbers.
-/// 
-/// Handles single-precision floats. Links to [TypeParser.float32]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Float32Parser();
-/// ```
 class Float32Parser extends TypeParser {
-  /// Creates a [Float32Parser].
-  /// 
-  /// Initializes the 32-bit float parser.
   const Float32Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -272,18 +166,7 @@ class Float32Parser extends TypeParser {
   );
 }
 
-/// Parser for 64-bit floating point numbers.
-/// 
-/// Handles double-precision floats. Links to [TypeParser.float64]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = Float64Parser();
-/// ```
 class Float64Parser extends TypeParser {
-  /// Creates a [Float64Parser].
-  /// 
-  /// Initializes the 64-bit float parser.
   const Float64Parser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -295,18 +178,7 @@ class Float64Parser extends TypeParser {
   );
 }
 
-/// Parser for boolean values.
-/// 
-/// Uses a single byte (1 for true, 0 for false). Links to [TypeParser.bool]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// const parser = BoolParser();
-/// ```
 class BoolParser extends TypeParser {
-  /// Creates a [BoolParser].
-  /// 
-  /// Initializes the boolean parser.
   const BoolParser();
   @override
   ({int length, Object? object}) read(ByteData buffer, int offset) =>
@@ -318,33 +190,11 @@ class BoolParser extends TypeParser {
   );
 }
 
-/// Parser for [String] data with configurable encoding and length limits.
-/// 
-/// Handles text serialization with variable length prefixing. Links to 
-/// [TypeParser.string].
-/// 
-/// ```dart
-/// const parser = StringParser(limit: 1024);
-/// ```
 class StringParser extends TypeParser {
-  /// The encoding to use for the string (defaults to UTF-8).
-  /// 
-  /// Affects the byte count and character representation.
   final Encoding encoding;
-  
-  /// The maximum length of the string in bytes.
-  /// 
-  /// Determines the size of the length prefix (uint8, uint16, etc.).
   final int limit;
-  
-  _LengthType get _lengthType => _LengthType.fromLimit(limit);
 
-  /// Creates a [StringParser].
-  /// 
-  /// Initializes the string parser with specific constraints.
-  /// 
-  /// * [encoding]: The text encoding strategy.
-  /// * [limit]: The maximum allowed byte size.
+  _LengthType get _lengthType => _LengthType.fromLimit(limit);
   const StringParser({this.encoding = utf8, this.limit = 65535});
 
   @override
@@ -379,27 +229,10 @@ class StringParser extends TypeParser {
   }
 }
 
-/// Parser for raw [Uint8List] binary data.
-/// 
-/// Ideal for transmitting blobs of binary data. Links to 
-/// [TypeParser.uint8List].
-/// 
-/// ```dart
-/// const parser = Uint8ListParser(limit: 1024);
-/// ```
 class Uint8ListParser extends TypeParser {
-  /// The maximum size of the byte list.
-  /// 
-  /// Determines the size of the length prefix.
   final int limit;
-  
-  _LengthType get _lengthType => _LengthType.fromLimit(limit);
 
-  /// Creates a [Uint8ListParser].
-  /// 
-  /// Initializes the binary blob parser with a specific limit.
-  /// 
-  /// * [limit]: The maximum allowed byte size.
+  _LengthType get _lengthType => _LengthType.fromLimit(limit);
   const Uint8ListParser({this.limit = 65535});
 
   @override
@@ -434,33 +267,11 @@ class Uint8ListParser extends TypeParser {
   }
 }
 
-/// Parser for a generic [List] of elements.
-/// 
-/// Serializes a variable-length sequence of items of type [T]. Links to [TypeParser.list]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// final parser = ListParser(TypeParser.int32);
-/// ```
 class ListParser<T> extends TypeParser {
-  /// The parser used for individual elements in the list.
-  /// 
-  /// Defines how each item is encoded/decoded.
   final TypeParser elementParser;
-  
-  /// The maximum number of elements in the list.
-  /// 
-  /// Determines the size of the length prefix.
   final int limit;
-  
-  _LengthType get _lengthType => _LengthType.fromLimit(limit);
 
-  /// Creates a [ListParser].
-  /// 
-  /// Initializes the list parser with an element strategy and size limit.
-  /// 
-  /// * [elementParser]: The strategy for individual items.
-  /// * [limit]: The maximum allowed element count.
+  _LengthType get _lengthType => _LengthType.fromLimit(limit);
   const ListParser(this.elementParser, {this.limit = 65535});
 
   @override
@@ -489,33 +300,11 @@ class ListParser<T> extends TypeParser {
   }
 }
 
-/// Parser for a [Set] of unique elements.
-/// 
-/// Serializes a collection where each item of type [T] is unique. Links to [TypeParser.set]. 
-/// See also [TypeParser] for the base interface.
-/// 
-/// ```dart
-/// final parser = SetParser(TypeParser.int32);
-/// ```
 class SetParser<T> extends TypeParser {
-  /// The parser used for individual elements in the set.
-  /// 
-  /// Defines how each unique item is encoded.
   final TypeParser elementParser;
-  
-  /// The maximum number of elements in the set.
-  /// 
-  /// Determines the size of the length prefix.
   final int limit;
-  
-  _LengthType get _lengthType => _LengthType.fromLimit(limit);
 
-  /// Creates a [SetParser].
-  /// 
-  /// Initializes the set parser with an element strategy and size limit.
-  /// 
-  /// * [elementParser]: The strategy for individual items.
-  /// * [limit]: The maximum allowed element count.
+  _LengthType get _lengthType => _LengthType.fromLimit(limit);
   const SetParser(this.elementParser, {this.limit = 65535});
 
   @override
@@ -544,38 +333,12 @@ class SetParser<T> extends TypeParser {
   }
 }
 
-/// Parser for a [Map] of key-value pairs.
-/// 
-/// Serializes an associative array of entries. Links to [TypeParser.map].
-/// 
-/// ```dart
-/// final parser = MapParser<String, int>(TypeParser.string(), TypeParser.int32);
-/// ```
 class MapParser<K, V> extends TypeParser {
-  /// The parser used for keys.
-  /// 
-  /// Defines the encoding strategy for map keys.
   final TypeParser keyParser;
-  
-  /// The parser used for values.
-  /// 
-  /// Defines the encoding strategy for map values.
   final TypeParser valueParser;
-  
-  /// The maximum number of entries in the map.
-  /// 
-  /// Determines the size of the length prefix.
   final int limit;
-  
-  _LengthType get _lengthType => _LengthType.fromLimit(limit);
 
-  /// Creates a [MapParser].
-  /// 
-  /// Initializes the map parser with key/value strategies and size limit.
-  /// 
-  /// * [keyParser]: The strategy for keys.
-  /// * [valueParser]: The strategy for values.
-  /// * [limit]: The maximum allowed entry count.
+  _LengthType get _lengthType => _LengthType.fromLimit(limit);
   const MapParser(this.keyParser, this.valueParser, {this.limit = 65535});
 
   @override

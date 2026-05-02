@@ -5,7 +5,6 @@ import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/core/physics_contact.dart';
 import 'package:goo2d/src/physics/core/world/collision/utils.dart';
 
-/// Checks for collision between two capsules.
 ContactManifold? checkCapsuleCapsule(
   PhysicsCapsule sA,
   PhysicsBody bA,
@@ -16,9 +15,12 @@ ContactManifold? checkCapsuleCapsule(
   final segB = getCapsuleSegment(sB, bB);
 
   final closest = getClosestPointsBetweenSegments(
-    segA[0], segA[1], segB[0], segB[1],
+    segA[0],
+    segA[1],
+    segB[0],
+    segB[1],
   );
-  
+
   final pA = closest[0];
   final pB = closest[1];
   final delta = pB - pA;

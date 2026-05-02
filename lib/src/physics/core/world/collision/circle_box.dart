@@ -5,7 +5,6 @@ import 'package:goo2d/src/physics/core/physics_shape.dart';
 import 'package:goo2d/src/physics/core/physics_contact.dart';
 import 'package:goo2d/src/physics/core/world/collision/utils.dart';
 
-/// Checks for collision between a circle and an oriented box.
 ContactManifold? checkCircleBox(
   PhysicsCircle sA,
   PhysicsBody bA,
