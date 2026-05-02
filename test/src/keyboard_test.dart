@@ -16,12 +16,12 @@ void main() {
       await simulateKeyDownEvent(LogicalKeyboardKey.space);
       game.input.update();
 
-      expect(game.input.keyboard.space.isPressed, isTrue);
+      expect(Keyboard.space.isPressed(game), isTrue);
 
       await simulateKeyUpEvent(LogicalKeyboardKey.space);
       game.input.update();
 
-      expect(game.input.keyboard.space.isPressed, isFalse);
+      expect(Keyboard.space.isPressed(game), isFalse);
     });
 
     testWidgets('should track frame-relative state', (tester) async {
@@ -35,23 +35,23 @@ void main() {
       await simulateKeyDownEvent(LogicalKeyboardKey.keyA);
       game.input.update();
 
-      expect(game.input.keyboard.keyA.wasPressedThisFrame, isTrue);
-      expect(game.input.keyboard.keyA.isPressed, isTrue);
+      expect(Keyboard.keyA.wasPressedThisFrame(game), isTrue);
+      expect(Keyboard.keyA.isPressed(game), isTrue);
 
       // Frame 2: Hold
       game.ticker.update(0.016);
       game.input.update();
 
-      expect(game.input.keyboard.keyA.wasPressedThisFrame, isFalse);
-      expect(game.input.keyboard.keyA.isPressed, isTrue);
+      expect(Keyboard.keyA.wasPressedThisFrame(game), isFalse);
+      expect(Keyboard.keyA.isPressed(game), isTrue);
 
       // Frame 3: Release
       game.ticker.update(0.016);
       await simulateKeyUpEvent(LogicalKeyboardKey.keyA);
       game.input.update();
 
-      expect(game.input.keyboard.keyA.wasReleasedThisFrame, isTrue);
-      expect(game.input.keyboard.keyA.isPressed, isFalse);
+      expect(Keyboard.keyA.wasReleasedThisFrame(game), isTrue);
+      expect(Keyboard.keyA.isPressed(game), isFalse);
     });
 
     testWidgets('should support multiple game instances with independent state', (
@@ -88,17 +88,17 @@ void main() {
       game1.input.update();
       game2.input.update();
 
-      expect(game1.input.keyboard.space.isPressed, isTrue);
-      expect(game2.input.keyboard.space.isPressed, isTrue);
+      expect(Keyboard.space.isPressed(game1), isTrue);
+      expect(Keyboard.space.isPressed(game2), isTrue);
 
       // Advance frame for game1
       game1.ticker.update(0.016);
       game1.input.update();
 
       // game1 should see wasPressedThisFrame = false (it was pressed in previous update)
-      expect(game1.input.keyboard.space.wasPressedThisFrame, isFalse);
+      expect(Keyboard.space.wasPressedThisFrame(game1), isFalse);
       // game2 still in its first frame (where space was pressed)
-      expect(game2.input.keyboard.space.wasPressedThisFrame, isTrue);
+      expect(Keyboard.space.wasPressedThisFrame(game2), isTrue);
     });
 
     group('InputControl', () {

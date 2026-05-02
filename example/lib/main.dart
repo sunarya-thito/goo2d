@@ -326,11 +326,11 @@ class PlayerState extends GameState<Player> with Tickable {
       moveAction = InputAction()
         ..name = 'thrust'
         ..type = InputActionType.button
-        ..bindings = [InputBinding(control: game.input.keyboard.keyW)],
+        ..bindings = [Keyboard.keyW],
       shootAction = InputAction()
         ..name = 'shoot'
         ..type = InputActionType.button
-        ..bindings = [InputBinding(control: game.input.keyboard.space)],
+        ..bindings = [Keyboard.space],
     );
 
     addComponent(

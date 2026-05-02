@@ -101,8 +101,6 @@ void main() {
       effector.onTriggerStay(collider);
       
       // Verify force was applied to the body.
-      // Rigidbody id starts at 1, but let's find the correct ID if possible.
-      // Actually, since it's the only body, it should be 1.
       expect(mockBridge.appliedForces, isNotEmpty);
       final forces = mockBridge.appliedForces.values.first;
       expect(forces.first, const Offset(1000, 0));

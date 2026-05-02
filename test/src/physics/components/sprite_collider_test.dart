@@ -11,10 +11,6 @@ class MockTexture extends GameTexture {
   final ui.Image? dummyImage;
 
   MockTexture(this.w, this.h, this.pixels, {this.dummyImage}) : super(AssetSource.local('mock')) {
-    if (dummyImage != null) {
-      // We can't set _loadedImage directly as it's private in GameTexture
-      // But we can override the getter if we change GameTexture
-    }
   }
 
   @override

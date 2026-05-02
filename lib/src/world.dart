@@ -68,8 +68,6 @@ class World extends SingleChildRenderObjectWidget {
 /// Example of internal usage:
 /// ```dart
 /// final world = RenderWorld(game: myEngine);
-/// // The world will now automatically handle matrix application 
-/// // during the paint phase.
 /// ```
 class RenderWorld extends RenderProxyBox {
   /// The [GameEngine] instance that provides access to the camera and ticker systems.

@@ -96,7 +96,7 @@ class _CoroutineWorldState extends GameState<CoroutineWorld> {
     startCoroutineWithOption(fireLasers, option: (color: Colors.redAccent));
 
     double timer = 0;
-    while (timer < 8.0 && !game.input.keyboard.space.isPressed) {
+    while (timer < 8.0 && !Keyboard.space.isPressed(game)) {
       timer += game.ticker.deltaTime;
       yield null;
     }

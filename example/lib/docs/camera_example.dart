@@ -61,16 +61,16 @@ class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
         ..type = InputActionType.value
         ..bindings = [
           InputBinding.composite(
-            up: game.input.keyboard.keyW,
-            down: game.input.keyboard.keyS,
-            left: game.input.keyboard.keyA,
-            right: game.input.keyboard.keyD,
+            up: Keyboard.keyW,
+            down: Keyboard.keyS,
+            left: Keyboard.keyA,
+            right: Keyboard.keyD,
           ),
           InputBinding.composite(
-            up: game.input.keyboard.upArrow,
-            down: game.input.keyboard.downArrow,
-            left: game.input.keyboard.leftArrow,
-            right: game.input.keyboard.rightArrow,
+            up: Keyboard.upArrow,
+            down: Keyboard.downArrow,
+            left: Keyboard.leftArrow,
+            right: Keyboard.rightArrow,
           ),
         ],
     );

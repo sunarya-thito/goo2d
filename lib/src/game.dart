@@ -699,9 +699,6 @@ class Game extends StatefulWidget {
 /// that systems are correctly initialized and disposed of when the
 /// widget tree changes.
 ///
-/// ```dart
-/// // Internal state management for the Game widget.
-/// ```
 class _GameState extends State<Game> {
   late GameEngine _game;
 
