@@ -1,6 +1,6 @@
 export 'src/game.dart' hide GameProvider;
 export 'src/event.dart';
-export 'src/component.dart' hide internalCreateComponent, internalType;
+export 'src/component.dart';
 export 'src/object.dart';
 export 'src/element.dart' hide GameObjectElement;
 export 'src/widget.dart';
@@ -19,6 +19,7 @@ export 'src/physics/components/collider.dart';
 export 'src/physics/utils/sprite_polygon_generator.dart';
 export 'src/physics/components/rigidbody.dart';
 export 'src/physics/components/effector.dart';
+export 'src/physics/components/joint.dart';
 export 'src/physics/components/physics_system.dart';
 export 'src/camera.dart';
 export 'src/ticker.dart'

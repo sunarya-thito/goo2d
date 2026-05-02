@@ -5,6 +5,7 @@ import 'package:goo2d/src/camera.dart';
 import 'package:goo2d/src/object.dart';
 import 'package:goo2d/src/world.dart';
 import 'package:goo2d/src/render.dart';
+import 'package:goo2d/src/screen.dart';
 
 /// A widget that renders a specific camera's view into a sub-region of the screen.
 /// 
@@ -107,7 +108,8 @@ class RenderCameraView extends RenderProxyBox {
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    if (game.isSecondaryPass) {
+    final cameraSystem = game.getSystem<CameraSystem>();
+    if (cameraSystem?.isSecondaryPass ?? false) {
       super.paint(context, offset);
       return;
     }
@@ -118,7 +120,8 @@ class RenderCameraView extends RenderProxyBox {
       return;
     }
 
-    final screenSize = game.ticker.screenSize;
+    final screen = game.getSystem<ScreenSystem>();
+    final screenSize = screen?.screenSize ?? Size.zero;
     if (screenSize == Size.zero) {
       super.paint(context, offset);
       return;
@@ -158,8 +161,10 @@ class RenderCameraView extends RenderProxyBox {
     }
 
     if (world != null && world.child != null) {
-      game.isSecondaryPass = true;
-      game.currentRenderCamera = camera;
+      if (cameraSystem != null) {
+        cameraSystem.isSecondaryPass = true;
+        cameraSystem.currentRenderCamera = camera;
+      }
       try {
         context.canvas.save();
         context.canvas.clipRect(offset & size);
@@ -169,8 +174,10 @@ class RenderCameraView extends RenderProxyBox {
         _paintFiltered(context, Offset.zero, world.child!);
         context.canvas.restore();
       } finally {
-        game.isSecondaryPass = false;
-        game.currentRenderCamera = null;
+        if (cameraSystem != null) {
+          cameraSystem.isSecondaryPass = false;
+          cameraSystem.currentRenderCamera = null;
+        }
       }
     }
 
@@ -213,17 +220,21 @@ class RenderCameraView extends RenderProxyBox {
 
   @override
   bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
-    if (game.isSecondaryPass) return false;
+    final cameraSystem = game.getSystem<CameraSystem>();
+    if (cameraSystem?.isSecondaryPass ?? false) return false;
 
     final camera = cameraTag.gameObject?.tryGetComponent<Camera>();
     if (camera == null || !camera.gameObject.active || !camera.enabled) {
       return super.hitTestChildren(result, position: position);
     }
 
-    final screenSize = game.ticker.screenSize;
+    final screen = game.getSystem<ScreenSystem>();
+    final screenSize = screen?.screenSize ?? Size.zero;
     if (screenSize == Size.zero) return false;
 
-    game.isSecondaryPass = true;
+    if (cameraSystem != null) {
+      cameraSystem.isSecondaryPass = true;
+    }
     try {
       final viewMatrix = camera.worldToCameraMatrix;
       final projMatrix = camera.projectionMatrix(screenSize);
@@ -287,7 +298,9 @@ class RenderCameraView extends RenderProxyBox {
 
       return super.hitTestChildren(result, position: position);
     } finally {
-      game.isSecondaryPass = false;
+      if (cameraSystem != null) {
+        cameraSystem.isSecondaryPass = false;
+      }
     }
   }
 

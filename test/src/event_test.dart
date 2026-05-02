@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/component.dart';
 
 mixin TestListener on Component implements EventListener {
   int eventCount = 0;

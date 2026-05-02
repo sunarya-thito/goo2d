@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/component.dart';
 import 'package:flutter/widgets.dart';
 
 // Mocking GameAudio to avoid actual file loading

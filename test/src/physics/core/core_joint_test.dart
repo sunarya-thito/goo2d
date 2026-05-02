@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/painting.dart';
 import 'package:goo2d/src/physics/core/physics_body.dart';
 import 'package:goo2d/src/physics/core/physics_joint.dart';
 

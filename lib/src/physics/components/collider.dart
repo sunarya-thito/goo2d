@@ -106,12 +106,12 @@ abstract class Collider extends Component with LifecycleListener, MultiComponent
 
   @override
   void onMounted() {
-    game.physics.registerCollider(this);
+    game.getSystem<PhysicsSystem>()?.registerCollider(this);
   }
 
   @override
   void onUnmounted() {
-    game.physics.unregisterCollider(this);
+    game.getSystem<PhysicsSystem>()?.unregisterCollider(this);
   }
 
   /// The Axis-Aligned Bounding Box (AABB) of the collider in world space.
@@ -504,8 +504,8 @@ class SpriteCollider extends PolygonCollider {
         tolerance: tolerance,
       );
       // Trigger a physics update if needed
-      game.physics.unregisterCollider(this);
-      game.physics.registerCollider(this);
+      game.getSystem<PhysicsSystem>()?.unregisterCollider(this);
+      game.getSystem<PhysicsSystem>()?.registerCollider(this);
     } finally {
       _isGenerating = false;
     }

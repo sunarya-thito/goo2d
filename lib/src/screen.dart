@@ -172,18 +172,18 @@ class ScreenSystem implements GameSystem {
   @override
   void dispose() {}
 
-  /// Analyzes the position of all colliders relative to the [screenSize].
-  /// 
-  /// This method is called by the [TickerState] every frame. It identifies 
-  /// the [CameraSystem.main] camera to determine the current world-space 
-  /// viewport rectangle.
-  /// 
-  /// * [screenSize]: The current logical size of the game window.
-  void update(Size screenSize) {
+  /// The current logical size of the game window.
+  Size screenSize = Size.zero;
+
+  void update() {
+    final screenSize = this.screenSize;
+    if (screenSize == Size.zero) return;
+    
     final Rect screenRect;
 
-    if (game.cameras.isReady) {
-      final camera = game.cameras.main;
+    final cameras = game.cameras;
+    if (cameras.isReady) {
+      final camera = cameras.main;
       final tl = camera.screenToWorldPoint(Offset.zero, screenSize);
       final br = camera.screenToWorldPoint(
         Offset(screenSize.width, screenSize.height),
@@ -194,7 +194,10 @@ class ScreenSystem implements GameSystem {
       screenRect = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
     }
 
-    for (final collider in game.physics.activeColliders) {
+    final physics = game.physics;
+    if (physics == null) return;
+
+    for (final collider in physics.activeColliders) {
       final bounds = collider.worldBounds;
       final overlapping = screenRect.overlaps(bounds);
 

@@ -30,12 +30,12 @@ abstract class Joint extends Component with LifecycleListener {
 
   @override
   void onMounted() {
-    game.physics.registerJoint(this);
+    game.getSystem<PhysicsSystem>()?.registerJoint(this);
   }
 
   @override
   void onUnmounted() {
-    game.physics.unregisterJoint(this);
+    game.getSystem<PhysicsSystem>()?.unregisterJoint(this);
   }
 
   /// Internal method to create the core joint representation for simulation.

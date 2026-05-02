@@ -361,19 +361,19 @@ abstract class Component {
   ///
   /// This is a convenience shortcut for `game.input.keyboard`. Use it
   /// to check for key presses during update loops.
-  KeyboardState get keyboard => game.input.keyboard;
+  KeyboardState? get keyboard => game.getSystem<InputSystem>()?.keyboard;
 
   /// The time elapsed since the last frame, in seconds.
   ///
   /// This value is vital for frame-rate independent movement. It is
   /// updated every frame by the [TickerState].
-  double get deltaTime => game.ticker.deltaTime;
+  double get deltaTime => game.getSystem<TickerState>()?.deltaTime ?? 0.0;
 
   /// The total number of frames processed by the engine.
   ///
   /// This monotonic counter can be used for staggered animations or
   /// simple frame-based timers.
-  int get frameCount => game.ticker.frameCount;
+  int get frameCount => game.getSystem<TickerState>()?.frameCount ?? 0;
 
   /// The name of the parent [GameObject].
   ///

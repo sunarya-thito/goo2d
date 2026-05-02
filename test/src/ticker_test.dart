@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/component.dart';
 
 class MockTickable extends Component with Tickable {
   int updateCount = 0;

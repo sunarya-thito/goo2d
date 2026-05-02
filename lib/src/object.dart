@@ -166,7 +166,8 @@ abstract class GameObject implements BuildContext {
     final path = isAbsolute ? name.substring(1) : name;
     final parts = path.split('/');
 
-    for (final root in engine.rootObjects) {
+    final roots = engine.getSystem<TickerState>()?.rootObjects ?? [];
+    for (final root in roots) {
       if (root.name == parts[0]) {
         if (parts.length == 1) return root;
         final found = root.findChild(path.substring(parts[0].length + 1));
@@ -198,7 +199,8 @@ abstract class GameObject implements BuildContext {
     GameTag tag,
   ) {
     final engine = GameEngine.of(context);
-    return engine.rootObjects.expand((e) => _findAllWithTag(e, tag));
+    final roots = engine.getSystem<TickerState>()?.rootObjects ?? [];
+    return roots.expand((e) => _findAllWithTag(e, tag));
   }
 
   static Iterable<GameObject> _findAllWithTag(GameObject root, GameTag tag) {

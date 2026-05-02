@@ -6,7 +6,6 @@ import 'package:goo2d/src/event.dart';
 import 'package:goo2d/src/lifecycle.dart';
 import 'package:goo2d/src/object.dart';
 import 'package:goo2d/src/component.dart';
-import 'package:goo2d/src/input.dart';
 import 'package:goo2d/src/widget.dart';
 import 'package:goo2d/src/render.dart';
 
@@ -654,13 +653,13 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
     _detachFromParent();
     _parentObject = _findParentGameObject(this);
     if (_parentObject == null) {
-      _game?.registerRootObject(this);
+      _game?.getSystem<TickerState>()?.registerRootObject(this);
     }
   }
 
   void _detachFromParent() {
     if (_parentObject == null) {
-      _game?.unregisterRootObject(this);
+      _game?.getSystem<TickerState>()?.unregisterRootObject(this);
     }
   }
 
@@ -761,7 +760,6 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 /// The logic and internal state for a [StatefulGameWidget].
 abstract class GameState<T extends GameWidget> extends Component {
   GameObjectElement? _element;
-  final List<InputAction> _trackedInputActions = [];
 
   @override
   GameObject get gameObject => _element!;
@@ -775,23 +773,7 @@ abstract class GameState<T extends GameWidget> extends Component {
   /// Whether the state is currently mounted in the scene graph.
   bool get mounted => _element != null;
 
-  /// Helper method to create and track an [InputAction] tied to this state's lifecycle.
-  InputAction createInputAction({
-    required String name,
-    InputActionType type = InputActionType.value,
-    List<InputBinding> bindings = const [],
-    bool enable = true,
-  }) {
-    final action = InputAction(
-      game: game,
-      name: name,
-      type: type,
-      bindings: bindings,
-    );
-    _trackedInputActions.add(action);
-    if (enable) action.enable();
-    return action;
-  }
+  /// Build the UI for this state.
 
   /// Notifies the engine that the internal state has changed.
   void setState(VoidCallback fn) {
@@ -819,10 +801,7 @@ abstract class GameState<T extends GameWidget> extends Component {
   /// Called when this object is removed from the scene graph.
   @mustCallSuper
   void dispose() {
-    for (var action in _trackedInputActions) {
-      action.dispose();
-    }
-    _trackedInputActions.clear();
+    _element = null;
   }
 
   /// Returns a collection of child widgets to be rendered as part of this object.

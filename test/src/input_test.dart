@@ -1,55 +1,69 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d/src/ticker.dart';
 
 void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Input', () {
-    late GameEngine game;
+    testWidgets('InputAction should transition phases for button type', (tester) async {
+      final control = ButtonControl(GameEngine()); // Temporary for registration
+      final action = InputAction()
+        ..name = 'test'
+        ..type = InputActionType.button
+        ..bindings = [SimpleInputBinding(control: control)];
 
-    setUp(() {
-      game = GameEngine();
-      game.initialize();
-    });
-
-    tearDown(() {
-      game.dispose();
-    });
-
-    test('InputAction should transition phases for button type', () {
-      final control = ButtonControl(game);
-      final action = InputAction(
-        game: game,
-        name: 'test',
-        type: InputActionType.button,
-        bindings: [SimpleInputBinding(control: control)],
+      await tester.pumpWidget(
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => action)],
+          ),
+        ),
       );
+      await tester.pump();
+
+      final game = (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
+      
+      // Update control with the real game instance from the widget tree
+      final realControl = ButtonControl(game);
+      action.bindings.clear();
+      action.bindings.add(SimpleInputBinding(control: realControl));
 
       action.enable();
       expect(action.phase, equals(InputActionPhase.waiting));
 
-      control.press();
+      realControl.press();
       game.input.update();
 
       expect(action.phase, equals(InputActionPhase.performed));
       expect(action.wasPressedThisFrame, isTrue);
       expect(action.wasPerformedThisFrame, isTrue);
 
-      control.release();
+      realControl.release();
       game.input.update();
 
       expect(action.phase, equals(InputActionPhase.waiting));
       expect(action.wasCompletedThisFrame, isTrue);
     });
 
-    test('InputAction should transition phases for value type', () {
-      final control = ButtonControl(game);
-      final action = InputAction(
-        game: game,
-        name: 'test',
-        type: InputActionType.value,
-        bindings: [SimpleInputBinding(control: control)],
+    testWidgets('InputAction should transition phases for value type', (tester) async {
+      final action = InputAction()
+        ..name = 'test'
+        ..type = InputActionType.value;
+
+      await tester.pumpWidget(
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => action)],
+          ),
+        ),
       );
+      await tester.pump();
+
+      final game = (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
+      final control = ButtonControl(game);
+      action.bindings.add(SimpleInputBinding(control: control));
 
       action.enable();
 
@@ -65,7 +79,10 @@ void main() {
       expect(action.phase, equals(InputActionPhase.waiting));
     });
 
-    test('CompositeBinding should calculate direction correctly', () {
+    testWidgets('CompositeBinding should calculate direction correctly', (tester) async {
+      await tester.pumpWidget(Game(child: const SizedBox()));
+      final game = (tester.widget(find.byType(GameLoop)) as GameLoop).game;
+
       final up = ButtonControl(game);
       final down = ButtonControl(game);
       final left = ButtonControl(game);
@@ -88,13 +105,22 @@ void main() {
       expect(binding.read(), equals(const Offset(1, 0)));
     });
 
-    test('InputAction events should be triggered', () {
-      final control = ButtonControl(game);
-      final action = InputAction(
-        game: game,
-        name: 'test',
-        bindings: [SimpleInputBinding(control: control)],
+    testWidgets('InputAction events should be triggered', (tester) async {
+      final action = InputAction()
+        ..name = 'test';
+
+      await tester.pumpWidget(
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => action)],
+          ),
+        ),
       );
+      await tester.pump();
+
+      final game = (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
+      final control = ButtonControl(game);
+      action.bindings.add(SimpleInputBinding(control: control));
       action.enable();
 
       int startedCount = 0;
@@ -115,19 +141,42 @@ void main() {
       expect(canceledCount, equals(1));
     });
 
-    test('InputAction should return default value when disabled', () {
-      final control = ButtonControl(game);
-      final action = InputAction(
-        game: game,
-        name: 'test',
-        bindings: [SimpleInputBinding(control: control)],
+    testWidgets('InputAction should handle dynamic enable/disable registration', (tester) async {
+      final action = InputAction()
+        ..name = 'test';
+      action.enabled = false;
+
+      await tester.pumpWidget(
+        Game(
+          child: GameObjectWidget(
+            children: [ComponentWidget(() => action)],
+          ),
+        ),
       );
+      await tester.pump();
 
+      final game = (tester.element(find.byType(GameObjectWidget)) as GameObject).game;
+      final control = ButtonControl(game);
+      action.bindings.add(SimpleInputBinding(control: control));
+
+      // Should NOT be registered yet
       control.press();
-      expect(action.readValue<bool>(), isFalse);
+      game.input.update();
+      expect(action.phase, equals(InputActionPhase.waiting));
 
-      action.enable();
-      expect(action.readValue<bool>(), isTrue);
+      // Enable while mounted
+      action.enabled = true;
+      game.input.update(); // Process phase
+      expect(action.phase, equals(InputActionPhase.performed));
+
+      // Disable while mounted
+      action.enabled = false;
+      expect(action.phase, equals(InputActionPhase.waiting));
+      
+      control.release();
+      game.input.update();
+      // Should not transition since unregistered
+      expect(action.phase, equals(InputActionPhase.waiting));
     });
   });
 }

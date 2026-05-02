@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:goo2d/src/game.dart';
 import 'package:goo2d/src/event.dart';
 import 'package:goo2d/src/camera.dart';
+import 'package:goo2d/src/screen.dart';
 
 /// A mixin that allows a [Component] to receive per-frame update ticks.
 /// 
@@ -239,7 +240,7 @@ class RenderGameLoop extends RenderProxyBox {
     final dt = delta.inMicroseconds / 1000000.0;
     _lastTick = elapsed;
 
-    game.ticker.tick(dt);
+    game.getSystem<TickerState>()?.tick(dt);
 
     // After updating the game state, we need to ensure the renderer repaints.
     markNeedsPaint();
@@ -306,7 +307,7 @@ class RenderGameRenderer extends RenderProxyBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     if (hasSize) {
-      game.ticker.screenSize = size;
+      game.getSystem<ScreenSystem>()?.screenSize = size;
     }
 
     final screenSize = size;
@@ -315,12 +316,13 @@ class RenderGameRenderer extends RenderProxyBox {
       return;
     }
 
-    if (!game.cameras.isReady) {
+    final cameras = game.getSystem<CameraSystem>();
+    if (cameras == null || !cameras.isReady) {
       super.paint(context, offset);
       return;
     }
 
-    final camera = game.cameras.main;
+    final camera = cameras.main;
     if (!camera.gameObject.active || !camera.enabled) {
       super.paint(context, offset);
       return;

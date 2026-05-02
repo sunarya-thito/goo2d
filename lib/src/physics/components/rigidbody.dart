@@ -69,7 +69,7 @@ class Rigidbody extends Component with LifecycleListener {
   set mass(double value) {
     if (_mass == value) return;
     _mass = value;
-    if (isAttached) game.physics.updateRigidbody(this);
+    if (isAttached) game.getSystem<PhysicsSystem>()?.updateRigidbody(this);
   }
 
   /// Resistance to linear movement.
@@ -87,7 +87,7 @@ class Rigidbody extends Component with LifecycleListener {
   set drag(double value) {
     if (_drag == value) return;
     _drag = value;
-    if (isAttached) game.physics.updateRigidbody(this);
+    if (isAttached) game.getSystem<PhysicsSystem>()?.updateRigidbody(this);
   }
 
   /// Resistance to rotational movement.
@@ -103,7 +103,7 @@ class Rigidbody extends Component with LifecycleListener {
   set angularDrag(double value) {
     if (_angularDrag == value) return;
     _angularDrag = value;
-    if (isAttached) game.physics.updateRigidbody(this);
+    if (isAttached) game.getSystem<PhysicsSystem>()?.updateRigidbody(this);
   }
 
   /// Multiplier for the global gravity vector.
@@ -119,7 +119,7 @@ class Rigidbody extends Component with LifecycleListener {
   set gravityScale(double value) {
     if (_gravityScale == value) return;
     _gravityScale = value;
-    if (isAttached) game.physics.updateRigidbody(this);
+    if (isAttached) game.getSystem<PhysicsSystem>()?.updateRigidbody(this);
   }
 
   /// Whether the body's rotation is locked.
@@ -136,7 +136,7 @@ class Rigidbody extends Component with LifecycleListener {
   set freezeRotation(bool value) {
     if (_freezeRotation == value) return;
     _freezeRotation = value;
-    if (isAttached) game.physics.updateRigidbody(this);
+    if (isAttached) game.getSystem<PhysicsSystem>()?.updateRigidbody(this);
   }
 
   Offset _velocity = Offset.zero;
@@ -156,7 +156,7 @@ class Rigidbody extends Component with LifecycleListener {
   set velocity(Offset value) {
     if (_velocity == value) return;
     _velocity = value;
-    if (isAttached) game.physics.internalSyncVelocity(this, value);
+    if (isAttached) game.getSystem<PhysicsSystem>()?.internalSyncVelocity(this, value);
   }
 
   /// The current rotational velocity in radians per second.
@@ -172,7 +172,7 @@ class Rigidbody extends Component with LifecycleListener {
   set angularVelocity(double value) {
     if (_angularVelocity == value) return;
     _angularVelocity = value;
-    if (isAttached) game.physics.internalSyncAngularVelocity(this, value);
+    if (isAttached) game.getSystem<PhysicsSystem>()?.internalSyncAngularVelocity(this, value);
   }
 
   /// Internal method used by PhysicsSystem to update velocity without triggering a sync.
@@ -218,12 +218,12 @@ class Rigidbody extends Component with LifecycleListener {
 
   @override
   void onMounted() {
-    game.physics.registerRigidbody(this);
+    game.getSystem<PhysicsSystem>()?.registerRigidbody(this);
   }
 
   @override
   void onUnmounted() {
-    game.physics.unregisterRigidbody(this);
+    game.getSystem<PhysicsSystem>()?.unregisterRigidbody(this);
   }
 
   /// Applies a continuous [force] to the body.
@@ -233,7 +233,7 @@ class Rigidbody extends Component with LifecycleListener {
   /// 
   /// * [force]: The force vector in world units/sec^2.
   void addForce(Offset force) {
-    game.physics.internalQueueForce(this, force);
+    game.getSystem<PhysicsSystem>()?.internalQueueForce(this, force);
   }
 
   /// Applies an instantaneous [impulse] to the body.
@@ -243,7 +243,7 @@ class Rigidbody extends Component with LifecycleListener {
   /// 
   /// * [impulse]: The impulse vector in world units/sec.
   void addImpulse(Offset impulse) {
-    game.physics.internalQueueImpulse(this, impulse);
+    game.getSystem<PhysicsSystem>()?.internalQueueImpulse(this, impulse);
   }
 
   /// Applies an instantaneous rotational [impulse].
@@ -253,6 +253,6 @@ class Rigidbody extends Component with LifecycleListener {
   /// 
   /// * [impulse]: The angular impulse in radians/sec.
   void addAngularImpulse(double impulse) {
-    game.physics.internalQueueAngularImpulse(this, impulse);
+    game.getSystem<PhysicsSystem>()?.internalQueueAngularImpulse(this, impulse);
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart' show Colors;
 import 'package:meta/meta.dart';
+import 'package:goo2d/src/game.dart';
 import 'package:goo2d/src/component.dart';
 import 'package:goo2d/src/object.dart';
 import 'package:goo2d/src/lifecycle.dart';
@@ -108,18 +109,18 @@ class Camera extends Behavior with LifecycleListener {
     if (_depth == value) return;
     _depth = value;
     if (isAttached) {
-      game.cameras.notifyDepthChanged();
+      game.getSystem<CameraSystem>()?.notifyDepthChanged();
     }
   }
 
   @override
   void onMounted() {
-    game.cameras.registerCamera(this);
+    game.getSystem<CameraSystem>()?.registerCamera(this);
   }
 
   @override
   void onUnmounted() {
-    game.cameras.unregisterCamera(this);
+    game.getSystem<CameraSystem>()?.unregisterCamera(this);
   }
 
   /// The matrix that transforms coordinates from World Space to Camera Space.

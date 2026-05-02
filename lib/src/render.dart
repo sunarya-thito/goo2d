@@ -8,6 +8,7 @@ import 'package:goo2d/src/transform.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:goo2d/src/camera.dart';
 import 'package:goo2d/src/object.dart';
+import 'package:goo2d/src/screen.dart';
 
 /// An interface for objects that can be rendered to a [Canvas].
 ///
@@ -202,7 +203,8 @@ class GameRenderObject extends RenderBox
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    final camera = object.game.currentRenderCamera;
+    final cameraSystem = object.game.getSystem<CameraSystem>();
+    final camera = cameraSystem?.currentRenderCamera;
     if (camera != null && (object.layer & camera.cullingMask) == 0) {
       return;
     }
@@ -210,12 +212,13 @@ class GameRenderObject extends RenderBox
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
 
     if (optionalTransform != null) {
+      final screenSize = object.game.getSystem<ScreenSystem>()?.screenSize ?? Size.zero;
       final paintMatrix = optionalTransform.getPaintMatrix(
         object.game,
-        object.game.ticker.screenSize,
+        screenSize,
       );
 
-      if (object.game.isSecondaryPass || !needsCompositing) {
+      if (cameraSystem?.isSecondaryPass ?? false || !needsCompositing) {
         context.canvas.save();
         context.canvas.translate(offset.dx, offset.dy);
         context.canvas.transform(paintMatrix.storage);
@@ -252,9 +255,10 @@ class GameRenderObject extends RenderBox
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
     if (optionalTransform != null) {
+      final screenSize = object.game.getSystem<ScreenSystem>()?.screenSize ?? Size.zero;
       final paintMatrix = optionalTransform.getPaintMatrix(
         object.game,
-        object.game.ticker.screenSize,
+        screenSize,
       );
       return result.addWithPaintTransform(
         transform: paintMatrix,

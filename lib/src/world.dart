@@ -1,6 +1,7 @@
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:goo2d/src/game.dart';
+import 'package:goo2d/src/screen.dart';
 
 /// A Flutter widget that serves as the root container for the 2D world space.
 /// 
@@ -95,10 +96,14 @@ class RenderWorld extends RenderProxyBox {
   /// The returned matrix handles the translation from game coordinates to 
   /// screen pixels.
   Matrix4? _getTransform() {
-    if (!game.cameras.isReady) return null;
-    final camera = game.cameras.main;
+    final cameras = game.getSystem<CameraSystem>();
+    if (cameras == null || !cameras.isReady) return null;
+    final camera = cameras.main;
 
-    final screenSize = game.ticker.screenSize;
+    final screen = game.getSystem<ScreenSystem>();
+    if (screen == null) return null;
+    
+    final screenSize = screen.screenSize;
     if (screenSize == Size.zero ||
         screenSize.width == 0 ||
         screenSize.height == 0) {
@@ -118,7 +123,8 @@ class RenderWorld extends RenderProxyBox {
       return;
     }
 
-    if (game.isSecondaryPass) {
+    final cameraSystem = game.getSystem<CameraSystem>();
+    if (cameraSystem?.isSecondaryPass ?? false) {
       // Manual transformation for non-standard rendering passes 
       // (e.g. shadow maps or post-processing buffers).
       context.canvas.save();
@@ -129,7 +135,9 @@ class RenderWorld extends RenderProxyBox {
     } else {
       // Standard Flutter transform push, allowing for hardware 
       // acceleration and layer optimization.
-      game.currentRenderCamera = game.cameras.main;
+      if (cameraSystem != null) {
+        cameraSystem.currentRenderCamera = cameraSystem.main;
+      }
       try {
         context.pushTransform(needsCompositing, offset, transform, (
           context,
@@ -138,7 +146,9 @@ class RenderWorld extends RenderProxyBox {
           context.paintChild(child!, offset);
         });
       } finally {
-        game.currentRenderCamera = null;
+      if (cameraSystem != null) {
+        cameraSystem.currentRenderCamera = null;
+      }
       }
     }
   }

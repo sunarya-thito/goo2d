@@ -1,9 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
 import 'package:goo2d/src/physics/bridge/physics_bridge.dart';
-import 'package:goo2d/src/physics/bridge/physics_bridge_data.dart';
 
 class MockPhysicsBridge implements PhysicsBridge {
   final Map<int, List<Offset>> appliedForces = {};
@@ -58,14 +55,14 @@ void main() {
     testWidgets('AreaEffector applies force', (tester) async {
       final mockBridge = MockPhysicsBridge();
       final physics = PhysicsSystem()..bridgeOverride = mockBridge;
-      final engine = GameEngine.internal(
-        ticker: TickerState(),
-        input: InputSystem(),
-        physics: physics,
-        cameras: CameraSystem(),
-        screen: ScreenSystem(),
-        audio: AudioSystem(),
-      );
+      final engine = GameEngine({
+        TickerState.new,
+        InputSystem.new,
+        () => physics,
+        CameraSystem.new,
+        ScreenSystem.new,
+        AudioSystem.new,
+      });
 
       final rb = Rigidbody();
       final collider = BoxCollider();

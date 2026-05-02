@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/physics/components/joint.dart';
 
 void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
@@ -39,7 +37,7 @@ void main() {
       );
 
       final engine = GameEngine.of(tester.element(find.byType(GameObjectWidget).first));
-      expect(engine.physics.activeJoints, contains(joint));
+      expect(engine.physics?.activeJoints, contains(joint));
     });
 
     testWidgets('HingeJoint registration', (tester) async {
@@ -64,7 +62,7 @@ void main() {
       );
 
       final engine = GameEngine.of(tester.element(find.byType(GameObjectWidget).first));
-      expect(engine.physics.activeJoints, contains(joint));
+      expect(engine.physics?.activeJoints, contains(joint));
     });
   });
 }

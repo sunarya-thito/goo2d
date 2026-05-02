@@ -394,8 +394,11 @@ class ScreenTransform extends ObjectTransform {
 
   @override
   Matrix4 getPaintMatrix(GameEngine game, Size screenSize) {
+    final cameraSystem = game.getSystem<CameraSystem>();
     // Revert camera transform in main pass, but stay world-space in secondary passes
-    if (game.isSecondaryPass || !game.cameras.isReady) {
+    if (cameraSystem == null ||
+        cameraSystem.isSecondaryPass ||
+        !cameraSystem.isReady) {
       return localMatrix;
     }
 
@@ -403,7 +406,7 @@ class ScreenTransform extends ObjectTransform {
       return localMatrix;
     }
 
-    final invCamera = game.cameras.main.getFullMatrixInverse(screenSize);
+    final invCamera = cameraSystem.main.getFullMatrixInverse(screenSize);
     return invCamera * localMatrix;
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:goo2d/src/game.dart';
+import 'package:goo2d/src/component.dart';
+import 'package:goo2d/src/lifecycle.dart';
 
 part 'keyboard.dart';
 
@@ -345,12 +347,12 @@ abstract class InputControl<T> {
   /// Whether the control was pressed this frame.
   /// 
   /// Checks [lastFramePressed] against the current engine frame.
-  bool get wasPressedThisFrame => lastFramePressed == game.ticker.frameCount;
+  bool get wasPressedThisFrame => lastFramePressed == game.getSystem<TickerState>()?.frameCount;
 
   /// Whether the control was released this frame.
   /// 
   /// Checks [lastFrameReleased] against the current engine frame.
-  bool get wasReleasedThisFrame => lastFrameReleased == game.ticker.frameCount;
+  bool get wasReleasedThisFrame => lastFrameReleased == game.getSystem<TickerState>()?.frameCount;
 }
 
 /// A specialized [InputControl] for binary (on/off) inputs.
@@ -386,7 +388,7 @@ class ButtonControl extends InputControl<bool> {
   /// Updates the [lastFramePressed] if the button was not previously 
   /// in a pressed state. This ensures frame-accurate input timing.
   void press() {
-    if (!_isPressed) lastFramePressed = game.ticker.frameCount;
+    if (!_isPressed) lastFramePressed = game.getSystem<TickerState>()?.frameCount ?? -1;
     _isPressed = true;
   }
 
@@ -397,8 +399,8 @@ class ButtonControl extends InputControl<bool> {
   /// sub-frame event resolution.
   void release() {
     if (_isPressed) {
-      lastFrameReleased = game.ticker.frameCount;
-      lastUpdateReleased = game.input.dynamicUpdateCount;
+      lastFrameReleased = game.getSystem<TickerState>()?.frameCount ?? -1;
+      lastUpdateReleased = game.getSystem<InputSystem>()?.dynamicUpdateCount ?? -1;
     }
     _isPressed = false;
   }
@@ -636,7 +638,7 @@ class SimpleInputBinding extends InputBinding {
   bool get wasReleasedThisFrame => control.wasReleasedThisFrame;
   @override
   bool get wasReleasedThisDynamicUpdate =>
-      control.lastUpdateReleased == control.game.input.dynamicUpdateCount;
+      control.lastUpdateReleased == control.game.getSystem<InputSystem>()?.dynamicUpdateCount;
 }
 
 /// A binding that maps four binary buttons to a single 2-dimensional [Offset].
@@ -694,16 +696,16 @@ class CompositeBinding extends InputBinding {
 
   @override
   bool get wasReleasedThisFrame =>
-      up.lastFrameReleased == up.game.ticker.frameCount ||
-      down.lastFrameReleased == down.game.ticker.frameCount ||
-      left.lastFrameReleased == left.game.ticker.frameCount ||
-      right.lastFrameReleased == right.game.ticker.frameCount;
+      up.lastFrameReleased == up.game.getSystem<TickerState>()?.frameCount ||
+      down.lastFrameReleased == down.game.getSystem<TickerState>()?.frameCount ||
+      left.lastFrameReleased == left.game.getSystem<TickerState>()?.frameCount ||
+      right.lastFrameReleased == right.game.getSystem<TickerState>()?.frameCount;
   @override
   bool get wasReleasedThisDynamicUpdate =>
-      up.lastUpdateReleased == up.game.input.dynamicUpdateCount ||
-      down.lastUpdateReleased == down.game.input.dynamicUpdateCount ||
-      left.lastUpdateReleased == left.game.input.dynamicUpdateCount ||
-      right.lastUpdateReleased == right.game.input.dynamicUpdateCount;
+      up.lastUpdateReleased == up.game.getSystem<InputSystem>()?.dynamicUpdateCount ||
+      down.lastUpdateReleased == down.game.getSystem<InputSystem>()?.dynamicUpdateCount ||
+      left.lastUpdateReleased == left.game.getSystem<InputSystem>()?.dynamicUpdateCount ||
+      right.lastUpdateReleased == right.game.getSystem<InputSystem>()?.dynamicUpdateCount;
 }
 
 /// A high-level logical input that abstracts hardware into game actions.
@@ -727,28 +729,22 @@ class CompositeBinding extends InputBinding {
 ///   ],
 /// );
 /// ```
-class InputAction {
-  /// The [GameEngine] this action belongs to.
-  /// 
-  /// Provides access to the engine's lifecycle and input system.
-  final GameEngine game;
-
+class InputAction extends Behavior with LifecycleListener, MultiComponent {
   /// The human-readable name of the action.
   /// 
   /// Used for debugging and identifying the action in registries.
-  final String name;
+  @override
+  String name = '';
 
-  /// The behavior type of the action.
-  /// 
-  /// Determines how input triggers the phase state machine.
-  final InputActionType type;
+  /// The logic type determining how input triggers the action.
+  InputActionType type = InputActionType.button;
 
-  /// The list of physical bindings for this action.
+  /// The set of controls that can trigger this action.
   /// 
   /// Allows multiple hardware sources to trigger the same game action.
-  final List<InputBinding> bindings;
+  List<InputBinding> bindings = [];
 
-  bool _enabled = false;
+  bool _enabled = true;
   InputActionPhase _phase = InputActionPhase.waiting;
   InputControl? _activeControl;
 
@@ -793,32 +789,51 @@ class InputAction {
   /// * [value]: The new event instance.
   set canceled(InputEvent value) {}
 
-  /// Creates a new [InputAction] and registers it with the [InputSystem].
-  /// 
   /// Initializes the action with the specified metadata and bindings.
   /// 
-  /// * [game]: The engine instance.
   /// * [name]: Descriptive name for the action.
   /// * [type]: Behavior type.
   /// * [bindings]: Initial set of input bindings.
-  InputAction({
-    required this.game,
-    required this.name,
-    this.type = InputActionType.button,
-    this.bindings = const [],
-  }) {
-    game.input._registerAction(this);
+  /// Initializes a new [InputAction].
+  InputAction();
+
+  @override
+  bool get enabled => _enabled;
+
+  @override
+  set enabled(bool value) {
+    if (_enabled == value) return;
+    _enabled = value;
+    if (!value) {
+      _phase = InputActionPhase.waiting;
+    }
+    if (isAttached) {
+      if (value) {
+        game.getSystem<InputSystem>()?._registerAction(this);
+      } else {
+        game.getSystem<InputSystem>()?._unregisterAction(this);
+      }
+    }
+  }
+
+  @override
+  void onMounted() {
+    if (enabled) {
+      game.getSystem<InputSystem>()?._registerAction(this);
+    }
+  }
+
+  @override
+  void onUnmounted() {
+    if (enabled) {
+      game.getSystem<InputSystem>()?._unregisterAction(this);
+    }
   }
 
   /// The current phase of the action in the game loop.
   /// 
   /// Tracks the transition through [InputActionPhase] states.
   InputActionPhase get phase => _phase;
-
-  /// Whether the action is currently active and listening for input.
-  /// 
-  /// Set this to false to temporarily pause input processing for this action.
-  bool get enabled => _enabled;
 
   /// Whether the action was triggered exactly in this frame.
   /// 
@@ -841,18 +856,18 @@ class InputAction {
   /// Whether the action entered the started phase this frame.
   /// 
   /// Checks the frame timestamp against the engine's current frame.
-  bool get wasPressedThisFrame => _lastFrameStarted == game.ticker.frameCount;
+  bool get wasPressedThisFrame => _lastFrameStarted == game.getSystem<TickerState>()?.frameCount;
 
   /// Whether the action was performed this frame.
   /// 
   /// Checks the frame timestamp against the engine's current frame.
   bool get wasPerformedThisFrame =>
-      _lastFramePerformed == game.ticker.frameCount;
+      _lastFramePerformed == game.getSystem<TickerState>()?.frameCount;
 
   /// Whether the action was canceled this frame.
   /// 
   /// Checks the frame timestamp against the engine's current frame.
-  bool get wasCanceledThisFrame => _lastFrameCanceled == game.ticker.frameCount;
+  bool get wasCanceledThisFrame => _lastFrameCanceled == game.getSystem<TickerState>()?.frameCount;
 
   /// Alias for [wasCanceledThisFrame].
   /// 
@@ -873,19 +888,19 @@ class InputAction {
   /// 
   /// Checks the dynamic update count against the engine's input system.
   bool get wasPressedThisDynamicUpdate =>
-      _lastUpdateStarted == game.input.dynamicUpdateCount;
+      _lastUpdateStarted == game.getSystem<InputSystem>()?.dynamicUpdateCount;
 
   /// Whether the action was performed in this update tick.
   /// 
   /// Checks the dynamic update count against the engine's input system.
   bool get wasPerformedThisDynamicUpdate =>
-      _lastUpdatePerformed == game.input.dynamicUpdateCount;
+      _lastUpdatePerformed == game.getSystem<InputSystem>()?.dynamicUpdateCount;
 
   /// Whether the action was canceled in this update tick.
   /// 
   /// Checks the dynamic update count against the engine's input system.
   bool get wasCanceledThisDynamicUpdate =>
-      _lastUpdateCanceled == game.input.dynamicUpdateCount;
+      _lastUpdateCanceled == game.getSystem<InputSystem>()?.dynamicUpdateCount;
 
   /// Alias for [wasCanceledThisDynamicUpdate].
   /// 
@@ -906,7 +921,7 @@ class InputAction {
   /// 
   /// Once enabled, the action will begin listening to its [bindings] during 
   /// the next [InputSystem.update] cycle.
-  void enable() => _enabled = true;
+  void enable() => enabled = true;
 
   /// Disables the action and resets its phase to waiting.
   /// 
@@ -914,7 +929,7 @@ class InputAction {
   /// to [InputActionPhase.waiting]. No further events will fire until 
   /// the action is re-enabled.
   void disable() {
-    _enabled = false;
+    enabled = false;
     _phase = InputActionPhase.waiting;
   }
 
@@ -963,8 +978,8 @@ class InputAction {
       }
     }
 
-    final updateCount = game.input.dynamicUpdateCount;
-    final currentFrame = game.ticker.frameCount;
+    final updateCount = game.getSystem<InputSystem>()?.dynamicUpdateCount ?? -1;
+    final currentFrame = game.getSystem<TickerState>()?.frameCount ?? -1;
 
     if (_phase == InputActionPhase.waiting && currentlyPressed) {
       _phase = InputActionPhase.started;
@@ -1003,12 +1018,9 @@ class InputAction {
     }
   }
 
-  /// Disposes the action and its event listeners.
-  /// 
-  /// This also unregisters the action from the [InputSystem].
+  /// This also unregisters the action from the [InputSystem] if mounted.
   void dispose() {
     disable();
-    game.input._unregisterAction(this);
     _started.dispose();
     _performed.dispose();
     _canceled.dispose();

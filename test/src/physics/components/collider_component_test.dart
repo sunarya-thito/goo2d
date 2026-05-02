@@ -1,7 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/physics/components/collider.dart';
 
 void main() {
   AutomatedTestWidgetsFlutterBinding.ensureInitialized();
@@ -120,7 +119,7 @@ void main() {
       );
       
       final engine = GameEngine.of(tester.element(find.byType(GameObjectWidget)));
-      expect(engine.physics.activeColliders, contains(collider));
+      expect(engine.physics?.activeColliders, contains(collider));
     });
   });
 }

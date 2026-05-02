@@ -55,23 +55,24 @@ class _CameraExampleWorldState extends GameState<CameraExampleWorld> {
   @override
   void initState() {
     super.initState();
-    moveAction = createInputAction(
-      name: 'move',
-      type: InputActionType.value,
-      bindings: [
-        InputBinding.composite(
-          up: game.input.keyboard.keyW,
-          down: game.input.keyboard.keyS,
-          left: game.input.keyboard.keyA,
-          right: game.input.keyboard.keyD,
-        ),
-        InputBinding.composite(
-          up: game.input.keyboard.upArrow,
-          down: game.input.keyboard.downArrow,
-          left: game.input.keyboard.leftArrow,
-          right: game.input.keyboard.rightArrow,
-        ),
-      ],
+    addComponent(
+      moveAction = InputAction()
+        ..name = 'move'
+        ..type = InputActionType.value
+        ..bindings = [
+          InputBinding.composite(
+            up: game.input.keyboard.keyW,
+            down: game.input.keyboard.keyS,
+            left: game.input.keyboard.keyA,
+            right: game.input.keyboard.keyD,
+          ),
+          InputBinding.composite(
+            up: game.input.keyboard.upArrow,
+            down: game.input.keyboard.downArrow,
+            left: game.input.keyboard.leftArrow,
+            right: game.input.keyboard.rightArrow,
+          ),
+        ],
     );
   }
 

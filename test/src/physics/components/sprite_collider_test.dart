@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/painting.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/asset.dart';
 
 class MockTexture extends GameTexture {
   final int w;

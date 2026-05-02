@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/component.dart';
 
 class MockScreenReceiver extends Component
     with ScreenCollidable, OuterScreenCollidable {
@@ -65,17 +64,20 @@ void main() {
                 .game;
 
         // Initial state: outside
-        game.screen.update(const Size(800, 600));
+        game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+        game.getSystem<ScreenSystem>()?.update();
         expect(receiver.enterCount, equals(0));
 
         // Move into center
         transform.localPosition = Offset.zero;
-        game.screen.update(const Size(800, 600));
+        game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+        game.getSystem<ScreenSystem>()?.update();
         expect(receiver.enterCount, equals(1));
 
         // Move out
         transform.localPosition = const Offset(20, 0);
-        game.screen.update(const Size(800, 600));
+        game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+        game.getSystem<ScreenSystem>()?.update();
         expect(receiver.exitCount, equals(1));
       },
     );
@@ -120,18 +122,21 @@ void main() {
               .game;
 
       // Starts fully inside
-      game.screen.update(const Size(800, 600));
+      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+      game.getSystem<ScreenSystem>()?.update();
       receiver.outerExitCount = 0;
       expect(receiver.outerEnterCount, equals(0));
 
       // Move so it's partially outside
       transform.localPosition = const Offset(12, 0);
-      game.screen.update(const Size(800, 600));
+      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+      game.getSystem<ScreenSystem>()?.update();
       expect(receiver.outerEnterCount, equals(1));
 
       // Move back fully inside
       transform.localPosition = Offset.zero;
-      game.screen.update(const Size(800, 600));
+      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+      game.getSystem<ScreenSystem>()?.update();
       expect(receiver.outerExitCount, equals(1));
     });
 
@@ -161,13 +166,15 @@ void main() {
       final game =
           (tester.element(find.byType(GameObjectWidget).first) as GameObject)
               .game;
-      expect(game.physics.activeColliders.length, equals(1));
+      expect(game.physics?.activeColliders.length, equals(1));
 
-      game.screen.update(const Size(800, 600));
+      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+      game.getSystem<ScreenSystem>()?.update();
       expect(receiver.enterCount, equals(0));
 
       transform.localPosition = const Offset(10, 10);
-      game.screen.update(const Size(800, 600));
+      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
+      game.getSystem<ScreenSystem>()?.update();
       expect(receiver.enterCount, equals(1));
     });
   });

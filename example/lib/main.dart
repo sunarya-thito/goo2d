@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
 // ignore: implementation_imports
-import 'package:goo2d/src/component.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // --- Assets ---
@@ -323,15 +322,15 @@ class PlayerState extends GameState<Player> with Tickable {
       ppu: 64.0,
     )[(0, 0)];
 
-    moveAction = createInputAction(
-      name: 'thrust',
-      type: InputActionType.button,
-      bindings: [InputBinding(control: game.input.keyboard.keyW)],
-    );
-    shootAction = createInputAction(
-      name: 'shoot',
-      type: InputActionType.button,
-      bindings: [InputBinding(control: game.input.keyboard.space)],
+    addComponent(
+      moveAction = InputAction()
+        ..name = 'thrust'
+        ..type = InputActionType.button
+        ..bindings = [InputBinding(control: game.input.keyboard.keyW)],
+      shootAction = InputAction()
+        ..name = 'shoot'
+        ..type = InputActionType.button
+        ..bindings = [InputBinding(control: game.input.keyboard.space)],
     );
 
     addComponent(
@@ -679,7 +678,7 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
     // 1. Minimap Optimization
     // In secondary passes (like the minimap), drawing thousands of tiles is overkill.
     // We just draw a single representative color for the whole visible area.
-    if (game.isSecondaryPass) {
+    if (game.getSystem<CameraSystem>()?.isSecondaryPass ?? false) {
       canvas.drawRect(
         ui.Rect.fromLTRB(
           startX * size,
@@ -883,7 +882,7 @@ class MuteState extends GameState<MuteUI> {
             onPressed: () {
               setState(() {
                 _muted = !_muted;
-                game.audio.globalVolume = _muted ? 0.0 : 1.0;
+                game.getSystem<AudioSystem>()?.globalVolume = _muted ? 0.0 : 1.0;
               });
             },
           ),
