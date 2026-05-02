@@ -112,6 +112,7 @@ class GameEngine {
     PhysicsSystem.new,
     CameraSystem.new,
     ScreenSystem.new,
+    ScreenPhysicsSystem.new,
     AudioSystem.new,
   };
 
@@ -195,10 +196,7 @@ class GameEngine {
       }
     }
   }
-}
 
-/// Provides convenient access to core systems on the [GameEngine].
-extension GameEngineSystemExtension on GameEngine {
   /// The time management and game loop system.
   TickerState get ticker {
     final tickerSystem = getSystem<TickerState>();
@@ -224,11 +222,19 @@ extension GameEngineSystemExtension on GameEngine {
   }
 
   /// The system for managing screen resolution and safe areas.
-  ScreenSystem? get screen => getSystem<ScreenSystem>();
+  ScreenSystem get screen {
+    final screenSystem = getSystem<ScreenSystem>();
+    assert(screenSystem != null, 'ScreenSystem not registered');
+    return screenSystem!;
+  }
+
+  /// The system responsible for monitoring viewport visibility and screen-edge collisions.
+  ScreenPhysicsSystem? get screenPhysics => getSystem<ScreenPhysicsSystem>();
 
   /// The audio engine interface for playback and sound management.
   AudioSystem? get audio => getSystem<AudioSystem>();
 }
+
 
 /// The heartbeat of the engine, managing time and update cycles.
 ///
@@ -311,11 +317,6 @@ class TickerState implements GameSystem {
   /// providing a unique frame identifier within the game's execution.
   int frameCount = 0;
 
-  /// The current size of the viewport in logical pixels.
-  ///
-  /// Updated every frame before the [TickEvent] broadcast.
-  Size screenSize = Size.zero;
-
   final _frameController = StreamController<void>.broadcast();
 
   /// A future that completes once the engine finishes the current frame.
@@ -370,7 +371,7 @@ class TickerState implements GameSystem {
       obj.broadcastEvent(TickEvent(dt));
     }
 
-    game.getSystem<ScreenSystem>()?.update();
+    game.screenPhysics?.update();
     game.getSystem<PhysicsSystem>()?.step(dt);
 
     for (final obj in _rootObjects) {

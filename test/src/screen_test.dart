@@ -64,20 +64,20 @@ void main() {
                 .game;
 
         // Initial state: outside
-        game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-        game.getSystem<ScreenSystem>()?.update();
+        game.screen.screenSize = const Size(800, 600);
+        game.screenPhysics?.update();
         expect(receiver.enterCount, equals(0));
 
         // Move into center
         transform.localPosition = Offset.zero;
-        game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-        game.getSystem<ScreenSystem>()?.update();
+        game.screen.screenSize = const Size(800, 600);
+        game.screenPhysics?.update();
         expect(receiver.enterCount, equals(1));
 
         // Move out
         transform.localPosition = const Offset(20, 0);
-        game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-        game.getSystem<ScreenSystem>()?.update();
+        game.screen.screenSize = const Size(800, 600);
+        game.screenPhysics?.update();
         expect(receiver.exitCount, equals(1));
       },
     );
@@ -122,21 +122,21 @@ void main() {
               .game;
 
       // Starts fully inside
-      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-      game.getSystem<ScreenSystem>()?.update();
+      game.screen.screenSize = const Size(800, 600);
+      game.screenPhysics?.update();
       receiver.outerExitCount = 0;
       expect(receiver.outerEnterCount, equals(0));
 
       // Move so it's partially outside
       transform.localPosition = const Offset(12, 0);
-      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-      game.getSystem<ScreenSystem>()?.update();
+      game.screen.screenSize = const Size(800, 600);
+      game.screenPhysics?.update();
       expect(receiver.outerEnterCount, equals(1));
 
       // Move back fully inside
       transform.localPosition = Offset.zero;
-      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-      game.getSystem<ScreenSystem>()?.update();
+      game.screen.screenSize = const Size(800, 600);
+      game.screenPhysics?.update();
       expect(receiver.outerExitCount, equals(1));
     });
 
@@ -168,13 +168,13 @@ void main() {
               .game;
       expect(game.physics?.activeColliders.length, equals(1));
 
-      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-      game.getSystem<ScreenSystem>()?.update();
+      game.screen.screenSize = const Size(800, 600);
+      game.screenPhysics?.update();
       expect(receiver.enterCount, equals(0));
 
       transform.localPosition = const Offset(10, 10);
-      game.getSystem<ScreenSystem>()?.screenSize = const Size(800, 600);
-      game.getSystem<ScreenSystem>()?.update();
+      game.screen.screenSize = const Size(800, 600);
+      game.screenPhysics?.update();
       expect(receiver.enterCount, equals(1));
     });
   });

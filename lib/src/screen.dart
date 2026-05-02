@@ -131,21 +131,7 @@ class OuterScreenExitEvent extends Event<OuterScreenCollidable> {
   }
 }
 
-/// The system responsible for monitoring viewport visibility and screen-edge collisions.
-/// 
-/// [ScreenSystem] iterates through all active colliders in the [PhysicsSystem] 
-/// every frame and compares their world-space bounds against the 
-/// main camera's viewport. It then dispatches the appropriate 
-/// [ScreenCollidable] or [OuterScreenCollidable] events.
-/// 
-/// ```dart
-/// final system = ScreenSystem();
-/// system.update(myScreenSize);
-/// ```
-/// 
-/// This system ensures that game logic (like object culling or 
-/// bullet destruction) can react to screen boundaries without 
-/// manual coordinate checks in every behavior.
+/// The system for managing screen metrics like resolution and safe areas.
 class ScreenSystem implements GameSystem {
   GameEngine? _game;
   
@@ -158,12 +144,6 @@ class ScreenSystem implements GameSystem {
   @override
   bool get gameAttached => _game != null;
 
-  /// Creates a [ScreenSystem].
-  /// 
-  /// This constructor initializes the system that monitors object 
-  /// visibility relative to the camera viewport.
-  ScreenSystem();
-
   @override
   void attach(GameEngine game) {
     _game = game;
@@ -174,9 +154,40 @@ class ScreenSystem implements GameSystem {
 
   /// The current logical size of the game window.
   Size screenSize = Size.zero;
+}
+
+/// The system responsible for monitoring viewport visibility and screen-edge collisions.
+/// 
+/// [ScreenPhysicsSystem] iterates through all active colliders in the [PhysicsSystem] 
+/// every frame and compares their world-space bounds against the 
+/// main camera's viewport. It then dispatches the appropriate 
+/// [ScreenCollidable] or [OuterScreenCollidable] events.
+/// 
+/// This system ensures that game logic (like object culling or 
+/// bullet destruction) can react to screen boundaries without 
+/// manual coordinate checks in every behavior.
+class ScreenPhysicsSystem implements GameSystem {
+  GameEngine? _game;
+  
+  @override
+  GameEngine get game {
+    assert(_game != null, 'ScreenPhysicsSystem: game is not ready. Did you call initialize()?');
+    return _game!;
+  }
+  
+  @override
+  bool get gameAttached => _game != null;
+
+  @override
+  void attach(GameEngine game) {
+    _game = game;
+  }
+ 
+  @override
+  void dispose() {}
 
   void update() {
-    final screenSize = this.screenSize;
+    final screenSize = game.screen.screenSize;
     if (screenSize == Size.zero) return;
     
     final Rect screenRect;

@@ -8,7 +8,6 @@ import 'package:goo2d/src/transform.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:goo2d/src/camera.dart';
 import 'package:goo2d/src/object.dart';
-import 'package:goo2d/src/screen.dart';
 
 /// An interface for objects that can be rendered to a [Canvas].
 ///
@@ -212,7 +211,7 @@ class GameRenderObject extends RenderBox
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
 
     if (optionalTransform != null) {
-      final screenSize = object.game.getSystem<ScreenSystem>()?.screenSize ?? Size.zero;
+      final screenSize = object.game.screen.screenSize;
       final paintMatrix = optionalTransform.getPaintMatrix(
         object.game,
         screenSize,
@@ -255,7 +254,7 @@ class GameRenderObject extends RenderBox
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
     final optionalTransform = object.tryGetComponent<ObjectTransform>();
     if (optionalTransform != null) {
-      final screenSize = object.game.getSystem<ScreenSystem>()?.screenSize ?? Size.zero;
+      final screenSize = object.game.screen.screenSize;
       final paintMatrix = optionalTransform.getPaintMatrix(
         object.game,
         screenSize,

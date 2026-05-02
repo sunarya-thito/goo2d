@@ -361,12 +361,11 @@ class PlayerState extends GameState<Player> with Tickable {
   @override
   void onUpdate(double dt) {
     final trans = getComponent<ObjectTransform>();
-    final kb = game.input.keyboard;
 
     // Rotation
     double targetRot = 0;
-    if (kb.keyA.isPressed) targetRot += 1.0;
-    if (kb.keyD.isPressed) targetRot -= 1.0;
+    if (Keyboard.keyA.isPressed(game)) targetRot += 1.0;
+    if (Keyboard.keyD.isPressed(game)) targetRot -= 1.0;
 
     final rotRes = MathUtils.smoothDamp(
       _rotationVel,
@@ -652,7 +651,7 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
           camera.gameObject.tryGetComponent<ObjectTransform>()?.position ??
           ui.Offset.zero;
       final halfHeight = camera.orthographicSize;
-      final screenSize = game.ticker.screenSize;
+      final screenSize = game.screen.screenSize;
       final aspect = screenSize.height > 0
           ? screenSize.width / screenSize.height
           : 1.0;
@@ -882,7 +881,9 @@ class MuteState extends GameState<MuteUI> {
             onPressed: () {
               setState(() {
                 _muted = !_muted;
-                game.getSystem<AudioSystem>()?.globalVolume = _muted ? 0.0 : 1.0;
+                game.getSystem<AudioSystem>()?.globalVolume = _muted
+                    ? 0.0
+                    : 1.0;
               });
             },
           ),

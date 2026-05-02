@@ -5,19 +5,18 @@ import 'package:goo2d/src/camera.dart';
 import 'package:goo2d/src/object.dart';
 import 'package:goo2d/src/world.dart';
 import 'package:goo2d/src/render.dart';
-import 'package:goo2d/src/screen.dart';
 
 /// A widget that renders a specific camera's view into a sub-region of the screen.
-/// 
-/// [CameraView] is primarily used for secondary views like minimaps, rearview 
-/// mirrors, or picture-in-picture effects. It looks up a [Camera] component 
-/// associated with the given [cameraTag] and renders the scene from that 
+///
+/// [CameraView] is primarily used for secondary views like minimaps, rearview
+/// mirrors, or picture-in-picture effects. It looks up a [Camera] component
+/// associated with the given [cameraTag] and renders the scene from that
 /// camera's perspective within its own bounds.
-/// 
-/// The view is rendered using the same world-space coordinate system as 
-/// the main game [World], but applies the transformation and culling 
+///
+/// The view is rendered using the same world-space coordinate system as
+/// the main game [World], but applies the transformation and culling
 /// settings of the specific secondary camera.
-/// 
+///
 /// Example:
 /// ```dart
 /// CameraView(
@@ -26,13 +25,13 @@ import 'package:goo2d/src/screen.dart';
 /// ```
 class CameraView extends SingleChildRenderObjectWidget {
   /// The tag of the [GameObject] that contains the [Camera] component to render.
-  /// 
-  /// This tag is used to resolve the target camera at runtime. If multiple 
+  ///
+  /// This tag is used to resolve the target camera at runtime. If multiple
   /// objects share the same tag, the first active one is used.
   final GameTag cameraTag;
 
   /// Creates a [CameraView] that renders the view from the camera tagged [cameraTag].
-  /// 
+  ///
   /// * [key]: Standard Flutter widget key.
   /// * [cameraTag]: The tag identifying the target camera.
   /// * [child]: Optional child widget to wrap.
@@ -55,34 +54,34 @@ class CameraView extends SingleChildRenderObjectWidget {
 }
 
 /// The [RenderObject] that performs the drawing for a [CameraView].
-/// 
-/// [RenderCameraView] handles the coordination between the Flutter painting 
-/// pipeline and the Goo2D secondary rendering pass. It ensures that 
-/// the target [Camera] is correctly positioned and that its projection 
+///
+/// [RenderCameraView] handles the coordination between the Flutter painting
+/// pipeline and the Goo2D secondary rendering pass. It ensures that
+/// the target [Camera] is correctly positioned and that its projection
 /// matrix is adjusted to fit the [RenderBox] size.
-/// 
+///
 /// ```dart
 /// // Internal use via CameraView widget
 /// ```
-/// 
+///
 /// See also:
 /// * [CameraView], the widget that uses this render object.
 class RenderCameraView extends RenderProxyBox {
   /// The engine instance providing access to systems.
-  /// 
+  ///
   /// Used to coordinate secondary passes and access the [TickerState].
   GameEngine game;
-  
+
   /// The tag used to identify the target camera.
-  /// 
-  /// The system looks up the [GameObject] with this tag to find 
+  ///
+  /// The system looks up the [GameObject] with this tag to find
   /// the active [Camera] component.
   GameTag cameraTag;
 
   /// Creates a [RenderCameraView] instance.
-  /// 
+  ///
   /// Initializes the render object with its engine and camera dependencies.
-  /// 
+  ///
   /// * [game]: The engine instance to use.
   /// * [cameraTag]: The tag for the target camera.
   RenderCameraView({required this.game, required this.cameraTag});
@@ -120,8 +119,7 @@ class RenderCameraView extends RenderProxyBox {
       return;
     }
 
-    final screen = game.getSystem<ScreenSystem>();
-    final screenSize = screen?.screenSize ?? Size.zero;
+    final screenSize = game.screen.screenSize;
     if (screenSize == Size.zero) {
       super.paint(context, offset);
       return;
@@ -155,7 +153,7 @@ class RenderCameraView extends RenderProxyBox {
       }
       current = current.parent;
     }
-    
+
     if (world == null) {
       debugPrint('goo2d: Minimap could NOT find RenderWorld ancestor!');
     }
@@ -185,10 +183,10 @@ class RenderCameraView extends RenderProxyBox {
   }
 
   /// Recursively paints children while applying camera culling masks.
-  /// 
-  /// This method traverses the scene graph and only paints [RenderObject]s 
+  ///
+  /// This method traverses the scene graph and only paints [RenderObject]s
   /// whose layer matches the target camera's [Camera.cullingMask].
-  /// 
+  ///
   /// * [context]: The painting context to draw into.
   /// * [offset]: The drawing offset.
   /// * [node]: The current render node being processed.
@@ -228,8 +226,7 @@ class RenderCameraView extends RenderProxyBox {
       return super.hitTestChildren(result, position: position);
     }
 
-    final screen = game.getSystem<ScreenSystem>();
-    final screenSize = screen?.screenSize ?? Size.zero;
+    final screenSize = game.screen.screenSize;
     if (screenSize == Size.zero) return false;
 
     if (cameraSystem != null) {
@@ -305,10 +302,10 @@ class RenderCameraView extends RenderProxyBox {
   }
 
   /// Utility to check if [ancestor] is in the parent chain of [node].
-  /// 
-  /// Perfroms a recursive climb up the [RenderObject] tree to determine 
+  ///
+  /// Perfroms a recursive climb up the [RenderObject] tree to determine
   /// structural relationship.
-  /// 
+  ///
   /// * [ancestor]: The potential parent node.
   /// * [node]: The potential descendant node.
   bool _isAncestorOf(RenderObject ancestor, RenderObject node) {

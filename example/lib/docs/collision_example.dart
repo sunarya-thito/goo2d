@@ -140,10 +140,10 @@ class BouncingBehavior extends Behavior
     final camera = game.cameras.main;
 
     // Get world coordinates of screen corners
-    final tl = camera.screenToWorldPoint(Offset.zero, game.ticker.screenSize);
+    final tl = camera.screenToWorldPoint(Offset.zero, game.screen.screenSize);
     final br = camera.screenToWorldPoint(
-      Offset(game.ticker.screenSize.width, game.ticker.screenSize.height),
-      game.ticker.screenSize,
+      Offset(game.screen.screenSize.width, game.screen.screenSize.height),
+      game.screen.screenSize,
     );
 
     final left = math.min(tl.dx, br.dx);
