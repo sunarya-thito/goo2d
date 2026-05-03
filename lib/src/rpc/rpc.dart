@@ -5,60 +5,51 @@ import 'package:goo2d/src/ticker.dart';
 import 'package:goo2d/src/rpc/parser.dart';
 import 'package:goo2d/src/rpc/registry.dart';
 
-/// A component that manages Remote Procedure Calls (RPC) over a network interface.
+/// A manager for network communication and RPC dispatching.
 ///
-/// [NetworkManager] provides a high-level API for registering local functions 
-/// that can be called remotely and for invoking functions on a remote peer. 
-/// it handles data serialization, request/response matching, and polling 
-/// the underlying [NetworkInterface] for incoming packets.
+/// [NetworkManager] is a engine component that polls a [NetworkInterface]
+/// for incoming data and dispatches it to an [RPCRegistry]. It provides
+/// a high-level API for making remote procedure calls while allowing
+/// the transport layer to remain decoupled.
 ///
 /// ```dart
-/// class MyGame extends StatefulGameWidget {
-///   const MyGame({super.key});
+/// void myFunc() {}
 ///
+/// class MySocket extends NetworkInterface {
 ///   @override
-///   GameState createState() => MyGameState();
+///   void sendData(Uint8List packet) {}
+///   @override
+///   Uint8List? pollData() => null;
 /// }
 ///
-/// class MyGameState extends GameState<MyGame> {
-///   void sayHello(String name) => print('Hello, $name!');
-///
+/// class MyState extends GameState {
 ///   @override
 ///   void initState() {
 ///     super.initState();
-///     
-///     // Register and add the network manager directly
-///     addComponent(NetworkManager()
-///       ..functions = [
-///         sayHello.describe([TypeParser.string()])
-///       ]);
+///     gameObject.addComponent(NetworkManager()
+///       ..networkInterface = MySocket()
+///       ..functions = [myFunc.describe([])]);
 ///   }
 ///
 ///   @override
-///   Iterable<Widget> build(BuildContext context) sync* {}
+///   Iterable<Widget> build(BuildContext context) => [];
 /// }
 /// ```
-///
-/// See also:
-/// * [NetworkInterface] for the contract used to send/receive raw bytes.
-/// * [FunctionEntry] for describing function signatures for RPC.
 class NetworkManager extends Component with Tickable {
-  /// The network communication layer used to transmit RPC data.
+  /// The low-level transport interface used for data transmission.
   ///
-  /// This interface must be provided before calling any remote functions 
-  /// or receiving incoming requests. It typically wraps a socket or 
-  /// a message passing system.
+  /// This interface is polled every frame during the [onUpdate] cycle
+  /// to check for incoming RPC packets. It must be provided before
+  /// any remote functions are called.
   NetworkInterface? networkInterface;
 
   RPCRegistry? _registry;
 
-  /// Sets the list of functions available for remote invocation.
+  /// Sets the list of RPC-capable functions for this manager.
   ///
-  /// This automatically initializes the internal [RPCRegistry] with 
-  /// the provided function entries and a writer callback that 
-  /// directs serialized data to the [networkInterface].
-  ///
-  /// * [functions]: A list of [FunctionEntry] objects describing the API.
+  /// This setter initializes the internal [RPCRegistry] with the
+  /// provided function metadata and a writer callback that routes
+  /// data through the [networkInterface].
   set functions(List<FunctionEntry> functions) {
     _registry = RPCRegistry(
       functions: functions,
@@ -72,20 +63,21 @@ class NetworkManager extends Component with Tickable {
     );
   }
 
-  /// Retrieves the list of functions currently registered in the manager.
+  /// The list of functions currently registered with this manager.
   ///
-  /// Returns an unmodifiable list of [FunctionEntry] objects. If no 
-  /// functions have been registered, an empty list is returned.
+  /// Returns an unmodifiable list of all [FunctionEntry] objects
+  /// that have been defined for remote invocation.
   List<FunctionEntry> get functions =>
       List.unmodifiable(_registry?.functions ?? const []);
 
-  /// Invokes a function on the remote peer and waits for its result.
+  /// Initiates a remote procedure call for the specified function.
   ///
-  /// The provided [function] must have been registered in the [functions] 
-  /// list to determine its signature and return type for serialization.
+  /// This method uses the internal registry to serialize the [args]
+  /// and transmit them via the network interface. It returns a future
+  /// that resolves when the remote peer returns a result.
   ///
-  /// * [function]: The local function reference used as an identifier.
-  /// * [args]: The arguments to pass to the remote function.
+  /// * [function]: The local Dart function to invoke remotely.
+  /// * [args]: The list of arguments to pass to the function.
   Future<T> callRemoteFunction<T>(Function function, List<Object> args) {
     assert(
       _registry != null,
@@ -109,38 +101,33 @@ class NetworkManager extends Component with Tickable {
   }
 }
 
-/// An abstract interface for sending and receiving raw binary data over a network.
+/// An abstraction for network transport layers.
 ///
-/// Implementations of this interface handle the low-level details of 
-/// connection management, packet framing, and reliable delivery if required. 
-/// [NetworkManager] uses this to exchange RPC requests and responses.
+/// [NetworkInterface] defines the minimum set of operations required
+/// to support RPC communication. Implementing this class allows
+/// [NetworkManager] to work with any underlying protocol.
 ///
 /// ```dart
-/// class MySocketInterface implements NetworkInterface {
+/// class MySocket extends NetworkInterface {
 ///   @override
 ///   void sendData(Uint8List packet) {
-///     // Implementation for sending data
+///     // Implementation here
 ///   }
-///   
 ///   @override
 ///   Uint8List? pollData() {
-///     // Implementation for polling data
+///     // Implementation here
 ///     return null;
 ///   }
 /// }
 /// ```
-///
-/// See also:
-/// * [NetworkManager] for the primary user of this interface.
 abstract class NetworkInterface {
-  /// Sends a packet of binary data to the remote peer.
+  /// Transmits a raw byte packet over the network.
   ///
-  /// * [packet]: The raw bytes to be transmitted.
+  /// * [packet]: The serialized RPC data to send.
   void sendData(Uint8List packet);
 
-  /// Polls the interface for the next available incoming packet.
+  /// Checks for any new data received from the network.
   ///
-  /// Returns a [Uint8List] containing the packet data, or null if 
-  /// no new data is currently available in the receive buffer.
+  /// Returns a [Uint8List] if a packet is available, or null otherwise.
   Uint8List? pollData();
 }

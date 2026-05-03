@@ -7,14 +7,14 @@ import 'package:goo2d/src/rpc/parser.dart';
 
 void main() {
   group('RPC Parsers', () {
-    late Uint8Buffer buffer;
+    late Uint8ListBuffer buffer;
 
     setUp(() {
-      buffer = Uint8Buffer();
+      buffer = Uint8ListBuffer();
     });
 
     Object? roundTrip(TypeParser parser, Object? value) {
-      buffer = Uint8Buffer();
+      buffer = Uint8ListBuffer();
       parser.write(buffer, value);
       final data = buffer.compact;
       final byteData = ByteData.view(data.buffer);
@@ -112,13 +112,13 @@ void main() {
       expect(buffer.compact.length, 1 + 1); // 1 byte prefix + 1 byte char
 
       // Test that uint16 prefix is used for medium limit
-      buffer = Uint8Buffer();
+      buffer = Uint8ListBuffer();
       final mediumLimit = TypeParser.string(limit: 65535);
       mediumLimit.write(buffer, 'a');
       expect(buffer.compact.length, 2 + 1); // 2 byte prefix + 1 byte char
 
       // Test that uint32 prefix is used for large limit
-      buffer = Uint8Buffer();
+      buffer = Uint8ListBuffer();
       final largeLimit = TypeParser.string(
         limit: 4294967296,
       ); // limit > uint32 max

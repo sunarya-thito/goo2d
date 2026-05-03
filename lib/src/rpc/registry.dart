@@ -8,9 +8,9 @@ import 'package:goo2d/src/rpc/parser.dart';
 ///
 /// This is typically provided to the [RPCRegistry] to define how 
 /// binary packets should be sent over the network (e.g., via a socket). 
-/// The callback receives a [Uint8Buffer] which contains the complete 
+/// The callback receives a [Uint8ListBuffer] which contains the complete 
 /// packet ready for transmission.
-typedef RPCBytesCallback = void Function(Uint8Buffer bytes);
+typedef RPCBytesCallback = void Function(Uint8ListBuffer bytes);
 
 /// Represents a handle to a remote-callable function.
 ///
@@ -51,9 +51,9 @@ class RPC {
 
   /// Invokes the remote function with the specified arguments.
   ///
-  /// This method serializes the [args], generates a unique request ID, 
-  /// and waits for the remote peer to return a response or for the 
-  /// [timeout] to expire.
+  /// This method serializes the call request and sends it via the 
+  /// registry's writer, returning a future that resolves when a 
+  /// response is received.
   ///
   /// * [args]: The list of arguments to pass to the remote function.
   /// * [timeout]: The maximum duration to wait for a response.
@@ -68,7 +68,7 @@ class RPC {
       completer,
     );
 
-    final buffer = Uint8Buffer();
+    final buffer = Uint8ListBuffer();
     buffer.write(2, () {
       buffer.byteData.setUint16(0, requestId);
     });
@@ -134,7 +134,7 @@ class RPCRequest {
 /// void main() {
 ///   final registry = RPCRegistry(
 ///     functions: [myFunc.describe([])],
-///     writer: (bytes) => print('Sending ${bytes.length} bytes'),
+///     writer: (bytes) => print('Sending ${bytes.offset} bytes'),
 ///   );
 ///   
 ///   // RPC calls are usually made through the [] operator
@@ -164,6 +164,9 @@ class RPCRegistry implements FunctionRegistry {
 
   /// Creates a new RPC registry with the specified functions and writer.
   ///
+  /// This initializes the registry to handle both incoming requests 
+  /// and outgoing responses over the provided transport.
+  ///
   /// * [functions]: The API definition for this registry.
   /// * [writer]: The transport layer callback.
   RPCRegistry({required this.functions, required this.writer});
@@ -179,9 +182,8 @@ class RPCRegistry implements FunctionRegistry {
 
   /// Processes raw binary data and dispatches it to the appropriate handler.
   ///
-  /// This method distinguishes between new requests and responses to 
-  /// previous calls based on the packet header. It returns the number 
-  /// of bytes consumed from the data buffer.
+  /// This method parses the header to determine if the packet is a request
+  /// for a local function or a response to a previous outbound call.
   ///
   /// * [data]: The incoming binary data.
   /// * [offset]: The starting position within the data buffer.
@@ -194,7 +196,7 @@ class RPCRegistry implements FunctionRegistry {
     if (isResponse == 0) {
       // request
       final result = readFunctionCallRequest(data, offset);
-      final buffer = Uint8Buffer();
+      final buffer = Uint8ListBuffer();
       buffer.write(2, () {
         buffer.byteData.setUint16(0, requestId | 0x8000);
       });
@@ -217,6 +219,9 @@ class RPCRegistry implements FunctionRegistry {
 
   /// Helper method to process a list of bytes as RPC data.
   ///
+  /// This method converts a standard list of integers into a view suitable
+  /// for processing by the [handleReadData] logic.
+  ///
   /// * [bytes]: The raw byte sequence to read.
   void handleReadBytes(List<int> bytes) {
     final buffer = ByteData.sublistView(Uint8List.fromList(bytes));
@@ -225,16 +230,20 @@ class RPCRegistry implements FunctionRegistry {
 
   /// Helper method to process a [Uint8List] as RPC data.
   ///
-  /// * [list]: The raw binary list to read.
-  void handleReadUint8List(Uint8List list) {
-    handleReadData(ByteData.sublistView(list));
+  /// This method is typically called by the [NetworkManager] when 
+  /// data arrives from the network interface.
+  ///
+  /// * [data]: The raw binary packet containing a request or response.
+  void handleReadUint8List(Uint8List data) {
+    handleReadData(ByteData.sublistView(data));
   }
 
   /// Retrieves an [RPC] handle for the specified function.
   ///
-  /// Throws an exception if the function is not found in the [functions] list.
+  /// This operator allows for a fluent syntax when initiating 
+  /// remote procedure calls (e.g., `registry[myFunc].call([args])`).
   ///
-  /// * [function]: The local function reference to look up.
+  /// * [function]: The Dart function to look up in the registry.
   RPC operator [](Function function) {
     return RPC._(
       this,
@@ -272,7 +281,7 @@ class RPCRegistry implements FunctionRegistry {
 
   @override
   void writeFunctionCallRequest(
-    Uint8Buffer buffer, {
+    Uint8ListBuffer buffer, {
     required Function function,
     required List<Object> parameters,
   }) {

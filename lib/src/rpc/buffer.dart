@@ -2,13 +2,13 @@ import 'dart:typed_data';
 
 /// A dynamic byte buffer for efficient binary data serialization.
 ///
-/// [Uint8Buffer] provides a wrapper around [Uint8List] that automatically 
+/// [Uint8ListBuffer] provides a wrapper around [Uint8List] that automatically 
 /// grows as needed. It is designed for write-heavy operations where 
 /// data is appended sequentially, and it provides a [ByteData] view 
 /// for typed writing (e.g., integers, floats).
 ///
 /// ```dart
-/// final buffer = Uint8Buffer();
+/// final buffer = Uint8ListBuffer();
 /// 
 /// buffer.write(4, () {
 ///   buffer.byteData.setUint32(buffer.offset, 12345);
@@ -20,7 +20,7 @@ import 'dart:typed_data';
 /// See also:
 /// * [Uint8List] for the underlying byte array.
 /// * [ByteData] for the typed view used to write values.
-class Uint8Buffer {
+class Uint8ListBuffer {
   /// The default initial capacity for a new buffer.
   ///
   /// This value is chosen to balance memory usage and the frequency 
@@ -35,7 +35,7 @@ class Uint8Buffer {
   /// Creates a new buffer with the specified initial capacity.
   ///
   /// * [initialCapacity]: The starting size of the internal byte array.
-  Uint8Buffer([int initialCapacity = defaultCapacity])
+  Uint8ListBuffer([int initialCapacity = defaultCapacity])
       : _buffer = Uint8List(initialCapacity);
 
   /// Returns a [ByteData] view of the entire internal buffer.
