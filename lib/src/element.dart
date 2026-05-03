@@ -9,8 +9,36 @@ import 'package:goo2d/src/component.dart';
 import 'package:goo2d/src/widget.dart';
 import 'package:goo2d/src/render.dart';
 
+/// The concrete implementation of [GameObject] in the Flutter widget tree.
+///
+/// This element acts as the bridge between declarative widgets and the
+/// persistent component-based game objects. It manages the lifecycle of
+/// attached [Component]s, routes events through the hierarchy, and
+/// synchronizes with the [GameRenderObject].
+///
+/// Developers typically interact with this through the [GameObject] interface
+/// rather than instantiating it directly, as it is created automatically by
+/// [GameWidget].
+///
+/// ```dart
+/// class MyWidget extends StatelessGameWidget {
+///   const MyWidget({super.key});
+///   @override
+///   Iterable<Widget> build(BuildContext context) => [];
+/// }
+///
+/// // Internal engine usage:
+/// final element = GameObjectElement(const MyWidget());
+/// ```
+///
+/// See also:
+/// * [GameObject], the public interface for this element.
+/// * [GameWidget], the widget that creates this element.
 class GameObjectElement extends RenderObjectElement implements GameObject {
-  GameObjectElement(GameWidget super.widget);
+  /// Creates an element that manages a [GameObject]'s lifecycle.
+  ///
+  /// * [widget]: The widget configuration for this element.
+  GameObjectElement(StatefulGameWidget super.widget);
 
   final List<Component> _components = [];
   final List<CoroutineFuture> _runningCoroutines = [];
@@ -25,6 +53,9 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   final HashSet<Element> _forgottenChildren = HashSet<Element>();
 
   int _layer = RenderLayer.defaultLayer;
+
+  @override
+  StatefulGameWidget get widget => super.widget as StatefulGameWidget;
 
   @override
   GameEngine get game {
@@ -62,6 +93,12 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   Iterable<Component> get components => _components;
+
+  /// The specialized state object associated with this game object, if any.
+  ///
+  /// This corresponds to the [GameState] created by a [StatefulGameWidget].
+  /// It provides a place for reactive state and logic that persists across
+  /// widget rebuilds.
   GameState? get state => _state;
 
   void _addComponentInternal(Component component) {
@@ -476,11 +513,9 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   @override
   String get name {
-    final w = widget;
-    if (w is GameWidget) {
-      return w.name ?? w.runtimeType.toString();
-    }
-    return w.runtimeType.toString();
+    return widget.name ??
+        widget.key?.toString() ??
+        widget.runtimeType.toString();
   }
 
   @override
@@ -529,9 +564,9 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
     super.mount(parent, newSlot);
     _game = parent?.dependOnInheritedWidgetOfExactType<GameProvider>()?.game;
     _attachToParent();
-    _layer = (widget as GameWidget).layer;
+    _layer = widget.layer;
 
-    _state = (widget as GameWidget).createState();
+    _state = widget.createState();
     if (_state != null) {
       _state!._element = this;
       _addComponentInternal(_state!);
@@ -724,34 +759,113 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   }
 }
 
+/// The logic and internal state for a [StatefulGameWidget].
+///
+/// [GameState] is analogous to Flutter's [State] class but optimized for
+/// the Goo2D engine. It allows for reactive updates to the game object's
+/// configuration and manages long-lived logic that persists across widget
+/// rebuilds.
+///
+/// ```dart
+/// class MyWidget extends StatefulGameWidget {
+///   const MyWidget({super.key});
+///   @override
+///   GameState createState() => MyState();
+/// }
+///
+/// class MyState extends GameState<MyWidget> {
+///   @override
+///   void initState() {
+///     super.initState();
+///     print('Object initialized');
+///   }
+/// }
+/// ```
+///
+/// See also:
+/// * [StatefulGameWidget], the widget that creates this state.
+/// * [Component], the base class for game logic.
 abstract class GameState<T extends GameWidget> extends Component {
   GameObjectElement? _element;
 
   @override
   GameObject get gameObject => _element!;
+
+  /// The widget configuration currently associated with this state.
+  ///
+  /// This property is updated whenever the widget tree is rebuilt with a
+  /// compatible widget. Use it to access declarative configuration data.
   T get widget => _element!.widget as T;
+
+  /// The [BuildContext] for this game object.
+  ///
+  /// This provides access to the engine, other game objects, and
+  /// Flutter-specific tree operations.
   BuildContext get context => _element!;
+
+  /// Whether the state is currently mounted in the object hierarchy.
+  ///
+  /// A state is mounted after [initState] is called and before [dispose]
+  /// completes. Calling [setState] on an unmounted state is an error.
   bool get mounted => _element != null;
+
+  /// Notifies the engine that the internal state has changed.
+  ///
+  /// This schedules a rebuild of the game object's child widgets, similar
+  /// to Flutter's `State.setState`.
+  ///
+  /// * [fn]: The function that modifies the state.
   void setState(VoidCallback fn) {
     assert(_element != null, 'Cannot call setState on an unmounted widget');
     fn();
     _element!.markNeedsBuild();
   }
 
+  /// Called when the state is first initialized.
+  ///
+  /// This is the ideal place to start coroutines or initialize one-time
+  /// resources.
   @mustCallSuper
   void initState() {}
+
+  /// Called when the widget configuration is updated.
+  ///
+  /// Use this to respond to changes in the parent widget's properties.
+  ///
+  /// * [oldWidget]: The previous widget configuration.
   @mustCallSuper
   void didUpdateWidget(T oldWidget) {}
+
+  /// Called when a dependency (e.g., [InheritedWidget]) changes.
+  ///
+  /// The engine calls this method immediately after [initState] and
+  /// whenever the dependencies of the object change.
   @mustCallSuper
   void didChangeDependencies() {}
+
+  /// Called during hot reload to reset state.
+  ///
+  /// This is used by the development tools to refresh the game logic
+  /// without restarting the entire process.
   @mustCallSuper
   void reassemble() {}
+
+  /// Called when the state is removed from the hierarchy.
+  ///
+  /// Clean up resources, cancel listeners, and stop coroutines here.
   @mustCallSuper
   void dispose() {
     _element = null;
   }
 
+  /// Describes the part of the user interface represented by this object.
+  ///
+  /// This is called during the build phase and should return a list of
+  /// child widgets (typically other [GameObject]s).
+  ///
+  /// * [context]: The build context for the object.
   Iterable<Widget> build(BuildContext context) => const [];
 }
 
+/// A high-level alias for [GameObjectElement].
 typedef GameElement = GameObjectElement;
