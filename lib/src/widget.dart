@@ -27,6 +27,11 @@ import 'package:goo2d/src/render.dart';
 ///   @override
 ///   GameState createState() => MyEntityState();
 /// }
+///
+/// class MyEntityState extends GameState<MyStatefulEntity> {
+///   @override
+///   Iterable<Widget> build(BuildContext context) => [];
+/// }
 /// ```
 ///
 /// See also:
