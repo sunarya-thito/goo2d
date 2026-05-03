@@ -2,7 +2,33 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:goo2d/src/game.dart';
 
+/// The root widget for the world-space scene hierarchy.
+///
+/// [World] defines the coordinate system for all game objects that exist 
+/// in the physical game environment. It automatically applies the main 
+/// camera's transformation to its children, allowing them to be positioned 
+/// in global world coordinates rather than screen pixels.
+///
+/// ```dart
+/// // Internal engine usage or custom world setup:
+/// void example(Widget gameHierarchy) {
+///   final world = World(
+///     child: gameHierarchy,
+///   );
+/// }
+/// ```
+///
+/// See also:
+/// * [Game], the root engine container which uses this widget internally.
+/// * [CameraSystem], which provides the transformation for the world.
 class World extends SingleChildRenderObjectWidget {
+  /// Creates a [World] container that transforms its [child].
+  ///
+  /// The [child] is typically a [GameObjectWidget] or a collection of 
+  /// entities that should respond to camera movement and zooming.
+  ///
+  /// * [key]: The Flutter widget key for identity.
+  /// * [child]: The root of the world-space entity tree.
   const World({super.key, super.child});
 
   @override
@@ -16,9 +42,40 @@ class World extends SingleChildRenderObjectWidget {
   }
 }
 
+/// The render object that implements world-space camera transformations.
+///
+/// [RenderWorld] acts as a bridge between Flutter's standard 2D layout and 
+/// the Goo2D camera system. It intercepts the painting and hit-testing 
+/// phases to apply the appropriate transformation matrix, ensuring that 
+/// world-space coordinates are correctly projected onto the screen.
+///
+/// Although this class is primarily used internally by the [World] widget, 
+/// it provides the technical foundation for the engine's spatial hierarchy 
+/// and coordinate resolution logic.
+///
+/// ```dart
+/// void example(GameEngine game) {
+///   final renderWorld = RenderWorld(game: game);
+///   // This is managed by the World widget during the layout pass
+/// }
+/// ```
+///
+/// See also:
+/// * [World], the widget that creates this render object.
+/// * [GameEngine], which provides the camera system and screen metrics.
 class RenderWorld extends RenderProxyBox {
+  /// The game engine instance used to retrieve camera and screen state.
+  ///
+  /// This reference allows the render object to access the current 
+  /// [CameraSystem] and [ScreenState] to calculate the final projection 
+  /// matrix for each frame.
   GameEngine game;
+
+  /// Creates a [RenderWorld] tied to the specified [game] engine.
+  ///
+  /// * [game]: The active engine instance managing the simulation.
   RenderWorld({required this.game});
+
   Matrix4? _getTransform() {
     final cameras = game.getSystem<CameraSystem>();
     if (cameras == null || !cameras.isReady) return null;
