@@ -6,8 +6,37 @@ import 'package:goo2d/src/object.dart';
 import 'package:goo2d/src/world.dart';
 import 'package:goo2d/src/render.dart';
 
+/// A widget that renders a secondary view of the game scene using a specific camera.
+///
+/// This widget is used to create minimaps, picture-in-picture views, or split-screen
+/// layouts. It identifies its target [Camera] via a [cameraTag], which must be
+/// assigned to a [GameObject] in the current game world.
+///
+/// ```dart
+/// Container(
+///   width: 200,
+///   height: 200,
+///   decoration: BoxDecoration(border: Border.all(color: Colors.white)),
+///   child: const CameraView(cameraTag: GameTag('minimap')),
+/// );
+/// ```
+///
+/// See also:
+/// * [Camera], which defines the transformation and culling for this view.
+/// * [RenderCameraView], the underlying render object.
 class CameraView extends SingleChildRenderObjectWidget {
+  /// The tag identifying the [Camera] component to use for this view.
+  ///
+  /// The [CameraView] will look up a [GameObject] with this tag and attempt
+  /// to find a [Camera] component on it. If no such camera is found or if the
+  /// camera is disabled, the view will render as empty (or show its child).
   final GameTag cameraTag;
+
+  /// Creates a new [CameraView] for the given [cameraTag].
+  ///
+  /// * [key]: The standard Flutter widget key.
+  /// * [cameraTag]: The tag for the target camera.
+  /// * [child]: An optional child widget to render behind/instead of the scene.
   const CameraView({super.key, required this.cameraTag, super.child});
 
   @override
@@ -26,9 +55,42 @@ class CameraView extends SingleChildRenderObjectWidget {
   }
 }
 
+/// A render object that displays a transformed view of the [RenderWorld].
+///
+/// This render object handles the complexity of mapping screen coordinates
+/// to world coordinates using a specific [Camera]. It performs a filtered
+/// paint pass to ensure only objects matching the camera's culling mask
+/// are rendered in this view.
+///
+/// ```dart
+/// void setupView(GameEngine game) {
+///   RenderCameraView(
+///     game: game,
+///     cameraTag: const GameTag('minimap'),
+///   );
+/// }
+/// ```
+///
+/// See also:
+/// * [CameraView], the widget that manages this render object.
+/// * [CameraSystem], which tracks active cameras in the engine.
 class RenderCameraView extends RenderProxyBox {
+  /// The current game engine instance providing access to the systems and world.
+  ///
+  /// This reference is used to look up the [CameraSystem] and the [RenderWorld]
+  /// ancestor during the painting and hit-testing phases.
   GameEngine game;
+
+  /// The tag identifying the camera to use for rendering and hit-testing.
+  ///
+  /// This tag is used at runtime to find the active [Camera] component. If the
+  /// camera state changes, the view will automatically reflect the new settings.
   GameTag cameraTag;
+
+  /// Creates a [RenderCameraView] with the required engine and camera references.
+  ///
+  /// * [game]: The engine instance to associate with this view.
+  /// * [cameraTag]: The tag for the target camera.
   RenderCameraView({required this.game, required this.cameraTag});
 
   @override
@@ -127,6 +189,14 @@ class RenderCameraView extends RenderProxyBox {
     super.paint(context, offset);
   }
 
+  /// Performs a filtered paint pass starting from the given render node.
+  ///
+  /// This method ensures that the [RenderCameraView] itself is not rendered
+  /// recursively and applies the camera's culling mask to [GameRenderObject] nodes.
+  ///
+  /// * [context]: The context for painting.
+  /// * [offset]: The offset for the current node.
+  /// * [node]: The render object node to paint.
   void _paintFiltered(
     PaintingContext context,
     Offset offset,
@@ -238,6 +308,13 @@ class RenderCameraView extends RenderProxyBox {
     }
   }
 
+  /// Checks if a [RenderObject] is an ancestor of another.
+  ///
+  /// This is used during painting to determine if we need to continue
+  /// traversing down the render tree or if we can paint a node directly.
+  ///
+  /// * [ancestor]: The potential ancestor node.
+  /// * [node]: The potential descendant node.
   bool _isAncestorOf(RenderObject ancestor, RenderObject node) {
     RenderObject? current = node;
     while (current != null) {
