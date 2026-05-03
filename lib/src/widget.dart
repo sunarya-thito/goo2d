@@ -105,7 +105,6 @@ abstract class StatefulGameWidget extends GameWidget {
     super.name,
   });
 
-  @override
   GameState createState();
 }
 
@@ -129,7 +128,7 @@ abstract class StatefulGameWidget extends GameWidget {
 ///
 /// See also:
 /// * [StatefulGameWidget] for widgets that require persistent state.
-abstract class StatelessGameWidget extends GameWidget {
+abstract class StatelessGameWidget extends StatefulGameWidget {
   /// Creates a [StatelessGameWidget].
   ///
   /// The provided [layer] and [name] are passed to the [GameObject]
