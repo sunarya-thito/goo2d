@@ -2,10 +2,29 @@ import 'dart:async';
 import 'package:goo2d/goo2d.dart';
 import 'package:meta/meta.dart';
 
+/// A function signature for coroutines that execute logic over multiple frames.
+///
+/// Coroutines use Dart's [Stream] as a sequence of yield instructions. Each
+/// yielded value (e.g., [YieldInstruction], [Future], or null) determines
+/// how long the engine should wait before resuming the coroutine logic.
 typedef CoroutineFunction = Stream Function();
+
+/// A function signature for coroutines that accept initial configuration data.
+///
+/// This allows for reusable coroutine logic that depends on external state
+/// (e.g., a fade effect that needs a target duration and opacity).
+///
+/// * [T]: The type of the option object passed to the coroutine.
 typedef CoroutineFunctionWithOptions<T> = Stream Function(T option);
 
 const _currentCoroutineKey = Object();
+/// Accesses the [Future] of the currently executing coroutine.
+///
+/// This is used within a coroutine to identify its own lifecycle or to
+/// wait for its completion recursively. It utilizes [Zone] values to
+/// track the execution context.
+///
+/// Throws an assertion error if called outside of a coroutine context.
 Future<void> get currentCoroutine {
   final coroutine = Zone.current[_currentCoroutineKey];
   assert(
@@ -56,12 +75,56 @@ class CoroutineFuture implements Future<void> {
   }
 }
 
+/// The base class for all instructions that pause a coroutine's execution.
+///
+/// Yield instructions allow developers to express complex timing and
+/// synchronization logic in a linear, readable way within a [Stream]-based
+/// coroutine.
+///
+/// ```dart
+/// class MyWait extends YieldInstruction {
+///   @override
+///   Future<void> wait(GameEngine game) async {
+///     // Custom wait logic
+///   }
+/// }
+/// ```
+///
+/// See also:
+/// * [WaitForSeconds], for time-based pauses.
+/// * [WaitForEndOfFrame], for frame-synchronization.
 abstract class YieldInstruction {
+  /// Internal method used by the engine to wait for the instruction's condition.
+  ///
+  /// * [game]: The engine instance providing timing and frame context.
   Future<void> wait(GameEngine game);
 }
 
+/// A yield instruction that pauses a coroutine for a specific duration.
+///
+/// Use this for non-precise delays like waiting for an animation to finish
+/// or staggering enemy spawns.
+///
+/// ```dart
+/// Stream example() async* {
+///   print('Wait start');
+///   yield WaitForSeconds(2.5);
+///   print('2.5 seconds later');
+/// }
+/// ```
+///
+/// See also:
+/// * [WaitForEndOfFrame], for frame-by-frame precision.
 class WaitForSeconds extends YieldInstruction {
+  /// The duration to wait, in seconds.
+  ///
+  /// This value is used to calculate the millisecond delay passed to the
+  /// underlying async timer.
   final double seconds;
+
+  /// Creates an instruction that waits for the specified [seconds].
+  ///
+  /// * [seconds]: The duration of the pause.
   WaitForSeconds(this.seconds);
 
   @override
@@ -70,6 +133,22 @@ class WaitForSeconds extends YieldInstruction {
   }
 }
 
+/// A yield instruction that pauses a coroutine until the next frame is rendered.
+///
+/// This is used to synchronize logic with the engine's main render loop,
+/// ensuring that calculations happen once per frame.
+///
+/// ```dart
+/// Stream example() async* {
+///   while(true) {
+///     yield WaitForEndOfFrame();
+///     print('Next frame reached');
+///   }
+/// }
+/// ```
+///
+/// See also:
+/// * [WaitForSeconds], for time-based pauses.
 class WaitForEndOfFrame extends YieldInstruction {
   @override
   Future<void> wait(GameEngine game) async {
@@ -77,8 +156,31 @@ class WaitForEndOfFrame extends YieldInstruction {
   }
 }
 
+/// A yield instruction that pauses until a specific condition becomes true.
+///
+/// This is useful for waiting for external events or state changes without
+/// manually checking every frame.
+///
+/// ```dart
+/// bool playerIsDead = false;
+/// Stream example() async* {
+///   yield WaitUntil(() => playerIsDead);
+///   print('Game Over');
+/// }
+/// ```
+///
+/// See also:
+/// * [WaitWhile], the inverse of this instruction.
 class WaitUntil extends YieldInstruction {
+  /// The condition to check every frame.
+  ///
+  /// The coroutine will remain suspended as long as this function returns
+  /// false, checking it once per frame update.
   final bool Function() predicate;
+
+  /// Creates an instruction that waits until the [predicate] returns true.
+  ///
+  /// * [predicate]: The condition function.
   WaitUntil(this.predicate);
 
   @override
@@ -89,8 +191,31 @@ class WaitUntil extends YieldInstruction {
   }
 }
 
+/// A yield instruction that pauses as long as a specific condition remains true.
+///
+/// This is used to stall a coroutine while a certain state persists (e.g.,
+/// waiting for a loading screen to close).
+///
+/// ```dart
+/// bool isLoading = true;
+/// Stream example() async* {
+///   yield WaitWhile(() => isLoading);
+///   print('Loading complete');
+/// }
+/// ```
+///
+/// See also:
+/// * [WaitUntil], which waits for a condition to become true.
 class WaitWhile extends YieldInstruction {
+  /// The condition to check every frame.
+  ///
+  /// The coroutine will remain suspended as long as this function returns
+  /// true, checking it once per frame update.
   final bool Function() predicate;
+
+  /// Creates an instruction that waits while the [predicate] returns true.
+  ///
+  /// * [predicate]: The condition function.
   WaitWhile(this.predicate);
 
   @override
