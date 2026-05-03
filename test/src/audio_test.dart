@@ -54,7 +54,7 @@ void main() {
       // Note: It will still attempt to call SoLoud.instance.play,
       // but we want to verify the logic BEFORE that call.
       try {
-        await audioSource.play();
+        audioSource.play();
       } catch (_) {
         // Expected crash on SoLoud.instance access in test environment
       }
