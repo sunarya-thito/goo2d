@@ -2,6 +2,8 @@ import 'dart:ui';
 
 abstract class SpritePivot {
   const SpritePivot();
+  const factory SpritePivot.relative(double x, double y) = NormalizedPivot;
+  const factory SpritePivot.fixed(double x, double y) = PixelPivot;
   Offset compute(Size size);
 }
 
