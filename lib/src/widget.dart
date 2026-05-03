@@ -12,11 +12,20 @@ import 'package:goo2d/src/render.dart';
 /// and maintains the state of attached components.
 ///
 /// ```dart
-/// class MyEntity extends GameWidget {
-///   const MyEntity({super.key, super.layer, super.name});
+/// class MyStatelessEntity extends StatelessGameWidget {
+///   const MyStatelessEntity({super.key});
 ///
 ///   @override
-///   GameState? createState() => null;
+///   Iterable<Widget> build(BuildContext context) sync* {
+///     yield const GameObjectWidget(name: 'Static');
+///   }
+/// }
+///
+/// class MyStatefulEntity extends StatefulGameWidget {
+///   const MyStatefulEntity({super.key});
+///
+///   @override
+///   GameState createState() => MyEntityState();
 /// }
 /// ```
 ///
@@ -81,7 +90,13 @@ abstract class GameWidget extends RenderObjectWidget {
 ///   @override
 ///   void initState() {
 ///     super.initState();
-///     // Initialize player logic
+///     // Initialize player logic by adding components
+///     // addComponent(const SpriteRenderer());
+///   }
+///
+///   @override
+///   Iterable<Widget> build(BuildContext context) sync* {
+///     yield const GameObjectWidget(name: 'Visuals');
 ///   }
 /// }
 /// ```
@@ -105,6 +120,14 @@ abstract class StatefulGameWidget extends GameWidget {
     super.name,
   });
 
+  @override
+  GameObjectElement createElement() => GameObjectElement(this);
+
+  /// Creates the [GameState] associated with this widget.
+  ///
+  /// This method is called when the widget is first mounted to the
+  /// engine's object tree. The resulting state object handles the
+  /// object's lifecycle and internal logic.
   GameState createState();
 }
 
@@ -174,7 +197,7 @@ class _StatelessGameWidgetState extends GameState<StatelessGameWidget> {
 ///     name: 'Environment',
 ///     children: [
 ///       const GameObjectWidget(name: 'Tree'),
-///       const GameObjectWidget(name: 'Rock'),
+///       const ComponentWidget(ObjectTransform.new),
 ///     ],
 ///   );
 /// }
@@ -205,9 +228,6 @@ class GameObjectWidget extends StatefulGameWidget {
     super.name,
     this.children = const [],
   });
-
-  @override
-  GameObjectElement createElement() => GameObjectElement(this);
 
   @override
   GameState createState() => _GameWidgetState();
