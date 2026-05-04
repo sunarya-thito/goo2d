@@ -4,6 +4,7 @@ import 'package:goo2d/src/physics/worker/engine/collision/narrowphase.dart';
 import 'package:goo2d/src/physics/worker/engine/collision/solver.dart';
 import 'package:goo2d/src/physics/worker/engine/collision/joint_solver.dart';
 import 'package:goo2d/src/physics/worker/engine/collision/effector_apply.dart';
+import 'package:goo2d/src/physics/worker/engine/collision/aabb_compute.dart';
 
 /// Simulation step logic, extracted from [PhysicsEngine].
 bool engineStep(PhysicsEngine engine, double dt, int layers) {
@@ -108,6 +109,18 @@ void _integratePositions(PhysicsEngine engine, double dt) {
     body.worldCenterOfMass
       ..setFrom(body.position)
       ..add(body.centerOfMass);
+      
+    // Update AABB tree
+    for (final ch in body.colliderHandles) {
+      final collider = engine.colliders[ch]!;
+      final aabb = computeColliderAABB(collider, body);
+      final moved = engine.broadphaseTree.move(
+        ch, aabb, body.linearVelocity * dt,
+      );
+      if (moved) {
+        engine.moveBuffer.add(ch);
+      }
+    }
   }
 }
 

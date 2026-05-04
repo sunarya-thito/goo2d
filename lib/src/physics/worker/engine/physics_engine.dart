@@ -11,6 +11,9 @@ import 'package:goo2d/src/physics/worker/data/contact_point_data.dart';
 
 import 'package:goo2d/src/physics/worker/engine/collision/narrowphase.dart';
 import 'package:goo2d/src/physics/worker/engine/collision/contact_tracker.dart';
+import 'package:goo2d/src/physics/worker/engine/collision/aabb_tree.dart';
+import 'package:goo2d/src/physics/worker/engine/collision/aabb.dart';
+import 'package:goo2d/src/physics/worker/engine/collision/aabb_compute.dart';
 
 /// The core 2D physics simulation engine.
 ///
@@ -67,6 +70,12 @@ class PhysicsEngine {
   // --- Contact/trigger state tracker ---
   final ContactTracker contactTracker = ContactTracker();
 
+  // --- Spatial Partitioning ---
+  final AABBTree broadphaseTree = AABBTree();
+
+  /// Colliders that moved significantly during the step and need new broadphase checks.
+  final Set<int> moveBuffer = {};
+
   int allocHandle() => _nextHandle++;
 
   // ===================== Body CRUD =====================
@@ -82,6 +91,8 @@ class PhysicsEngine {
     if (body != null) {
       for (final ch in body.colliderHandles) {
         colliders.remove(ch);
+        broadphaseTree.remove(ch);
+        moveBuffer.remove(ch);
       }
     }
   }
@@ -92,8 +103,19 @@ class PhysicsEngine {
 
   int createCollider(ColliderShapeType type, int bodyHandle) {
     final h = allocHandle();
-    colliders[h] = PhysicsCollider(h, type, bodyHandle);
-    bodies[bodyHandle]?.colliderHandles.add(h);
+    final collider = PhysicsCollider(h, type, bodyHandle);
+    colliders[h] = collider;
+    
+    final body = bodies[bodyHandle];
+    if (body != null) {
+      body.colliderHandles.add(h);
+      
+      // Add to spatial tree
+      final aabb = computeColliderAABB(collider, body);
+      broadphaseTree.insert(h, aabb);
+      moveBuffer.add(h);
+    }
+    
     return h;
   }
 
@@ -101,6 +123,8 @@ class PhysicsEngine {
     final c = colliders.remove(handle);
     if (c != null) {
       bodies[c.bodyHandle]?.colliderHandles.remove(handle);
+      broadphaseTree.remove(handle);
+      moveBuffer.remove(handle);
     }
   }
 

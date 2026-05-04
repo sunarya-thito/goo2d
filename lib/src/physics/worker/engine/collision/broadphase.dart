@@ -1,5 +1,6 @@
 import 'package:goo2d/src/physics/worker/engine/physics_engine.dart';
-import 'package:goo2d/src/physics/worker/engine/collision/aabb.dart';
+import 'package:goo2d/src/physics/worker/engine/physics_collider.dart';
+import 'package:goo2d/src/physics/worker/engine/collision/broadphase.dart';
 import 'package:goo2d/src/physics/worker/engine/collision/aabb_compute.dart';
 
 /// A potential collision pair.
@@ -9,41 +10,58 @@ class BroadphasePair {
   const BroadphasePair(this.colliderA, this.colliderB);
 }
 
-/// Simple N² broadphase using AABB overlap.
-///
-/// For small body counts this is sufficient. Can be upgraded to
-/// spatial hashing or sweep-and-prune later.
+/// Refined Broadphase using Dynamic AABB Tree.
 List<BroadphasePair> findBroadphasePairs(PhysicsEngine engine) {
-  final entries = <(int, AABB)>[];
+  final tree = engine.broadphaseTree;
+  final pairs = <BroadphasePair>[];
+  final seen = <int>{}; // Used to deduplicate pairs if we query from both sides
 
-  for (final collider in engine.colliders.values) {
+  // We need to find ALL overlapping pairs.
+  // Standard approach: iterate over all leaves and query.
+  // To optimize, we could only query "dirty" leaves, but then we'd need
+  // to maintain a persistent pair set. For now, let's do a semi-brute query
+  // that is still much faster than N² because of tree pruning.
+  
+  void queryCallback(int hA, int hB) {
+    if (hA == hB) return;
+    
+    // Canonical order for deduplication
+    final p1 = hA < hB ? hA : hB;
+    final p2 = hA < hB ? hB : hA;
+    final pairKey = (p1 << 32) | p2;
+    if (seen.contains(pairKey)) return;
+    seen.add(pairKey);
+
+    final cA = engine.colliders[hA];
+    final cB = engine.colliders[hB];
+    if (cA == null || cB == null) return;
+
+    // Skip colliders on the same body
+    if (cA.bodyHandle == cB.bodyHandle) return;
+
+    // Skip ignored pairs
+    if (engine.ignoredColliderPairs.contains((p1, p2))) return;
+
+    // Layer check
+    final bodyA = engine.bodies[cA.bodyHandle];
+    final bodyB = engine.bodies[cB.bodyHandle];
+    if (bodyA != null && bodyB != null) {
+      // (Layer collision logic can be added here)
+    }
+
+    pairs.add(BroadphasePair(hA, hB));
+  }
+
+  // Option 1: Query every object (Still much faster than N² due to tree)
+  for (final hA in engine.colliders.keys) {
+    final collider = engine.colliders[hA]!;
     final body = engine.bodies[collider.bodyHandle];
     if (body == null || !body.simulated) continue;
-    entries.add((collider.handle, computeColliderAABB(collider, body)));
+    
+    // Use the actual (not fat) AABB for the query to be precise
+    final aabb = computeColliderAABB(collider, body);
+    tree.query(aabb, (hB) => queryCallback(hA, hB));
   }
 
-  final pairs = <BroadphasePair>[];
-  for (var i = 0; i < entries.length; i++) {
-    for (var j = i + 1; j < entries.length; j++) {
-      final (hA, aabbA) = entries[i];
-      final (hB, aabbB) = entries[j];
-
-      // Skip colliders on the same body
-      final cA = engine.colliders[hA]!;
-      final cB = engine.colliders[hB]!;
-      if (cA.bodyHandle == cB.bodyHandle) continue;
-
-      // Skip ignored pairs
-      final pair = hA < hB ? (hA, hB) : (hB, hA);
-      if (engine.ignoredColliderPairs.contains(pair)) continue;
-
-      // Skip if layer collision is disabled
-      // (layer check would go here once layers are tracked per body)
-
-      if (aabbA.overlaps(aabbB)) {
-        pairs.add(BroadphasePair(hA, hB));
-      }
-    }
-  }
   return pairs;
 }

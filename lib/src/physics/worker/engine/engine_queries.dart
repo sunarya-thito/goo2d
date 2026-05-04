@@ -21,31 +21,29 @@ class EngineQueries {
     final results = <RaycastHitData>[];
     final dir = direction.normalized();
 
-    for (final collider in engine.colliders.values) {
-      if (!_matchesLayer(layerMask, 0)) continue;
-      if (collider.isTrigger && !engine.queriesHitTriggers) continue;
+    engine.broadphaseTree.raycast(origin, dir, distance, (handle, fraction) {
+      final collider = engine.colliders[handle]!;
+      if (!_matchesLayer(layerMask, 0)) return distance; // Check layers
+      if (collider.isTrigger && !engine.queriesHitTriggers) return distance;
 
       final body = engine.bodies[collider.bodyHandle];
-      if (body == null || !body.simulated) continue;
-
-      // Quick AABB check
-      final aabb = computeColliderAABB(collider, body);
-      if (aabb.raycast(origin, dir, distance) < 0) continue;
+      if (body == null || !body.simulated) return distance;
 
       // Precise shape test
       final hit = _rayVsCollider(origin, dir, distance, collider, body);
-      if (hit == null) continue;
-
-      results.add(RaycastHitData(
-        point: hit.point,
-        normal: hit.normal,
-        centroid: body.position,
-        distance: hit.fraction * distance,
-        fraction: hit.fraction,
-        colliderHandle: collider.handle,
-        bodyHandle: collider.bodyHandle,
-      ));
-    }
+      if (hit != null) {
+        results.add(RaycastHitData(
+          point: hit.point,
+          normal: hit.normal,
+          centroid: body.position,
+          distance: hit.fraction * distance,
+          fraction: hit.fraction,
+          colliderHandle: collider.handle,
+          bodyHandle: collider.bodyHandle,
+        ));
+      }
+      return distance; // Return original distance to find all hits
+    });
 
     results.sort((a, b) => a.fraction.compareTo(b.fraction));
     return results;
@@ -66,18 +64,16 @@ class EngineQueries {
         point.x - radius, point.y - radius,
         point.x + radius, point.y + radius);
 
-    for (final collider in engine.colliders.values) {
-      if (collider.isTrigger && !engine.queriesHitTriggers) continue;
+    engine.broadphaseTree.query(queryAABB, (handle) {
+      final collider = engine.colliders[handle]!;
+      if (collider.isTrigger && !engine.queriesHitTriggers) return;
       final body = engine.bodies[collider.bodyHandle];
-      if (body == null || !body.simulated) continue;
-
-      final aabb = computeColliderAABB(collider, body);
-      if (!queryAABB.overlaps(aabb)) continue;
+      if (body == null || !body.simulated) return;
 
       if (circleOverlapsCollider(point, radius, collider, body)) {
         results.add(collider.handle);
       }
-    }
+    });
     return results;
   }
 
@@ -101,20 +97,18 @@ class EngineQueries {
   static List<int> overlapPoint(PhysicsEngine engine, Vector2 point,
       int layerMask, double minDepth, double maxDepth) {
     final results = <int>[];
+    final queryAABB = AABB(point.x, point.y, point.x, point.y);
 
-    for (final collider in engine.colliders.values) {
-      if (collider.isTrigger && !engine.queriesHitTriggers) continue;
+    engine.broadphaseTree.query(queryAABB, (handle) {
+      final collider = engine.colliders[handle]!;
+      if (collider.isTrigger && !engine.queriesHitTriggers) return;
       final body = engine.bodies[collider.bodyHandle];
-      if (body == null || !body.simulated) continue;
-
-      // Quick AABB check
-      final aabb = computeColliderAABB(collider, body);
-      if (!aabb.containsPoint(point)) continue;
+      if (body == null || !body.simulated) return;
 
       if (pointInCollider(point, collider, body)) {
         results.add(collider.handle);
       }
-    }
+    });
     return results;
   }
 
@@ -231,17 +225,16 @@ class EngineQueries {
     final aabb = computeColliderAABB(collider, body);
     final results = <int>[];
 
-    for (final other in engine.colliders.values) {
-      if (other.handle == colliderHandle) continue;
-      if (other.bodyHandle == collider.bodyHandle) continue;
+    engine.broadphaseTree.query(aabb, (otherHandle) {
+      if (otherHandle == colliderHandle) return;
+      final other = engine.colliders[otherHandle]!;
+      if (other.bodyHandle == collider.bodyHandle) return;
+      
       final otherBody = engine.bodies[other.bodyHandle];
-      if (otherBody == null || !otherBody.simulated) continue;
+      if (otherBody == null || !otherBody.simulated) return;
 
-      final otherAABB = computeColliderAABB(other, otherBody);
-      if (aabb.overlaps(otherAABB)) {
-        results.add(other.handle);
-      }
-    }
+      results.add(otherHandle);
+    });
     return results;
   }
 
