@@ -25,6 +25,7 @@ class ColliderProp {
   static const int errorState = 18;
   static const int shapeCount = 19;
   static const int compositeCapable = 20;
+  static const int layer = 21;
   // Box
   static const int boxSize = 100;
   static const int boxEdgeRadius = 101;
@@ -78,6 +79,7 @@ class DirectColliderOps {
       ColliderProp.sharedMaterialHandle => c.sharedMaterialHandle,
       ColliderProp.excludeLayers => c.excludeLayers,
       ColliderProp.includeLayers => c.includeLayers,
+      ColliderProp.layer => c.layer,
       ColliderProp.callbackLayers => c.callbackLayers,
       ColliderProp.contactCaptureLayers => c.contactCaptureLayers,
       ColliderProp.forceReceiveLayers => c.forceReceiveLayers,
@@ -128,6 +130,7 @@ class DirectColliderOps {
       case ColliderProp.sharedMaterialHandle: c.sharedMaterialHandle = v as int;
       case ColliderProp.excludeLayers: c.excludeLayers = v as int;
       case ColliderProp.includeLayers: c.includeLayers = v as int;
+      case ColliderProp.layer: c.layer = v as int;
       case ColliderProp.callbackLayers: c.callbackLayers = v as int;
       case ColliderProp.contactCaptureLayers: c.contactCaptureLayers = v as int;
       case ColliderProp.forceReceiveLayers: c.forceReceiveLayers = v as int;

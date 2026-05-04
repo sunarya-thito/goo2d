@@ -46,7 +46,21 @@ List<BroadphasePair> findBroadphasePairs(PhysicsEngine engine) {
     final bodyA = engine.bodies[cA.bodyHandle];
     final bodyB = engine.bodies[cB.bodyHandle];
     if (bodyA != null && bodyB != null) {
-      // (Layer collision logic can be added here)
+      final layerA = cA.layer != 0 ? cA.layer : bodyA.layer;
+      final layerB = cB.layer != 0 ? cB.layer : bodyB.layer;
+
+      // 1. Check global layer matrix
+      if ((engine.layerCollisionMask[layerA] & (1 << layerB)) == 0) return;
+
+      // 2. Check exclusion masks (if either excludes the other's layer)
+      if ((cA.excludeLayers & (1 << layerB)) != 0) return;
+      if ((cB.excludeLayers & (1 << layerA)) != 0) return;
+      if ((bodyA.excludeLayers & (1 << layerB)) != 0) return;
+      if ((bodyB.excludeLayers & (1 << layerA)) != 0) return;
+
+      // 3. Check inclusion masks (if set, must include the other's layer)
+      if (cA.includeLayers != 0 && (cA.includeLayers & (1 << layerB)) == 0) return;
+      if (cB.includeLayers != 0 && (cB.includeLayers & (1 << layerA)) == 0) return;
     }
 
     pairs.add(BroadphasePair(hA, hB));

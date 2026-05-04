@@ -23,11 +23,12 @@ class EngineQueries {
 
     engine.broadphaseTree.raycast(origin, dir, distance, (handle, fraction) {
       final collider = engine.colliders[handle]!;
-      if (!_matchesLayer(layerMask, 0)) return distance; // Check layers
-      if (collider.isTrigger && !engine.queriesHitTriggers) return distance;
-
       final body = engine.bodies[collider.bodyHandle];
       if (body == null || !body.simulated) return distance;
+
+      final layer = collider.layer != 0 ? collider.layer : body.layer;
+      if (!_matchesLayer(layerMask, layer)) return distance; 
+      if (collider.isTrigger && !engine.queriesHitTriggers) return distance;
 
       // Precise shape test
       final hit = _rayVsCollider(origin, dir, distance, collider, body);
@@ -66,9 +67,12 @@ class EngineQueries {
 
     engine.broadphaseTree.query(queryAABB, (handle) {
       final collider = engine.colliders[handle]!;
-      if (collider.isTrigger && !engine.queriesHitTriggers) return;
       final body = engine.bodies[collider.bodyHandle];
       if (body == null || !body.simulated) return;
+
+      final layer = collider.layer != 0 ? collider.layer : body.layer;
+      if (!_matchesLayer(layerMask, layer)) return;
+      if (collider.isTrigger && !engine.queriesHitTriggers) return;
 
       if (circleOverlapsCollider(point, radius, collider, body)) {
         results.add(collider.handle);
@@ -101,9 +105,12 @@ class EngineQueries {
 
     engine.broadphaseTree.query(queryAABB, (handle) {
       final collider = engine.colliders[handle]!;
-      if (collider.isTrigger && !engine.queriesHitTriggers) return;
       final body = engine.bodies[collider.bodyHandle];
       if (body == null || !body.simulated) return;
+
+      final layer = collider.layer != 0 ? collider.layer : body.layer;
+      if (!_matchesLayer(layerMask, layer)) return;
+      if (collider.isTrigger && !engine.queriesHitTriggers) return;
 
       if (pointInCollider(point, collider, body)) {
         results.add(collider.handle);

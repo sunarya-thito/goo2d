@@ -26,6 +26,7 @@ class PhysicsBody {
   int interpolation = 0; // 0=none, 1=interpolate, 2=extrapolate
   int collisionDetectionMode = 0; // 0=discrete, 1=continuous
   int sleepMode = 0; // 0=startAwake, 1=startAsleep, 2=neverSleep
+  int layer = 0;
   int excludeLayers = 0;
   int includeLayers = 0;
 

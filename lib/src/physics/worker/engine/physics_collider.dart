@@ -19,6 +19,7 @@ class PhysicsCollider {
   int compositeOrder = 0;
   bool usedByEffector = false;
   int sharedMaterialHandle = -1;
+  int layer = 0;
   int excludeLayers = 0;
   int includeLayers = 0;
   int callbackLayers = ~0;

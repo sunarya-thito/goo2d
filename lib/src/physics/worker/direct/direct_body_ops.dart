@@ -28,6 +28,7 @@ class BodyProp {
   static const int sharedMaterialHandle = 22;
   static const int excludeLayers = 23;
   static const int includeLayers = 24;
+  static const int layer = 25;
 }
 
 /// Direct body operations. `object → invocation`.
@@ -65,6 +66,7 @@ class DirectBodyOps {
       BodyProp.sharedMaterialHandle => b.sharedMaterialHandle,
       BodyProp.excludeLayers => b.excludeLayers,
       BodyProp.includeLayers => b.includeLayers,
+      BodyProp.layer => b.layer,
       _ => throw ArgumentError('Unknown body property: $p'),
     });
   }
@@ -96,6 +98,7 @@ class DirectBodyOps {
       case BodyProp.sharedMaterialHandle: b.sharedMaterialHandle = v as int;
       case BodyProp.excludeLayers: b.excludeLayers = v as int;
       case BodyProp.includeLayers: b.includeLayers = v as int;
+      case BodyProp.layer: b.layer = v as int;
       default: throw ArgumentError('Unknown or readonly body property: $p');
     }
     return Future.value();
