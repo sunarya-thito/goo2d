@@ -99,4 +99,10 @@ class Uint8ListBuffer {
   /// This creates a new [Uint8List] that matches the current [offset]. 
   /// It is typically called when serialization is complete.
   Uint8List get compact => _buffer.sublist(0, _offset);
+
+  /// Resets the buffer's write position to the beginning.
+  /// 
+  /// This allows the buffer to be reused for a new packet without 
+  /// reallocating the underlying byte array.
+  void clear() => _offset = 0;
 }

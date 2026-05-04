@@ -1,543 +1,218 @@
-import 'package:flutter/painting.dart';
-import 'package:meta/meta.dart';
+import 'dart:ui' as ui;
+import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/goo2d.dart';
 
-abstract class Collider extends Component
-    with LifecycleListener, MultiComponent {
-  Offset offset = Offset.zero;
-  bool isTrigger = false;
-  PhysicsMaterial material = PhysicsMaterial.defaultMaterial;
-  bool isOneWay = false;
-  double oneWayAngle = -1.57079632679; // -PI/2 (Up)
-  double oneWayArc = 3.14159265359; // PI (180 degrees)
-  int layerMask = 0xFFFFFFFF;
+/// The parent class for collider types used with 2D gameplay. Provides methods to defines the shape and physical behavior for 2D object interactions, used to detect collisions, and trigger events in 2D game environments.
+/// 
+/// Equivalent to Unity's `Collider2D`.
+class Collider extends Component {
+  /// The bounciness combine mode used by the Collider2D.
+  PhysicsMaterialCombine get bounceCombine => throw UnimplementedError('Implemented via Physics Worker');
+  set bounceCombine(PhysicsMaterialCombine value) => throw UnimplementedError('Implemented via Physics Worker');
 
-  bool _wasOverlappingScreen = false;
-  bool _wasFullyInsideScreen = false;
-  @internal
-  bool get wasOverlappingScreen => _wasOverlappingScreen;
-  @internal
-  set wasOverlappingScreen(bool value) => _wasOverlappingScreen = value;
-  @internal
-  bool get wasFullyInsideScreen => _wasFullyInsideScreen;
-  @internal
-  set wasFullyInsideScreen(bool value) => _wasFullyInsideScreen = value;
-  ObjectTransform get transform => gameObject.getComponent<ObjectTransform>();
-  ObjectTransform? get tryTransform =>
-      gameObject.tryGetComponent<ObjectTransform>();
+  /// The Layers that this Collider2D can receive forces from during a Collision contact with another Collider2D.
+  int get forceReceiveLayers => throw UnimplementedError('Implemented via Physics Worker');
+  set forceReceiveLayers(int value) => throw UnimplementedError('Implemented via Physics Worker');
 
-  @override
-  void onMounted() {
-    game.getSystem<PhysicsSystem>()?.registerCollider(this);
+  /// The Layers that this Collider2D will report collision or trigger callbacks for during a contact with another Collider2D.
+  int get callbackLayers => throw UnimplementedError('Implemented via Physics Worker');
+  set callbackLayers(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The world space bounding area of the collider.
+  ui.Rect get bounds => throw UnimplementedError('Implemented via Physics Worker');
+  set bounds(ui.Rect value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The composite operation to be used by a CompositeCollider2D.
+  CompositeOperation get compositeOperation => throw UnimplementedError('Implemented via Physics Worker');
+  set compositeOperation(CompositeOperation value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The composite operation order to be used when a CompositeCollider2D is used.
+  int get compositeOrder => throw UnimplementedError('Implemented via Physics Worker');
+  set compositeOrder(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The layers of other Collider2D involved in contacts with this Collider2D that will be captured.
+  int get contactCaptureLayers => throw UnimplementedError('Implemented via Physics Worker');
+  set contactCaptureLayers(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The density of the collider used to calculate its mass (when auto mass is enabled).
+  double get density => throw UnimplementedError('Implemented via Physics Worker');
+  set density(double value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The error state that indicates the state of the physics shapes the 2D Collider tried to create. (Read Only)
+  ColliderErrorState get errorState => throw UnimplementedError('Implemented via Physics Worker');
+  set errorState(ColliderErrorState value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Get the CompositeCollider2D that is available to be attached to the collider.
+  CompositeCollider get composite => throw UnimplementedError('Implemented via Physics Worker');
+  set composite(CompositeCollider value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Calculates the effective LayerMask that the Collider2D will use when determining if it can contact another Collider2D.
+  int get contactMask => throw UnimplementedError('Implemented via Physics Worker');
+  set contactMask(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The bounciness used by the Collider2D.
+  double get bounciness => throw UnimplementedError('Implemented via Physics Worker');
+  set bounciness(double value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The additional Layers that this Collider2D should exclude when deciding if a contact with another Collider2D should happen or not.
+  int get excludeLayers => throw UnimplementedError('Implemented via Physics Worker');
+  set excludeLayers(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The Rigidbody2D attached to the Collider2D.
+  Rigidbody get attachedRigidbody => throw UnimplementedError('Implemented via Physics Worker');
+  set attachedRigidbody(Rigidbody value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Indicates if this Collider2D is capable of being composited by the CompositeCollider2D.
+  bool get compositeCapable => throw UnimplementedError('Implemented via Physics Worker');
+  set compositeCapable(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// A decision priority assigned to this Collider2D used when there is a conflicting decision on whether a contact between itself and another Collision2D should happen or not.
+  int get layerOverridePriority => throw UnimplementedError('Implemented via Physics Worker');
+  set layerOverridePriority(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The friction used by the Collider2D.
+  double get friction => throw UnimplementedError('Implemented via Physics Worker');
+  set friction(double value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Is this collider configured as a trigger?
+  bool get isTrigger => throw UnimplementedError('Implemented via Physics Worker');
+  set isTrigger(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The transformation matrix used to transform the Collider physics shapes to world space.
+  Matrix4 get localToWorldMatrix => throw UnimplementedError('Implemented via Physics Worker');
+  set localToWorldMatrix(Matrix4 value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The number of active PhysicsShape2D the Collider2D is currently using.
+  int get shapeCount => throw UnimplementedError('Implemented via Physics Worker');
+  set shapeCount(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The additional Layers that this Collider2D should include when deciding if a contact with another Collider2D should happen or not.
+  int get includeLayers => throw UnimplementedError('Implemented via Physics Worker');
+  set includeLayers(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Whether the collider is used by an attached effector or not.
+  bool get usedByEffector => throw UnimplementedError('Implemented via Physics Worker');
+  set usedByEffector(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The friction combine mode used by the Collider2D.
+  PhysicsMaterialCombine get frictionCombine => throw UnimplementedError('Implemented via Physics Worker');
+  set frictionCombine(PhysicsMaterialCombine value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The PhysicsMaterial2D that is applied to this collider.
+  PhysicsMaterial get sharedMaterial => throw UnimplementedError('Implemented via Physics Worker');
+  set sharedMaterial(PhysicsMaterial value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The local offset of the collider geometry.
+  Vector2 get offset => throw UnimplementedError('Implemented via Physics Worker');
+  set offset(Vector2 value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The Layers that this Collider2D is allowed to send forces to during a Collision contact with another Collider2D.
+  int get forceSendLayers => throw UnimplementedError('Implemented via Physics Worker');
+  set forceSendLayers(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Casts the Collider shape into the Scene starting at the Collider position ignoring the Collider itself.
+  /// - [direction]: Vector representing the direction to cast the Collider.
+  /// - [contactFilter]: Filter results defined by the contact filter.
+  /// - [distance]: Maximum distance over which to cast the Collider.
+  /// - [ignoreSiblingColliders]: Determines whether the cast should ignore other Colliders attached to the same Rigidbody2D (known as sibling colliders).
+  /// - [allocator]: The memory allocator to use for the results. This can only be Allocator.Temp, Allocator.TempJob or Allocator.Persistent.
+  List<RaycastHit> cast(Vector2 direction, ContactFilter contactFilter, double distance, bool ignoreSiblingColliders, int allocator) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  void onUnmounted() {
-    game.getSystem<PhysicsSystem>()?.unregisterCollider(this);
+  /// This method determines if both Colliders can ever come into contact.
+  /// - [collider]: The other Collider that is to be checked to see if it can contact the current Collider.
+  bool canContact(Collider collider) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  Rect get worldBounds;
-  bool containsPoint(Offset worldPoint);
-}
-
-class BoxCollider extends Collider {
-  Size size = const Size(100, 100);
-
-  @override
-  Rect get worldBounds {
-    final t = tryTransform;
-    if (t == null) return Rect.zero;
-    final halfW = size.width / 2;
-    final halfH = size.height / 2;
-
-    // Corners in local space
-    final corners = [
-      Offset(offset.dx - halfW, offset.dy - halfH),
-      Offset(offset.dx + halfW, offset.dy - halfH),
-      Offset(offset.dx - halfW, offset.dy + halfH),
-      Offset(offset.dx + halfW, offset.dy + halfH),
-    ];
-
-    double? minX, maxX, minY, maxY;
-    for (final corner in corners) {
-      final world = t.localToWorld(corner);
-      if (minX == null || world.dx < minX) minX = world.dx;
-      if (maxX == null || world.dx > maxX) maxX = world.dx;
-      if (minY == null || world.dy < minY) minY = world.dy;
-      if (maxY == null || world.dy > maxY) maxY = world.dy;
-    }
-
-    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  /// Returns a point on the perimeter of this Collider that is closest to the specified position.
+  /// - [position]: The position from which to find the closest point on this Collider.
+  Vector2 closestPoint(Vector2 position) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(Offset worldPoint) {
-    final t = tryTransform;
-    if (t == null) return false;
-    final localPoint = t.worldToLocal(worldPoint);
-    final halfW = size.width / 2;
-    final halfH = size.height / 2;
-    return localPoint.dx >= offset.dx - halfW &&
-        localPoint.dx <= offset.dx + halfW &&
-        localPoint.dy >= offset.dy - halfH &&
-        localPoint.dy <= offset.dy + halfH;
-  }
-}
-
-class CircleCollider extends Collider {
-  double radius = 50.0;
-
-  @override
-  Rect get worldBounds {
-    final t = tryTransform;
-    if (t == null) return Rect.zero;
-    final worldCenter = t.localToWorld(offset);
-    final worldScale = t.scale;
-    final maxScale = worldScale.dx > worldScale.dy
-        ? worldScale.dx
-        : worldScale.dy;
-    final worldRadius = radius * maxScale;
-    return Rect.fromCircle(center: worldCenter, radius: worldRadius);
+  /// Creates a planar Mesh that is identical to the area defined by the Collider2D geometry.
+  /// - [useBodyPosition]: Should the mesh be transformed by the position of the attached Rigidbody2D?
+  /// - [useBodyRotation]: Should the mesh be transformed by the rotation of the attached Rigidbody2D?
+  /// - [useDelaunay]: When true, Delaunay triangulation is used to generate the mesh. This can reduce the number of vertices created in the Collider mesh and reduce the number of small triangle fans produced, both of which can improve overall mesh size and performance.
+  SpriteMesh createMesh(bool useBodyPosition, bool useBodyRotation, bool useDelaunay) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(Offset worldPoint) {
-    final t = tryTransform;
-    if (t == null) return false;
-    final worldCenter = t.localToWorld(offset);
-    final distSq = (worldPoint - worldCenter).distanceSquared;
-
-    final worldScale = t.scale;
-    final maxScale = worldScale.dx > worldScale.dy
-        ? worldScale.dx
-        : worldScale.dy;
-    final worldRadius = radius * maxScale;
-
-    return distSq <= worldRadius * worldRadius;
-  }
-}
-
-class CapsuleCollider extends Collider {
-  double radius = 25.0;
-  double height = 100.0;
-  CapsuleDirection direction = CapsuleDirection.vertical;
-
-  @override
-  Rect get worldBounds {
-    final t = tryTransform;
-    if (t == null) return Rect.zero;
-    double capOffset = (height / 2) - radius;
-    if (capOffset < 0) capOffset = 0;
-
-    List<Offset> centers;
-    if (direction == CapsuleDirection.vertical) {
-      centers = [
-        Offset(offset.dx, offset.dy - capOffset),
-        Offset(offset.dx, offset.dy + capOffset),
-      ];
-    } else {
-      centers = [
-        Offset(offset.dx - capOffset, offset.dy),
-        Offset(offset.dx + capOffset, offset.dy),
-      ];
-    }
-
-    double? minX, maxX, minY, maxY;
-    for (final p in centers) {
-      final world = t.localToWorld(p);
-      final worldScale = t.scale;
-      final worldR =
-          radius *
-          (worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy);
-
-      final b = Rect.fromCircle(center: world, radius: worldR);
-      if (minX == null || b.left < minX) minX = b.left;
-      if (maxX == null || b.right > maxX) maxX = b.right;
-      if (minY == null || b.top < minY) minY = b.top;
-      if (maxY == null || b.bottom > maxY) maxY = b.bottom;
-    }
-
-    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  /// Retrieves all colliders in contact with this Collider, with the results filtered by the contactFilter.
+  /// - [contactFilter]: The contact filter used to filter the results differently, such as by layer mask, Z depth, or normal angle.
+  /// - [allocator]: The memory allocator to use for the results. This can only be Allocator.Temp, Allocator.TempJob or Allocator.Persistent.
+  List<Collider> getContactColliders(ContactFilter contactFilter, int allocator) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(Offset worldPoint) {
-    final t = tryTransform;
-    if (t == null) return false;
-    final localPoint = t.worldToLocal(worldPoint);
-    final relativePoint = localPoint - offset;
-
-    double halfHeight = (height - radius * 2) / 2;
-    if (halfHeight < 0) halfHeight = 0;
-
-    double distSq;
-    if (direction == CapsuleDirection.vertical) {
-      double y = relativePoint.dy.clamp(-halfHeight, halfHeight);
-      distSq = (relativePoint - Offset(0, y)).distanceSquared;
-    } else {
-      double x = relativePoint.dx.clamp(-halfHeight, halfHeight);
-      distSq = (relativePoint - Offset(x, 0)).distanceSquared;
-    }
-
-    return distSq <= radius * radius;
-  }
-}
-
-class PolygonCollider extends Collider {
-  List<Offset> vertices = [];
-
-  @override
-  Rect get worldBounds {
-    final t = tryTransform;
-    if (t == null) return Rect.zero;
-    double? minX, maxX, minY, maxY;
-    for (final v in vertices) {
-      final world = t.localToWorld(v + offset);
-      if (minX == null || world.dx < minX) minX = world.dx;
-      if (maxX == null || world.dx > maxX) maxX = world.dx;
-      if (minY == null || world.dy < minY) minY = world.dy;
-      if (maxY == null || world.dy > maxY) maxY = world.dy;
-    }
-    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  /// Calculates the minimum separation of this collider against another collider.
+  /// - [collider]: A collider used to calculate the minimum separation against this collider.
+  double distance(Collider collider) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(Offset worldPoint) {
-    final t = tryTransform;
-    if (t == null) return false;
-    final localPoint = t.worldToLocal(worldPoint) - offset;
-    if (vertices.length < 3) return false;
-
-    // Ray casting algorithm for point in polygon
-    bool inside = false;
-    for (int i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-      if (((vertices[i].dy > localPoint.dy) !=
-              (vertices[j].dy > localPoint.dy)) &&
-          (localPoint.dx <
-              (vertices[j].dx - vertices[i].dx) *
-                      (localPoint.dy - vertices[i].dy) /
-                      (vertices[j].dy - vertices[i].dy) +
-                  vertices[i].dx)) {
-        inside = !inside;
-      }
-    }
-    return inside;
-  }
-}
-
-class SpriteCollider extends PolygonCollider {
-  static final Map<GameSprite, List<Offset>> _cache = {};
-  double alphaThreshold = 0.1;
-  double tolerance = 1.0;
-  bool autoGenerate = true;
-
-  bool _isGenerating = false;
-  static Future<List<Offset>> bake(
-    GameSprite sprite, {
-    double alphaThreshold = 0.1,
-    double tolerance = 1.0,
-  }) async {
-    if (_cache.containsKey(sprite)) return _cache[sprite]!;
-
-    if (!sprite.texture.isLoaded) {
-      await sprite.texture.load();
-    }
-
-    final pixels = sprite.texture.getPixels32();
-    final rect = sprite.rect;
-    final ppu = sprite.pixelsPerUnit;
-    final pivot = sprite.pivotOffset;
-
-    // Generate vertices from the sprite's alpha channel.
-    final vertices = SpritePolygonGenerator.generate(
-      pixels: pixels,
-      width: sprite.texture.width,
-      height: sprite.texture.height,
-      sourceRect: rect,
-      alphaThreshold: alphaThreshold,
-      tolerance: tolerance,
-    );
-
-    // Convert pixel coordinates to local world units relative to pivot
-    final worldVertices = vertices.map((v) {
-      return Offset(
-        (v.dx - rect.left - pivot.dx) / ppu,
-        (v.dy - rect.top - pivot.dy) / ppu,
-      );
-    }).toList();
-
-    _cache[sprite] = worldVertices;
-    return worldVertices;
+  /// Gets all the PhysicsShape2D used by the Collider2D.
+  /// - [physicsShapeGroup]: The PhysicsShapeGroup2D to store the retrieved PhysicsShape2D in.
+  int getShapes(PhysicsShapeGroup physicsShapeGroup) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  void onMounted() {
-    super.onMounted();
-    if (autoGenerate) {
-      _tryGenerate();
-    }
+  /// Generates a simple hash value based upon the geometry of the Collider2D.
+  int getShapeHash() {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  void _tryGenerate() async {
-    if (_isGenerating) return;
-    final renderer = gameObject.tryGetComponent<SpriteRenderer>();
-    if (renderer == null) return;
-    final sprite = renderer.sprite;
-    if (sprite == null) return;
-
-    _isGenerating = true;
-    try {
-      vertices = await bake(
-        sprite,
-        alphaThreshold: alphaThreshold,
-        tolerance: tolerance,
-      );
-      // Trigger a physics update if needed
-      game.getSystem<PhysicsSystem>()?.unregisterCollider(this);
-      game.getSystem<PhysicsSystem>()?.registerCollider(this);
-    } finally {
-      _isGenerating = false;
-    }
-  }
-}
-
-class CompositeCollider extends Collider {
-  final List<ColliderGeometry> shapes = [];
-
-  @override
-  Rect get worldBounds {
-    if (shapes.isEmpty) return Rect.zero;
-    Rect? bounds;
-    for (final shape in shapes) {
-      final b = shape.getWorldBounds(tryTransform, offset);
-      if (bounds == null) {
-        bounds = b;
-      } else {
-        bounds = bounds.expandToInclude(b);
-      }
-    }
-    return bounds ?? Rect.zero;
+  /// Retrieves all contact points for this Collider, with the results filtered by the contactFilter.
+  /// - [contactFilter]: The contact filter used to filter the results differently, such as by layer mask, Z depth, or normal angle.
+  /// - [allocator]: The memory allocator to use for the results. This can only be Allocator.Temp, Allocator.TempJob or Allocator.Persistent.
+  List<ContactPoint> getContacts(ContactFilter contactFilter, int allocator) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(Offset worldPoint) {
-    final t = tryTransform;
-    if (t == null) return false;
-    for (final shape in shapes) {
-      if (shape.containsPoint(worldPoint, t, offset)) return true;
-    }
-    return false;
-  }
-}
-
-abstract class ColliderGeometry {
-  Offset offset = Offset.zero;
-  PhysicsMaterial material = PhysicsMaterial.defaultMaterial;
-  bool isTrigger = false;
-  bool isOneWay = false;
-  double oneWayAngle = -1.57079632679; // -PI/2 (Up)
-  double oneWayArc = 3.14159265359; // PI (180 degrees)
-  Rect getWorldBounds(ObjectTransform? transform, Offset compositeOffset);
-  bool containsPoint(
-    Offset worldPoint,
-    ObjectTransform transform,
-    Offset compositeOffset,
-  );
-}
-
-class CircleGeometry extends ColliderGeometry {
-  double radius = 50.0;
-
-  @override
-  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
-    if (t == null) return Rect.zero;
-    final worldCenter = t.localToWorld(offset + compositeOffset);
-    final worldScale = t.scale;
-    final maxScale = worldScale.dx > worldScale.dy
-        ? worldScale.dx
-        : worldScale.dy;
-    return Rect.fromCircle(center: worldCenter, radius: radius * maxScale);
+  /// Retrieves a list of Bounds for all PhysicsShape2D created by this Collider2D, and returns the combined Bounds of the retrieved list.
+  /// - [bounds]: The list used to store the returned Bounds.
+  /// - [useRadii]: Whether the radius of each PhysicsShape2D should be used to calculate the Bounds or not.
+  /// - [useWorldSpace]: Whether to transform all the returned Bounds to world space or leave them in their default local space.
+  ui.Rect getShapeBounds(List<ui.Rect> bounds, bool useRadii, bool useWorldSpace) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(
-    Offset worldPoint,
-    ObjectTransform t,
-    Offset compositeOffset,
-  ) {
-    final worldCenter = t.localToWorld(offset + compositeOffset);
-    final distSq = (worldPoint - worldCenter).distanceSquared;
-    final worldScale = t.scale;
-    final maxScale = worldScale.dx > worldScale.dy
-        ? worldScale.dx
-        : worldScale.dy;
-    final worldRadius = radius * maxScale;
-    return distSq <= worldRadius * worldRadius;
-  }
-}
-
-class BoxGeometry extends ColliderGeometry {
-  Size size = const Size(100, 100);
-
-  @override
-  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
-    if (t == null) return Rect.zero;
-    final halfW = size.width / 2;
-    final halfH = size.height / 2;
-    final corners = [
-      Offset(
-        offset.dx + compositeOffset.dx - halfW,
-        offset.dy + compositeOffset.dy - halfH,
-      ),
-      Offset(
-        offset.dx + compositeOffset.dx + halfW,
-        offset.dy + compositeOffset.dy - halfH,
-      ),
-      Offset(
-        offset.dx + compositeOffset.dx - halfW,
-        offset.dy + compositeOffset.dy + halfH,
-      ),
-      Offset(
-        offset.dx + compositeOffset.dx + halfW,
-        offset.dy + compositeOffset.dy + halfH,
-      ),
-    ];
-
-    double? minX, maxX, minY, maxY;
-    for (final corner in corners) {
-      final world = t.localToWorld(corner);
-      if (minX == null || world.dx < minX) minX = world.dx;
-      if (maxX == null || world.dx > maxX) maxX = world.dx;
-      if (minY == null || world.dy < minY) minY = world.dy;
-      if (maxY == null || world.dy > maxY) maxY = world.dy;
-    }
-    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  /// Check if a collider overlaps a point in space.
+  /// - [point]: A point in world space.
+  bool overlapPoint(Vector2 point) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(
-    Offset worldPoint,
-    ObjectTransform t,
-    Offset compositeOffset,
-  ) {
-    final localPoint = t.worldToLocal(worldPoint);
-    final halfW = size.width / 2;
-    final halfH = size.height / 2;
-    final localCenter = offset + compositeOffset;
-    return localPoint.dx >= localCenter.dx - halfW &&
-        localPoint.dx <= localCenter.dx + halfW &&
-        localPoint.dy >= localCenter.dy - halfH &&
-        localPoint.dy <= localCenter.dy + halfH;
-  }
-}
-
-class CapsuleGeometry extends ColliderGeometry {
-  double radius = 25.0;
-  double height = 100.0;
-  CapsuleDirection direction = CapsuleDirection.vertical;
-
-  @override
-  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
-    if (t == null) return Rect.zero;
-    double capOffset = (height / 2) - radius;
-    if (capOffset < 0) capOffset = 0;
-
-    final localCenter = offset + compositeOffset;
-    List<Offset> centers;
-    if (direction == CapsuleDirection.vertical) {
-      centers = [
-        Offset(localCenter.dx, localCenter.dy - capOffset),
-        Offset(localCenter.dx, localCenter.dy + capOffset),
-      ];
-    } else {
-      centers = [
-        Offset(localCenter.dx - capOffset, localCenter.dy),
-        Offset(localCenter.dx + capOffset, localCenter.dy),
-      ];
-    }
-
-    double? minX, maxX, minY, maxY;
-    for (final p in centers) {
-      final world = t.localToWorld(p);
-      final worldScale = t.scale;
-      final worldR =
-          radius *
-          (worldScale.dx > worldScale.dy ? worldScale.dx : worldScale.dy);
-
-      final b = Rect.fromCircle(center: world, radius: worldR);
-      if (minX == null || b.left < minX) minX = b.left;
-      if (maxX == null || b.right > maxX) maxX = b.right;
-      if (minY == null || b.top < minY) minY = b.top;
-      if (maxY == null || b.bottom > maxY) maxY = b.bottom;
-    }
-
-    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  /// Casts a ray into the Scene that starts at the Collider position and ignores the Collider itself.
+  /// - [direction]: Vector representing the direction of the ray.
+  /// - [results]: Array to receive results.
+  /// - [distance]: Maximum distance over which to cast the ray.
+  /// - [layerMask]: Filter to check objects only on specific layers.
+  /// - [minDepth]: Only include objects with a Z coordinate (depth) greater than this value.
+  /// - [maxDepth]: Only include objects with a Z coordinate (depth) less than this value.
+  int raycast(Vector2 direction, List<RaycastHit> results, double distance, int layerMask, double minDepth, double maxDepth) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(
-    Offset worldPoint,
-    ObjectTransform t,
-    Offset compositeOffset,
-  ) {
-    final localPoint = t.worldToLocal(worldPoint);
-    final relativePoint = localPoint - (offset + compositeOffset);
-
-    double halfHeight = (height - radius * 2) / 2;
-    if (halfHeight < 0) halfHeight = 0;
-
-    double distSq;
-    if (direction == CapsuleDirection.vertical) {
-      double y = relativePoint.dy.clamp(-halfHeight, halfHeight);
-      distSq = (relativePoint - Offset(0, y)).distanceSquared;
-    } else {
-      double x = relativePoint.dx.clamp(-halfHeight, halfHeight);
-      distSq = (relativePoint - Offset(x, 0)).distanceSquared;
-    }
-
-    return distSq <= radius * radius;
-  }
-}
-
-class PolygonGeometry extends ColliderGeometry {
-  List<Offset> vertices = [];
-
-  @override
-  Rect getWorldBounds(ObjectTransform? t, Offset compositeOffset) {
-    if (t == null) return Rect.zero;
-    double? minX, maxX, minY, maxY;
-    final localCenter = offset + compositeOffset;
-    for (final v in vertices) {
-      final world = t.localToWorld(v + localCenter);
-      if (minX == null || world.dx < minX) minX = world.dx;
-      if (maxX == null || world.dx > maxX) maxX = world.dx;
-      if (minY == null || world.dy < minY) minY = world.dy;
-      if (maxY == null || world.dy > maxY) maxY = world.dy;
-    }
-    return Rect.fromLTRB(minX ?? 0, minY ?? 0, maxX ?? 0, maxY ?? 0);
+  /// Checks whether this collider is touching any colliders on the specified layerMask or not.
+  /// - [layerMask]: Any colliders on any of these layers count as touching.
+  bool isTouchingLayers(int layerMask) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  bool containsPoint(
-    Offset worldPoint,
-    ObjectTransform t,
-    Offset compositeOffset,
-  ) {
-    final localPoint = t.worldToLocal(worldPoint) - (offset + compositeOffset);
-    if (vertices.length < 3) return false;
-
-    bool inside = false;
-    for (int i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-      if (((vertices[i].dy > localPoint.dy) !=
-              (vertices[j].dy > localPoint.dy)) &&
-          (localPoint.dx <
-              (vertices[j].dx - vertices[i].dx) *
-                      (localPoint.dy - vertices[i].dy) /
-                      (vertices[j].dy - vertices[i].dy) +
-                  vertices[i].dx)) {
-        inside = !inside;
-      }
-    }
-    return inside;
+  /// TODO.
+  /// - [contactFilter]: The contact filter used to filter the results differently, such as by layer mask, Z depth. Note that normal angle is not used for overlap testing.
+  /// - [results]: The list to receive results.
+  List<Collider> overlap(ContactFilter contactFilter, int results) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
+
+  /// Check whether this collider is touching the collider or not.
+  /// - [collider]: The collider to check if it is touching this collider.
+  bool isTouching(Collider collider) {
+    throw UnimplementedError('Implemented via Physics Worker');
+  }
+
 }

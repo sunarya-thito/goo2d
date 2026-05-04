@@ -1,387 +1,143 @@
-import 'dart:isolate';
-import 'dart:typed_data';
-import 'package:flutter/painting.dart';
-import 'package:goo2d/src/physics/core/physics_world.dart';
-import 'package:goo2d/src/physics/core/physics_body.dart';
-import 'package:goo2d/src/physics/core/physics_shape.dart';
-import 'package:goo2d/src/physics/core/physics_joint.dart';
-import 'package:goo2d/src/physics/worker/physics_protocol.dart';
+import 'package:vector_math/vector_math_64.dart';
+import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
+import 'package:goo2d/src/physics/worker/data/raycast_hit_data.dart';
+import 'package:goo2d/src/physics/worker/data/contact_point_data.dart';
 
-class PhysicsWorkerManager {
-  final Map<int, PhysicsWorld> worlds = {};
-  final void Function(ByteData) onResponse;
-  PhysicsWorkerManager({required this.onResponse});
-  void handleMessage(ByteData message) {
-    final buffer = PhysicsBuffer(message);
-    final packetId = buffer.readUint8();
-    final worldId = buffer.readInt32();
+/// Abstract interface for physics execution strategies.
+///
+/// Two implementations exist:
+/// - [DirectPhysicsWorker]: `object → invocation` (no serialization).
+/// - [IsolatePhysicsWorker]: `object → binary → isolate → binary → invocation`.
+abstract class PhysicsWorker {
+  Future<void> initialize();
+  void dispose();
+  void step(double deltaTime);
 
-    if (packetId == PhysicsPacket.createWorld) {
-      worlds[worldId] = PhysicsWorld();
-      return;
-    }
+  // ===================== Global Settings =====================
+  Future<void> setGravity(Vector2 value);
+  Future<Vector2> getGravity();
+  Future<void> setCallbacksOnDisable(bool value);
+  Future<bool> getCallbacksOnDisable();
+  Future<void> setBounceThreshold(double value);
+  Future<double> getBounceThreshold();
+  Future<void> setContactThreshold(double value);
+  Future<double> getContactThreshold();
+  Future<void> setBaumgarteTOIScale(double value);
+  Future<double> getBaumgarteTOIScale();
+  Future<void> setBaumgarteScale(double value);
+  Future<double> getBaumgarteScale();
+  Future<void> setAngularSleepTolerance(double value);
+  Future<double> getAngularSleepTolerance();
+  Future<void> setLinearSleepTolerance(double value);
+  Future<double> getLinearSleepTolerance();
+  Future<void> setDefaultContactOffset(double value);
+  Future<double> getDefaultContactOffset();
+  Future<void> setMaxAngularCorrection(double value);
+  Future<double> getMaxAngularCorrection();
+  Future<void> setMaxLinearCorrection(double value);
+  Future<double> getMaxLinearCorrection();
+  Future<void> setMaxRotationSpeed(double value);
+  Future<double> getMaxRotationSpeed();
+  Future<void> setMaxTranslationSpeed(double value);
+  Future<double> getMaxTranslationSpeed();
+  Future<void> setMinSubStepFPS(double value);
+  Future<double> getMinSubStepFPS();
+  Future<void> setTimeToSleep(double value);
+  Future<double> getTimeToSleep();
+  Future<void> setPositionIterations(int value);
+  Future<int> getPositionIterations();
+  Future<void> setVelocityIterations(int value);
+  Future<int> getVelocityIterations();
+  Future<void> setMaxSubStepCount(int value);
+  Future<int> getMaxSubStepCount();
+  Future<int> getMaxPolygonShapeVertices();
+  Future<int> getAllLayers();
+  Future<int> getDefaultRaycastLayers();
+  Future<int> getIgnoreRaycastLayer();
+  Future<void> setSimulationLayers(int value);
+  Future<int> getSimulationLayers();
+  Future<void> setSimulationMode(int value);
+  Future<int> getSimulationMode();
+  Future<void> setQueriesStartInColliders(bool value);
+  Future<bool> getQueriesStartInColliders();
+  Future<void> setQueriesHitTriggers(bool value);
+  Future<bool> getQueriesHitTriggers();
+  Future<void> setReuseCollisionCallbacks(bool value);
+  Future<bool> getReuseCollisionCallbacks();
+  Future<void> setUseSubStepping(bool value);
+  Future<bool> getUseSubStepping();
+  Future<void> setUseSubStepContacts(bool value);
+  Future<bool> getUseSubStepContacts();
 
-    final world = worlds[worldId];
-    if (world == null) return;
+  // ===================== Layer Collision =====================
+  Future<bool> getIgnoreLayerCollision(int layer1, int layer2);
+  Future<void> setIgnoreLayerCollision(int layer1, int layer2, bool ignore);
+  Future<int> getLayerCollisionMask(int layer);
+  Future<void> setLayerCollisionMask(int layer, int mask);
+  Future<void> ignoreCollision(int colliderA, int colliderB, bool ignore);
+  Future<bool> getIgnoreCollision(int colliderA, int colliderB);
 
-    switch (packetId) {
-      case PhysicsPacket.destroyWorld:
-        worlds.remove(worldId);
-        break;
+  // ===================== Body Operations =====================
+  Future<int> createBody();
+  Future<void> destroyBody(int handle);
+  // Property access uses generic get/set by property index
+  Future<Object?> getBodyProperty(int handle, int property);
+  Future<void> setBodyProperty(int handle, int property, Object? value);
+  // Methods
+  Future<void> bodyAddForce(int handle, Vector2 force, int mode);
+  Future<void> bodyAddForceAtPosition(int handle, Vector2 force, Vector2 position, int mode);
+  Future<void> bodyAddTorque(int handle, double torque, int mode);
+  Future<void> bodyAddRelativeForce(int handle, Vector2 force, int mode);
+  Future<void> bodyMovePosition(int handle, Vector2 position);
+  Future<void> bodyMoveRotation(int handle, double angle);
+  Future<void> bodyMovePositionAndRotation(int handle, Vector2 position, double angle);
+  Future<void> bodySetRotation(int handle, double angle);
+  Future<void> bodyWakeUp(int handle);
+  Future<void> bodySleep(int handle);
+  Future<bool> bodyIsAwake(int handle);
+  Future<bool> bodyIsSleeping(int handle);
+  Future<Vector2> bodyGetPoint(int handle, Vector2 worldPoint);
+  Future<Vector2> bodyGetRelativePoint(int handle, Vector2 localPoint);
+  Future<Vector2> bodyGetVector(int handle, Vector2 worldVector);
+  Future<Vector2> bodyGetRelativeVector(int handle, Vector2 localVector);
+  Future<Vector2> bodyGetPointVelocity(int handle, Vector2 worldPoint);
+  Future<Vector2> bodyGetRelativePointVelocity(int handle, Vector2 localPoint);
+  Future<Vector2> bodyClosestPoint(int handle, Vector2 position);
 
-      case PhysicsPacket.addBody:
-        final id = buffer.readInt32();
-        final type = buffer.readUint8();
-        final body = PhysicsBody(id: id, type: type);
-        body.setMass(buffer.readFloat32());
-        body.drag = buffer.readFloat32();
-        body.angularDrag = buffer.readFloat32();
-        body.freezeRotation = buffer.readBool();
-        body.gravityScale = buffer.readFloat32();
-        body.position = Offset(buffer.readFloat32(), buffer.readFloat32());
-        body.rotation = buffer.readFloat32();
-        world.bodies[id] = body;
-        break;
+  // ===================== Collider Operations =====================
+  Future<int> createCollider(ColliderShapeType type, int bodyHandle);
+  Future<void> destroyCollider(int handle);
+  Future<Object?> getColliderProperty(int handle, int property);
+  Future<void> setColliderProperty(int handle, int property, Object? value);
+  Future<Vector2> colliderClosestPoint(int handle, Vector2 position);
+  Future<double> colliderDistance(int handleA, int handleB);
+  Future<bool> colliderIsTouching(int handleA, int handleB);
+  Future<bool> colliderIsTouchingLayers(int handle, int layerMask);
 
-      case PhysicsPacket.removeBody:
-        world.bodies.remove(buffer.readInt32());
-        break;
+  // ===================== Joint Operations =====================
+  Future<int> createJoint(int type, int bodyHandleA);
+  Future<void> destroyJoint(int handle);
+  Future<Object?> getJointProperty(int handle, int property);
+  Future<void> setJointProperty(int handle, int property, Object? value);
 
-      case PhysicsPacket.updateBody:
-        final id = buffer.readInt32();
-        final body = world.bodies[id];
-        if (body != null) {
-          body.setMass(buffer.readFloat32());
-          body.drag = buffer.readFloat32();
-          body.angularDrag = buffer.readFloat32();
-          body.freezeRotation = buffer.readBool();
-          body.gravityScale = buffer.readFloat32();
-        }
-        break;
+  // ===================== Effector Operations =====================
+  Future<int> createEffector(int type);
+  Future<void> destroyEffector(int handle);
+  Future<Object?> getEffectorProperty(int handle, int property);
+  Future<void> setEffectorProperty(int handle, int property, Object? value);
 
-      case PhysicsPacket.addShape:
-        final shapeId = buffer.readInt32();
-        final bodyId = buffer.readInt32();
-        final body = world.bodies[bodyId];
-        if (body == null) break;
-
-        final isTrigger = buffer.readBool();
-        final offsetX = buffer.readFloat32();
-        final offsetY = buffer.readFloat32();
-        final bounciness = buffer.readFloat32();
-        final friction = buffer.readFloat32();
-        final isOneWay = buffer.readBool();
-        final oneWayAngle = buffer.readFloat32();
-        final oneWayArc = buffer.readFloat32();
-        final shapeType = buffer.readUint8();
-
-        if (shapeType == PhysicsPacket.shapeComposite) {
-          final count = buffer.readInt32();
-          for (int i = 0; i < count; i++) {
-            final sOffX = buffer.readFloat32();
-            final sOffY = buffer.readFloat32();
-            final sB = buffer.readFloat32();
-            final sF = buffer.readFloat32();
-            final sTrig = buffer.readBool();
-            final sOW = buffer.readBool();
-            final sOWAngle = buffer.readFloat32();
-            final sOWArc = buffer.readFloat32();
-            final sType = buffer.readUint8();
-
-            final shape = _readShape(buffer, sType);
-            shape.id = shapeId;
-            shape.isTrigger = sTrig;
-            shape.localOffset = Offset(sOffX, sOffY) + Offset(offsetX, offsetY);
-            shape.bounciness = sB;
-            shape.friction = sF;
-            shape.isOneWay = sOW;
-            shape.oneWayAngle = sOWAngle;
-            shape.oneWayArc = sOWArc;
-            shape.body = body;
-          }
-        } else {
-          final shape = _readShape(buffer, shapeType);
-          shape.id = shapeId;
-          shape.isTrigger = isTrigger;
-          shape.localOffset = Offset(offsetX, offsetY);
-          shape.bounciness = bounciness;
-          shape.friction = friction;
-          shape.isOneWay = isOneWay;
-          shape.oneWayAngle = oneWayAngle;
-          shape.oneWayArc = oneWayArc;
-          shape.body = body;
-        }
-        break;
-
-      case PhysicsPacket.removeShape:
-        final id = buffer.readInt32();
-        for (final body in world.bodies.values) {
-          body.shapes.removeWhere((s) => s.id == id);
-        }
-        break;
-
-      case PhysicsPacket.addJoint:
-        final id = buffer.readInt32();
-        final bodyAId = buffer.readInt32();
-        final bodyBId = buffer.readInt32();
-        final jointType = buffer.readUint8();
-
-        Joint joint;
-        if (jointType == PhysicsPacket.jointDistance) {
-          joint = DistanceJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            length: buffer.readFloat32(),
-          );
-        } else if (jointType == PhysicsPacket.jointHinge) {
-          joint = HingeJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
-          );
-        } else if (jointType == PhysicsPacket.jointSpring) {
-          joint = SpringJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            restLength: buffer.readFloat32(),
-            stiffness: buffer.readFloat32(),
-            damping: buffer.readFloat32(),
-          );
-        } else if (jointType == PhysicsPacket.jointSlider) {
-          joint = SliderJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            axis: Offset(buffer.readFloat32(), buffer.readFloat32()),
-          );
-        } else if (jointType == PhysicsPacket.jointWheel) {
-          joint = WheelJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            anchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            anchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            suspensionAxis: Offset(buffer.readFloat32(), buffer.readFloat32()),
-          );
-        } else if (jointType == PhysicsPacket.jointFixed) {
-          joint = FixedJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            localAnchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            localAnchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            referenceAngle: buffer.readFloat32(),
-          );
-        } else if (jointType == PhysicsPacket.jointFriction) {
-          joint = FrictionJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            localAnchorA: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            localAnchorB: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            maxForce: buffer.readFloat32(),
-            maxTorque: buffer.readFloat32(),
-          );
-        } else if (jointType == PhysicsPacket.jointRelative) {
-          joint = RelativeJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            linearOffset: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            angularOffset: buffer.readFloat32(),
-            maxForce: buffer.readFloat32(),
-            maxTorque: buffer.readFloat32(),
-          );
-        } else if (jointType == PhysicsPacket.jointTarget) {
-          joint = TargetJoint(
-            id: id,
-            bodyAId: bodyAId,
-            bodyBId: bodyBId,
-            target: Offset(buffer.readFloat32(), buffer.readFloat32()),
-            maxForce: buffer.readFloat32(),
-            frequency: buffer.readFloat32(),
-            dampingRatio: buffer.readFloat32(),
-          );
-        } else {
-          break;
-        }
-
-        world.joints[id] = joint;
-        break;
-
-      case PhysicsPacket.removeJoint:
-        world.joints.remove(buffer.readInt32());
-        break;
-
-      case PhysicsPacket.applyForce:
-        final body = world.bodies[buffer.readInt32()];
-        body?.applyForce(Offset(buffer.readFloat32(), buffer.readFloat32()));
-        break;
-
-      case PhysicsPacket.applyImpulse:
-        final body = world.bodies[buffer.readInt32()];
-        body?.applyImpulse(Offset(buffer.readFloat32(), buffer.readFloat32()));
-        break;
-
-      case PhysicsPacket.applyTorque:
-        final body = world.bodies[buffer.readInt32()];
-        body?.applyTorque(buffer.readFloat32());
-        break;
-
-      case PhysicsPacket.applyAngularImpulse:
-        final body = world.bodies[buffer.readInt32()];
-        body?.applyAngularImpulse(buffer.readFloat32());
-        break;
-
-      case PhysicsPacket.setGravity:
-        world.gravity = Offset(buffer.readFloat32(), buffer.readFloat32());
-        break;
-
-      case PhysicsPacket.syncVelocity:
-        final body = world.bodies[buffer.readInt32()];
-        if (body != null) {
-          body.velocity = Offset(buffer.readFloat32(), buffer.readFloat32());
-        }
-        break;
-
-      case PhysicsPacket.syncAngularVelocity:
-        final body = world.bodies[buffer.readInt32()];
-        if (body != null) {
-          body.angularVelocity = buffer.readFloat32();
-        }
-        break;
-
-      case PhysicsPacket.raycast:
-        final requestId = buffer.readInt32();
-        final origin = Offset(buffer.readFloat32(), buffer.readFloat32());
-        final direction = Offset(buffer.readFloat32(), buffer.readFloat32());
-        final maxDistance = buffer.readFloat32();
-
-        final hit = world.raycast(origin, direction, maxDistance);
-
-        final respBuf = PhysicsBuffer.fixed(37);
-        respBuf.writeUint8(PhysicsPacket.raycastResult);
-        respBuf.writeInt32(worldId);
-        respBuf.writeInt32(requestId);
-        respBuf.writeBool(hit != null);
-        if (hit != null) {
-          respBuf.writeInt32(hit.shapeId);
-          respBuf.writeFloat32(hit.point.dx);
-          respBuf.writeFloat32(hit.point.dy);
-          respBuf.writeFloat32(hit.normal.dx);
-          respBuf.writeFloat32(hit.normal.dy);
-          respBuf.writeFloat32(hit.distance);
-          respBuf.writeFloat32(hit.fraction);
-        }
-        onResponse(respBuf.data);
-        break;
-
-      case PhysicsPacket.step:
-        final dt = buffer.readFloat32();
-        final kinCount = buffer.readInt32();
-        for (int i = 0; i < kinCount; i++) {
-          final id = buffer.readInt32();
-          final px = buffer.readFloat32();
-          final py = buffer.readFloat32();
-          final rot = buffer.readFloat32();
-          final body = world.bodies[id];
-          if (body != null) {
-            body.position = Offset(px, py);
-            body.rotation = rot;
-          }
-        }
-
-        final result = world.step(dt);
-
-        // Encode step result
-        final dynamicBodies = world.bodies.values
-            .where((b) => b.type == 0)
-            .toList(); // dynamic
-        final respSize =
-            1 +
-            4 +
-            4 +
-            (dynamicBodies.length * 28) +
-            4 +
-            (result.contacts.length * 32);
-        final respBuf = PhysicsBuffer.fixed(respSize);
-        respBuf.writeUint8(PhysicsPacket.stepResult);
-        respBuf.writeInt32(worldId);
-        respBuf.writeInt32(dynamicBodies.length);
-        for (final b in dynamicBodies) {
-          respBuf.writeInt32(b.id);
-          respBuf.writeFloat32(b.position.dx);
-          respBuf.writeFloat32(b.position.dy);
-          respBuf.writeFloat32(b.rotation);
-          respBuf.writeFloat32(b.velocity.dx);
-          respBuf.writeFloat32(b.velocity.dy);
-          respBuf.writeFloat32(b.angularVelocity);
-        }
-
-        respBuf.writeInt32(result.contacts.length);
-        for (final c in result.contacts) {
-          respBuf.writeInt32(c.shapeAId);
-          respBuf.writeInt32(c.shapeBId);
-          respBuf.writeFloat32(c.manifold.contactPoint.dx);
-          respBuf.writeFloat32(c.manifold.contactPoint.dy);
-          respBuf.writeFloat32(c.manifold.normal.dx);
-          respBuf.writeFloat32(c.manifold.normal.dy);
-          respBuf.writeFloat32(c.impulse);
-        }
-
-        onResponse(respBuf.data);
-        break;
-    }
-  }
-
-  PhysicsShape _readShape(PhysicsBuffer buffer, int shapeType) {
-    if (shapeType == 0) {
-      // Box
-      return PhysicsBox(buffer.readFloat32(), buffer.readFloat32());
-    } else if (shapeType == 1) {
-      // Circle
-      return PhysicsCircle(buffer.readFloat32());
-    } else if (shapeType == 2) {
-      // Polygon
-      final count = buffer.readInt32();
-      final verts = List.generate(
-        count,
-        (_) => Offset(buffer.readFloat32(), buffer.readFloat32()),
-      );
-      return PhysicsPolygon(verts);
-    } else {
-      return PhysicsCapsule(
-        buffer.readFloat32(),
-        buffer.readFloat32(),
-        buffer.readUint8() == 1
-            ? CapsuleDirection.vertical
-            : CapsuleDirection.horizontal,
-      );
-    }
-  }
-}
-
-void physicsWorkerEntry(SendPort mainSendPort) {
-  final workerReceivePort = ReceivePort();
-  mainSendPort.send(workerReceivePort.sendPort);
-
-  final manager = PhysicsWorkerManager(
-    onResponse: (data) => mainSendPort.send(data),
-  );
-
-  workerReceivePort.listen((message) {
-    if (message is ByteData) {
-      manager.handleMessage(message);
-    }
-  });
+  // ===================== Queries =====================
+  Future<List<RaycastHitData>> raycast(Vector2 origin, Vector2 direction, double distance, int layerMask, double minDepth, double maxDepth);
+  Future<List<RaycastHitData>> linecast(Vector2 start, Vector2 end, int layerMask, double minDepth, double maxDepth);
+  Future<List<RaycastHitData>> boxCast(Vector2 origin, Vector2 size, double angle, Vector2 direction, double distance, int layerMask, double minDepth, double maxDepth);
+  Future<List<RaycastHitData>> circleCast(Vector2 origin, double radius, Vector2 direction, double distance, int layerMask, double minDepth, double maxDepth);
+  Future<List<RaycastHitData>> capsuleCast(Vector2 origin, Vector2 size, int capsuleDirection, double angle, Vector2 direction, double distance, int layerMask, double minDepth, double maxDepth);
+  Future<List<int>> overlapCircle(Vector2 point, double radius, int layerMask, double minDepth, double maxDepth);
+  Future<List<int>> overlapBox(Vector2 point, Vector2 size, double angle, int layerMask, double minDepth, double maxDepth);
+  Future<List<int>> overlapPoint(Vector2 point, int layerMask, double minDepth, double maxDepth);
+  Future<Vector2> closestPoint(Vector2 position, int colliderHandle);
+  Future<List<ContactPointData>> getContacts(int colliderHandle);
+  Future<List<int>> getContactColliders(int colliderHandle);
+  Future<List<int>> overlapCollider(int colliderHandle);
+  Future<void> syncTransforms();
 }

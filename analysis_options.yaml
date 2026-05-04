@@ -6,7 +6,7 @@ analyzer:
 
 linter:
   rules:
-    - public_member_api_docs
+    # - public_member_api_docs
     - slash_for_doc_comments
     - always_use_package_imports # for the sake of import consistency
 

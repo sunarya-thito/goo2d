@@ -1,198 +1,52 @@
-import 'package:flutter/painting.dart';
-import 'package:meta/meta.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/physics/core/physics_joint.dart' as core;
 
-abstract class Joint extends Component with LifecycleListener {
-  Rigidbody? connectedBody;
-  Offset anchor = Offset.zero;
-  Offset connectedAnchor = Offset.zero;
-  bool enableCollision = false;
-  @internal
-  int? internalId;
-  Rigidbody get rigidbody => gameObject.getComponent<Rigidbody>();
+/// Parent class for joints to connect Rigidbody2D objects.
+/// 
+/// Equivalent to Unity's `Joint2D`.
+class Joint extends Component {
+  /// Gets the reaction torque of the joint.
+  double get reactionTorque => throw UnimplementedError('Implemented via Physics Worker');
+  set reactionTorque(double value) => throw UnimplementedError('Implemented via Physics Worker');
 
-  @override
-  void onMounted() {
-    game.getSystem<PhysicsSystem>()?.registerJoint(this);
+  /// The Rigidbody2D attached to the Joint2D.
+  Rigidbody get attachedRigidbody => throw UnimplementedError('Implemented via Physics Worker');
+  set attachedRigidbody(Rigidbody value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The action to take when the joint breaks the breakForce or breakTorque.
+  int get breakAction => throw UnimplementedError('Implemented via Physics Worker');
+  set breakAction(int value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Gets the reaction force of the joint.
+  Vector2 get reactionForce => throw UnimplementedError('Implemented via Physics Worker');
+  set reactionForce(Vector2 value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The torque that needs to be applied for this joint to break.
+  double get breakTorque => throw UnimplementedError('Implemented via Physics Worker');
+  set breakTorque(double value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The force that needs to be applied for this joint to break.
+  double get breakForce => throw UnimplementedError('Implemented via Physics Worker');
+  set breakForce(double value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// The Rigidbody2D object to which the other end of the joint is attached (ie, the object without the joint component).
+  Rigidbody get connectedBody => throw UnimplementedError('Implemented via Physics Worker');
+  set connectedBody(Rigidbody value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Should the two Rigidbody2D connected with this joint collide with each other?
+  bool get enableCollision => throw UnimplementedError('Implemented via Physics Worker');
+  set enableCollision(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+
+  /// Gets the reaction torque of the joint given the specified timeStep.
+  /// - [timeStep]: The time to calculate the reaction torque for.
+  double getReactionTorque(double timeStep) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @override
-  void onUnmounted() {
-    game.getSystem<PhysicsSystem>()?.unregisterJoint(this);
+  /// Gets the reaction force of the joint given the specified timeStep.
+  /// - [timeStep]: The time to calculate the reaction force for.
+  Vector2 getReactionForce(double timeStep) {
+    throw UnimplementedError('Implemented via Physics Worker');
   }
 
-  @internal
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId);
-}
-
-class DistanceJoint extends Joint {
-  double distance = 0.0;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    double finalDist = distance;
-    if (finalDist <= 0) {
-      // Calculate initial distance
-      final pA = rigidbody.transform.localToWorld(anchor);
-      final pB =
-          connectedBody?.transform.localToWorld(connectedAnchor) ??
-          connectedBody?.transform.position ??
-          Offset.zero; // Fallback for world anchor
-      finalDist = (pB - pA).distance;
-    }
-
-    return core.DistanceJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      length: finalDist,
-    );
-  }
-}
-
-class HingeJoint extends Joint {
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.HingeJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-    );
-  }
-}
-
-class SpringJoint extends Joint {
-  double restLength = 0.0;
-  double stiffness = 100.0;
-  double damping = 10.0;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.SpringJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      restLength: restLength,
-      stiffness: stiffness,
-      damping: damping,
-    );
-  }
-}
-
-class SliderJoint extends Joint {
-  Offset axis = const Offset(1, 0);
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.SliderJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      axis: axis,
-    );
-  }
-}
-
-class WheelJoint extends Joint {
-  Offset suspensionAxis = const Offset(0, 1);
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.WheelJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      suspensionAxis: suspensionAxis,
-    );
-  }
-}
-
-class FixedJoint extends Joint {
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    final rbA = rigidbody;
-    final rbB = connectedBody;
-    double refAngle = 0.0;
-    if (rbB != null) {
-      refAngle = rbB.transform.angle - rbA.transform.angle;
-    }
-
-    return core.FixedJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      localAnchorA: anchor,
-      localAnchorB: connectedAnchor,
-      referenceAngle: refAngle,
-    );
-  }
-}
-
-class FrictionJoint extends Joint {
-  double maxForce = 10.0;
-  double maxTorque = 1.0;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.FrictionJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      localAnchorA: anchor,
-      localAnchorB: connectedAnchor,
-      maxForce: maxForce,
-      maxTorque: maxTorque,
-    );
-  }
-}
-
-class RelativeJoint extends Joint {
-  Offset linearOffset = Offset.zero;
-  double angularOffset = 0.0;
-  double maxForce = 1000.0;
-  double maxTorque = 1000.0;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.RelativeJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      linearOffset: linearOffset,
-      angularOffset: angularOffset,
-      maxForce: maxForce,
-      maxTorque: maxTorque,
-    );
-  }
-}
-
-class TargetJoint extends Joint {
-  Offset target = Offset.zero;
-  double maxForce = 5000.0;
-  double frequency = 5.0;
-  double dampingRatio = 0.7;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.TargetJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: -1, // No connected body for target joint
-      target: target,
-      maxForce: maxForce,
-      frequency: frequency,
-      dampingRatio: dampingRatio,
-    );
-  }
 }
