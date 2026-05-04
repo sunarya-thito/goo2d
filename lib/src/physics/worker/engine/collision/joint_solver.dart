@@ -14,15 +14,15 @@ void solveJointConstraints(PhysicsEngine engine, double dt) {
     final bB = joint.bodyHandleB >= 0 ? engine.bodies[joint.bodyHandleB] : null;
 
     switch (joint.jointType) {
-      case 0: _solveDistanceJoint(joint, bA, bB, dt, engine);
-      case 1: _solveFixedJoint(joint, bA, bB, dt, engine);
-      case 2: _solveFrictionJoint(joint, bA, bB, dt, engine);
-      case 3: _solveHingeJoint(joint, bA, bB, dt, engine);
-      case 4: _solveRelativeJoint(joint, bA, bB, dt, engine);
-      case 5: _solveSliderJoint(joint, bA, bB, dt, engine);
-      case 6: _solveSpringJoint(joint, bA, bB, dt, engine);
-      case 7: _solveTargetJoint(joint, bA, bB, dt, engine);
-      case 8: _solveWheelJoint(joint, bA, bB, dt, engine);
+      case 0: _solveDistanceJoint(joint, bA, bB, dt, engine); break;
+      case 1: _solveFixedJoint(joint, bA, bB, dt, engine); break;
+      case 2: _solveFrictionJoint(joint, bA, bB, dt, engine); break;
+      case 3: _solveHingeJoint(joint, bA, bB, dt, engine); break;
+      case 4: _solveRelativeJoint(joint, bA, bB, dt, engine); break;
+      case 5: _solveSliderJoint(joint, bA, bB, dt, engine); break;
+      case 6: _solveSpringJoint(joint, bA, bB, dt, engine); break;
+      case 7: _solveTargetJoint(joint, bA, bB, dt, engine); break;
+      case 8: _solveWheelJoint(joint, bA, bB, dt, engine); break;
     }
 
     // Check break force/torque
@@ -61,23 +61,27 @@ void _solveDistanceJoint(
 }
 
 Vector2 _computeDistanceImpulse(
-    PhysicsBody bA, PhysicsBody? bB, Vector2 normal, double error, double dt) {
-  final invMassA = _invMass(bA);
-  final invMassB = bB != null ? _invMass(bB) : 0.0;
-  final totalInvMass = invMassA + invMassB;
-  if (totalInvMass <= 0) return Vector2.zero();
+    PhysicsBody bA, PhysicsBody? bB, Vector2 normal, double error, double dt,
+    {Vector2? localAnchorA, Vector2? localAnchorB}) {
+  final anchorA = _worldAnchor(bA, localAnchorA ?? Vector2.zero());
+  final anchorB = bB != null
+      ? _worldAnchor(bB, localAnchorB ?? Vector2.zero())
+      : (localAnchorB ?? Vector2.zero());
+
+  final invMass = _computeEffectiveInvMass(bA, bB, anchorA, anchorB, normal);
+  if (invMass <= 0) return Vector2.zero();
 
   // Baumgarte stabilization with clamped bias to prevent explosion
   const beta = 0.2;
   const maxBias = 10.0;
   final bias = (beta / dt * error).clamp(-maxBias, maxBias);
 
-  // Relative velocity along normal
-  final relVel = _relativeVelocity(bA, bB, normal);
-  var lambda = -(relVel + bias) / totalInvMass;
+  // Relative velocity at points
+  final relVel = _relativeVelocityAtPoints(bA, bB, anchorA, anchorB, normal);
+  var lambda = -(relVel + bias) / invMass;
 
   // Clamp impulse to prevent numerical explosion
-  const maxLambda = 50.0;
+  const maxLambda = 100.0;
   lambda = lambda.clamp(-maxLambda, maxLambda);
 
   return normal * lambda;
@@ -272,16 +276,27 @@ void _solveSpringJoint(
   final error = dist - targetDist;
   final normal = delta / dist;
 
+  // Relative velocity at anchor points along normal
+  final relVel = _relativeVelocityAtPoints(bA, bB, anchorA, anchorB, normal);
+
+  // Effective mass for this constraint
+  final invMass = _computeEffectiveInvMass(bA, bB, anchorA, anchorB, normal);
+  if (invMass <= 0) return;
+  final mass = 1.0 / invMass;
+
   // Spring-damper force: F = -k*x - c*v
   final omega = 2.0 * math.pi * j.springFrequency;
-  final massA = bA.mass > 0 ? bA.mass : 1.0;
-  final k = massA * omega * omega;
-  final c = 2.0 * massA * j.springDampingRatio * omega;
+  final k = mass * omega * omega;
+  final c = 2.0 * mass * j.springDampingRatio * omega;
 
-  final relVel = _relativeVelocity(bA, bB, normal);
-  final force = k * error + c * relVel;
+  var force = k * error + c * relVel;
+  
+  // Clamp force to prevent explosion
+  const maxForce = 5000.0;
+  force = force.clamp(-maxForce, maxForce);
 
-  final impulse = normal * (force * dt);
+  // Impulse on B is -F*dt*normal.
+  final impulse = normal * (-force * dt);
   _applyJointImpulse(bA, bB, impulse, anchorA, anchorB);
 }
 
@@ -290,27 +305,34 @@ void _solveSpringJoint(
 void _solveTargetJoint(
     PhysicsJoint j, PhysicsBody bA, PhysicsBody? bB,
     double dt, PhysicsEngine engine) {
-  // Pulls body A toward target position
-  final delta = j.target - bA.position;
+  final anchorA = _worldAnchor(bA, j.anchor);
+  final target = j.target;
+
+  final delta = target - anchorA;
   final dist = delta.length;
   if (dist < 1e-10) return;
 
-  final invMassA = _invMass(bA);
-  if (invMassA <= 0) return;
-
   final normal = delta / dist;
+  final error = dist; // Target distance is 0
+
+  // Baumgarte stabilization
   const beta = 0.2;
-  final bias = beta / dt * dist;
-  final relVel = bA.linearVelocity.dot(normal);
-  var lambda = (bias - relVel) / invMassA;
+  final bias = (beta / dt * error).clamp(-10.0, 10.0);
 
-  // Clamp to max force
-  final maxLambda = j.targetMaxForce * dt;
-  if (maxLambda > 0) lambda = lambda.clamp(-maxLambda, maxLambda);
+  // Relative velocity at anchor point
+  final relVel = _relativeVelocityAtPoints(bA, null, anchorA, target, normal);
 
-  if (bA.bodyType == 0) {
-    bA.linearVelocity += normal * (lambda * invMassA);
-  }
+  final invMass = _computeEffectiveInvMass(bA, null, anchorA, target, normal);
+  if (invMass <= 0) return;
+
+  var lambda = -(relVel + bias) / invMass;
+  
+  // Clamp impulse
+  const maxLambda = 100.0;
+  lambda = lambda.clamp(-maxLambda, maxLambda);
+
+  final impulse = normal * lambda;
+  _applyJointImpulse(bA, null, impulse, anchorA, target);
 }
 
 // ===================== Wheel Joint =====================
@@ -384,6 +406,41 @@ Vector2 _worldAnchor(PhysicsBody body, Vector2 localAnchor) {
   );
 }
 
+double _relativeVelocityAtPoints(
+    PhysicsBody bA, PhysicsBody? bB, Vector2 pA, Vector2 pB, Vector2 axis) {
+  final rA = pA - bA.worldCenterOfMass;
+  final vA = bA.linearVelocity + _crossSV(bA.angularVelocity * math.pi / 180, rA);
+
+  if (bB == null) {
+    return -vA.dot(axis);
+  }
+
+  final rB = pB - bB.worldCenterOfMass;
+  final vB = bB.linearVelocity + _crossSV(bB.angularVelocity * math.pi / 180, rB);
+
+  return (vB - vA).dot(axis);
+}
+
+double _computeEffectiveInvMass(
+    PhysicsBody bA, PhysicsBody? bB, Vector2 pA, Vector2 pB, Vector2 axis) {
+  final invMassA = _invMass(bA);
+  final invIA = _invInertia(bA);
+  final rA = pA - bA.worldCenterOfMass;
+  final rnA = _cross2(rA, axis);
+
+  var k = invMassA + invIA * rnA * rnA;
+
+  if (bB != null) {
+    final invMassB = _invMass(bB);
+    final invIB = _invInertia(bB);
+    final rB = pB - bB.worldCenterOfMass;
+    final rnB = _cross2(rB, axis);
+    k += invMassB + invIB * rnB * rnB;
+  }
+
+  return k;
+}
+
 double _relativeVelocity(PhysicsBody bA, PhysicsBody? bB, Vector2 axis) {
   final vA = bA.linearVelocity.dot(axis);
   final vB = bB != null ? bB.linearVelocity.dot(axis) : 0.0;
@@ -393,22 +450,22 @@ double _relativeVelocity(PhysicsBody bA, PhysicsBody? bB, Vector2 axis) {
 void _applyJointImpulse(PhysicsBody bA, PhysicsBody? bB,
     Vector2 impulse, Vector2 anchorA, Vector2 anchorB) {
   if (bA.bodyType == 0) {
-    bA.linearVelocity += impulse * _invMass(bA);
+    bA.linearVelocity -= impulse * _invMass(bA);
     final rA = anchorA - bA.worldCenterOfMass;
-    bA.angularVelocity +=
+    bA.angularVelocity -=
         (rA.x * impulse.y - rA.y * impulse.x) * _invInertia(bA) * 180 / math.pi;
   }
   if (bB != null && bB.bodyType == 0) {
-    bB.linearVelocity -= impulse * _invMass(bB);
+    bB.linearVelocity += impulse * _invMass(bB);
     final rB = anchorB - bB.worldCenterOfMass;
-    bB.angularVelocity -=
+    bB.angularVelocity +=
         (rB.x * impulse.y - rB.y * impulse.x) * _invInertia(bB) * 180 / math.pi;
   }
 }
 
 void _applyLinearImpulse(PhysicsBody bA, PhysicsBody? bB, Vector2 impulse) {
-  if (bA.bodyType == 0) bA.linearVelocity += impulse * _invMass(bA);
-  if (bB != null && bB.bodyType == 0) bB.linearVelocity -= impulse * _invMass(bB);
+  if (bA.bodyType == 0) bA.linearVelocity -= impulse * _invMass(bA);
+  if (bB != null && bB.bodyType == 0) bB.linearVelocity += impulse * _invMass(bB);
 }
 
 void _applyAngularCorrection(
@@ -427,3 +484,6 @@ void _applyAngularCorrection(
   if (bA.bodyType == 0) bA.angularVelocity -= impulse * invIA;
   if (bB != null && bB.bodyType == 0) bB.angularVelocity += impulse * invIB;
 }
+double _cross2(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
+
+Vector2 _crossSV(double s, Vector2 v) => Vector2(-s * v.y, s * v.x);
