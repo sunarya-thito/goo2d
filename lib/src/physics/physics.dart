@@ -1,3 +1,4 @@
+export 'collision_listener.dart';
 export 'components/collider.dart';
 export 'components/colliders/box_collider.dart';
 export 'components/colliders/capsule_collider.dart';

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show Offset;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
@@ -77,6 +78,25 @@ class PolygonCollider extends Collider {
 
   /// Return the total number of points in the polygon in all paths.
   int getTotalPointCount() => _points.length;
+
+  @override
+  bool containsPoint(Offset position) {
+    if (_points.length < 3) return false;
+    final px = position.dx - offset.x;
+    final py = position.dy - offset.y;
+    // Ray-casting algorithm
+    bool inside = false;
+    int j = _points.length - 1;
+    for (int i = 0; i < _points.length; i++) {
+      final xi = _points[i].x, yi = _points[i].y;
+      final xj = _points[j].x, yj = _points[j].y;
+      if ((yi > py) != (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+        inside = !inside;
+      }
+      j = i;
+    }
+    return inside;
+  }
 
   /// Creates as regular primitive polygon with the specified number of sides.
   void createPrimitive(int sides, Vector2 scale, Vector2 offset) {

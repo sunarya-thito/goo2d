@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
@@ -36,5 +37,22 @@ class CapsuleCollider extends Collider {
   set direction(CapsuleDirection value) {
     _direction = value;
     handle.then((h) => worker.setColliderProperty(h, ColliderProp.capsuleDirection, value.index));
+  }
+
+  @override
+  bool containsPoint(Offset position) {
+    final px = position.dx - offset.x;
+    final py = position.dy - offset.y;
+    if (_direction == CapsuleDirection.vertical) {
+      final radius = _size.x / 2;
+      final halfBody = ((_size.y - _size.x) / 2).clamp(0.0, double.infinity);
+      final cy = py.clamp(-halfBody, halfBody);
+      return px * px + (py - cy) * (py - cy) <= radius * radius;
+    } else {
+      final radius = _size.y / 2;
+      final halfBody = ((_size.x - _size.y) / 2).clamp(0.0, double.infinity);
+      final cx = px.clamp(-halfBody, halfBody);
+      return (px - cx) * (px - cx) + py * py <= radius * radius;
+    }
   }
 }

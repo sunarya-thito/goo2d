@@ -229,7 +229,7 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
             ),
             ComponentWidget(
               Rigidbody.new.withInitialValues(
-                (c) => c.type = RigidbodyType.kinematic,
+                (c) => c.bodyType = RigidbodyType.kinematic,
               ),
             ),
             ComponentWidget(
@@ -335,7 +335,7 @@ class PlayerState extends GameState<Player> with Tickable {
 
     addComponent(
       ObjectTransform()..position = Offset.zero,
-      Rigidbody()..type = RigidbodyType.kinematic,
+      Rigidbody()..bodyType = RigidbodyType.kinematic,
       SpriteRenderer()
         ..sprite = GameSprite(
           texture: MyGameTexture.ship,
@@ -420,7 +420,7 @@ class PlayerState extends GameState<Player> with Tickable {
             ),
             ComponentWidget(
               Rigidbody.new.withInitialValues(
-                (c) => c.type = RigidbodyType.kinematic,
+                (c) => c.bodyType = RigidbodyType.kinematic,
               ),
             ),
             ComponentWidget(BulletOutOfScreenDestroyer.new),
@@ -455,7 +455,7 @@ class BulletController extends Behavior
   }
 
   @override
-  void onCollisionEnter(Collision collision) {
+  Future<void> onCollisionEnter(Collision collision) async {
     if (collision.otherCollider.gameObject.tryGetComponent<EnemyController>() !=
         null) {
       world._destroyObject(gameObject);
@@ -499,7 +499,7 @@ class EnemyController extends Behavior
   }
 
   @override
-  void onCollisionEnter(Collision collision) {
+  Future<void> onCollisionEnter(Collision collision) async {
     final other = collision.otherCollider;
     if (other.gameObject.tag == const GameTag('Player')) {
       const GameTag(

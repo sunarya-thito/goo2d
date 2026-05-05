@@ -27,7 +27,7 @@ void main() {
       'should detect onEnterScreen and onExitScreen based on camera view',
       (tester) async {
         final receiver = MockScreenReceiver();
-        final collider = BoxCollider()..size = const Size(2, 2);
+        final collider = BoxCollider()..size = Vector2(2, 2);
         final transform = ObjectTransform()
           ..localPosition = const Offset(100, 0);
 
@@ -86,8 +86,8 @@ void main() {
       tester,
     ) async {
       final receiver = MockScreenReceiver();
-      final collider = BoxCollider()..size = const Size(4, 4);
-      final transform = ObjectTransform()..localPosition = Offset.zero;
+      final collider = BoxCollider()..size = Vector2(4, 4);
+      final transform = ObjectTransform()..localPosition = Vector2.all(0);
 
       await tester.pumpWidget(
         Game(

@@ -229,9 +229,3 @@ extension OffsetExtension on Offset {
 extension SizeExtension on Size {
   Vector2 get asVector2 => Vector2(width, height);
 }
-
-extension ColliderExtension on Collider {
-  bool containsPoint(Offset point) {
-    return bounds.contains(point);
-  }
-}

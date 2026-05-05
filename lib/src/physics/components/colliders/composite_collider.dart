@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
@@ -95,4 +96,8 @@ class CompositeCollider extends Collider {
   void generateGeometry() {
     handle.then((h) => worker.colliderGenerateGeometry(h));
   }
+
+  // CompositeCollider geometry is only known to the physics worker — not testable synchronously.
+  @override
+  bool containsPoint(Offset position) => false;
 }

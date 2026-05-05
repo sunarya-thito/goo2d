@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_collider_ops.dart';
@@ -26,5 +27,12 @@ class CircleCollider extends Collider {
   set radius(double value) {
     _radius = value;
     handle.then((h) => worker.setColliderProperty(h, ColliderProp.circleRadius, value));
+  }
+
+  @override
+  bool containsPoint(Offset position) {
+    final dx = position.dx - offset.x;
+    final dy = position.dy - offset.y;
+    return dx * dx + dy * dy <= _radius * _radius;
   }
 }

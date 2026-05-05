@@ -1,4 +1,3 @@
-import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/goo2d.dart';
 
 /// Collision details returned by 2D physics callback functions.
@@ -9,21 +8,23 @@ class Collision {
   int contactCount = 0;
 
   /// The incoming GameObject involved in the collision.
-  GameObject? gameObject;
+  late GameObject gameObject;
 
   /// The incoming Collider2D involved in the collision with the otherCollider.
-  Collider? collider;
+  late Collider collider;
 
   /// Indicates whether the collision response or reaction is enabled or disabled.
   bool enabled = true;
 
   /// The incoming Rigidbody2D involved in the collision with the otherRigidbody.
+  /// Null when the object has no Rigidbody (e.g. static colliders).
   Rigidbody? rigidbody;
 
   /// The other Collider2D involved in the collision with the collider.
-  Collider? otherCollider;
+  late Collider otherCollider;
 
   /// The other Rigidbody2D involved in the collision with the rigidbody.
+  /// Null when the other object has no Rigidbody (e.g. static colliders).
   Rigidbody? otherRigidbody;
 
   /// The Transform of the incoming object involved in the collision.

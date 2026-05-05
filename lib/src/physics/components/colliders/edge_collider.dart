@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
@@ -94,4 +95,8 @@ class EdgeCollider extends Collider {
     this.points = points;
     return true;
   }
+
+  // Edge colliders have no area — hit testing is not supported.
+  @override
+  bool containsPoint(Offset position) => false;
 }

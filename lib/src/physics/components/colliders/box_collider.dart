@@ -1,3 +1,4 @@
+import 'dart:ui' show Offset;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
@@ -45,5 +46,12 @@ class BoxCollider extends Collider {
   set autoTiling(bool value) {
     _autoTiling = value;
     handle.then((h) => worker.setColliderProperty(h, ColliderProp.boxAutoTiling, value));
+  }
+
+  @override
+  bool containsPoint(Offset position) {
+    final dx = position.dx - offset.x;
+    final dy = position.dy - offset.y;
+    return dx.abs() <= _size.x / 2 && dy.abs() <= _size.y / 2;
   }
 }

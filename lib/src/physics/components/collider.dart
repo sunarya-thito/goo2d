@@ -270,6 +270,13 @@ abstract class Collider extends Component {
   /// Check if a collider overlaps a point in space.
   Future<bool> overlapPoint(Vector2 point) async => (await worker.overlapPoint(point, 1 << gameObject.layer, 0, 0)).contains(await handle);
 
+  /// Synchronous point-in-shape test in the object's local coordinate space.
+  ///
+  /// Used by the render hit-test system. The [position] is already transformed
+  /// into local game-unit space by [GameRenderObject.hitTest] before this is
+  /// called. Each Collider subclass overrides this with its own geometry test.
+  bool containsPoint(ui.Offset position) => false;
+
   /// The PhysicsMaterial2D that is shared by this Collider2D.
   PhysicsMaterial? get sharedMaterial => null;
   set sharedMaterial(PhysicsMaterial? value) {}
