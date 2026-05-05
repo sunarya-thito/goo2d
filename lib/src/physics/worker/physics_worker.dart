@@ -113,6 +113,7 @@ abstract class PhysicsWorker {
   Future<double> colliderDistance(int handleA, int handleB);
   Future<bool> colliderIsTouching(int handleA, int handleB);
   Future<bool> colliderIsTouchingLayers(int handle, int layerMask);
+  Future<void> colliderGenerateGeometry(int handle);
 
   // ===================== Joint Operations =====================
   Future<int> createJoint(int type, int bodyHandleA);

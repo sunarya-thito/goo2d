@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 /// Performs a linear interpolation between two values of type [T].
@@ -227,4 +228,10 @@ extension OffsetExtension on Offset {
 
 extension SizeExtension on Size {
   Vector2 get asVector2 => Vector2(width, height);
+}
+
+extension ColliderExtension on Collider {
+  bool containsPoint(Offset point) {
+    return bounds.contains(point);
+  }
 }

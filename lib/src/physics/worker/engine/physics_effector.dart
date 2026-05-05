@@ -31,7 +31,7 @@ class PhysicsEffector {
   bool useSideBounce = true;
   double surfaceArc = 180.0;
   double sideArc = 0.0;
-  int rotationalOffset = 0;
+  double rotationalOffset = 0.0;
 
   // Point
   double pointForceMagnitude = 0.0;

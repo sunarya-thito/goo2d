@@ -1,104 +1,60 @@
 import 'package:vector_math/vector_math_64.dart';
-import 'package:goo2d/goo2d.dart';
 
 /// A 2D Rectangle defined by X and Y position, width and height.
-/// 
-/// Equivalent to Unity's `Rect2D`.
+///
+/// Equivalent to Unity's `Rect`.
 class Rect {
-  /// Shorthand for writing new Rect(0,0,0,0).
-  static Rect get zero => throw UnimplementedError('Implemented via Physics Worker');
-  static set zero(Rect value) => throw UnimplementedError('Implemented via Physics Worker');
+  Rect(this.x, this.y, this.width, this.height);
+  Rect.fromMinMax(Vector2 min, Vector2 max)
+      : x = min.x, y = min.y, width = max.x - min.x, height = max.y - min.y;
 
-  /// Returns the normalized coordinates corresponding to the point.
-  /// - [rectangle]: Rectangle to get normalized coordinates inside.
-  /// - [point]: A point inside the rectangle to get normalized coordinates for.
-  static Vector2 pointToNormalized(Rect rectangle, Vector2 point) {
-    throw UnimplementedError('Implemented via Physics Worker');
+  double x;
+  double y;
+  double width;
+  double height;
+
+  double get xMin => x;
+  double get xMax => x + width;
+  double get yMin => y;
+  double get yMax => y + height;
+  Vector2 get min => Vector2(xMin, yMin);
+  Vector2 get max => Vector2(xMax, yMax);
+  Vector2 get center => Vector2(x + width / 2, y + height / 2);
+  Vector2 get size => Vector2(width, height);
+  Vector2 get position => Vector2(x, y);
+
+  set xMin(double v) { width += x - v; x = v; }
+  set xMax(double v) => width = v - x;
+  set yMin(double v) { height += y - v; y = v; }
+  set yMax(double v) => height = v - y;
+  set min(Vector2 v) { xMin = v.x; yMin = v.y; }
+  set max(Vector2 v) { xMax = v.x; yMax = v.y; }
+  set center(Vector2 v) { x = v.x - width / 2; y = v.y - height / 2; }
+  set size(Vector2 v) { width = v.x; height = v.y; }
+  set position(Vector2 v) { x = v.x; y = v.y; }
+
+  static Rect get zero => Rect(0, 0, 0, 0);
+
+  static Vector2 pointToNormalized(Rect rectangle, Vector2 point) =>
+      Vector2((point.x - rectangle.x) / rectangle.width, (point.y - rectangle.y) / rectangle.height);
+
+  static Vector2 normalizedToPoint(Rect rectangle, Vector2 normalizedRectCoordinates) =>
+      Vector2(rectangle.x + normalizedRectCoordinates.x * rectangle.width,
+              rectangle.y + normalizedRectCoordinates.y * rectangle.height);
+
+  static Rect minMaxRect(double xmin, double ymin, double xmax, double ymax) =>
+      Rect(xmin, ymin, xmax - xmin, ymax - ymin);
+
+  bool contains(Vector2 point) =>
+      point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height;
+
+  void set(double x, double y, double width, double height) {
+    this.x = x; this.y = y; this.width = width; this.height = height;
   }
 
-  /// Returns a point inside a rectangle, given normalized coordinates.
-  /// - [rectangle]: Rectangle to get a point inside.
-  /// - [normalizedRectCoordinates]: Normalized coordinates to get a point for.
-  static Vector2 normalizedToPoint(Rect rectangle, Vector2 normalizedRectCoordinates) {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
+  bool overlaps(Rect other) =>
+      xMax > other.xMin && xMin < other.xMax && yMax > other.yMin && yMin < other.yMax;
 
-  /// Creates a rectangle from min/max coordinate values.
-  /// - [xmin]: The minimum X coordinate.
-  /// - [ymin]: The minimum Y coordinate.
-  /// - [xmax]: The maximum X coordinate.
-  /// - [ymax]: The maximum Y coordinate.
-  static Rect minMaxRect(double xmin, double ymin, double xmax, double ymax) {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
-
-  /// The minimum Y coordinate of the rectangle.
-  double get yMin => throw UnimplementedError('Implemented via Physics Worker');
-  set yMin(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The position of the minimum corner of the rectangle.
-  Vector2 get min => throw UnimplementedError('Implemented via Physics Worker');
-  set min(Vector2 value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The position of the maximum corner of the rectangle.
-  Vector2 get max => throw UnimplementedError('Implemented via Physics Worker');
-  set max(Vector2 value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The height of the rectangle, measured from the Y position.
-  double get height => throw UnimplementedError('Implemented via Physics Worker');
-  set height(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The width and height of the rectangle.
-  Vector2 get size => throw UnimplementedError('Implemented via Physics Worker');
-  set size(Vector2 value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The position of the center of the rectangle.
-  Vector2 get center => throw UnimplementedError('Implemented via Physics Worker');
-  set center(Vector2 value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The maximum Y coordinate of the rectangle.
-  double get yMax => throw UnimplementedError('Implemented via Physics Worker');
-  set yMax(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The minimum X coordinate of the rectangle.
-  double get xMin => throw UnimplementedError('Implemented via Physics Worker');
-  set xMin(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The X coordinate of the rectangle.
-  double get x => throw UnimplementedError('Implemented via Physics Worker');
-  set x(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The width of the rectangle, measured from the X position.
-  double get width => throw UnimplementedError('Implemented via Physics Worker');
-  set width(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The maximum X coordinate of the rectangle.
-  double get xMax => throw UnimplementedError('Implemented via Physics Worker');
-  set xMax(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The X and Y position of the rectangle.
-  Vector2 get position => throw UnimplementedError('Implemented via Physics Worker');
-  set position(Vector2 value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The Y coordinate of the rectangle.
-  double get y => throw UnimplementedError('Implemented via Physics Worker');
-  set y(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// Returns true if the x and y components of point is a point inside this rectangle. If allowInverse is present and true, the width and height of the Rect are allowed to take negative values (ie, the min value is greater than the max), and the test will still work.
-  /// - [point]: Point to test.
-  bool contains(Vector2 point) {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
-
-  /// Set components of an existing Rect.
-  void set(double p0, double p1, double p2, double p3) {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
-
-  /// Returns true if the other rectangle overlaps this one. If allowInverse is present and true, the widths and heights of the Rects are allowed to take negative values (ie, the min value is greater than the max), and the test will still work.
-  /// - [other]: Other rectangle to test overlapping with.
-  bool overlaps(Rect other) {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
-
+  @override
+  String toString() => 'Rect(x: $x, y: $y, width: $width, height: $height)';
 }

@@ -1,32 +1,74 @@
-import 'package:vector_math/vector_math_64.dart';
+import 'package:meta/meta.dart';
+import 'package:goo2d/src/physics/worker/direct/direct_effector_ops.dart';
+import 'package:goo2d/src/physics/worker/data/effector_type.dart';
 import 'package:goo2d/goo2d.dart';
 
-/// Applies tangent forces along the surfaces of colliders.
-/// 
+/// Applies force along the surface of a collider.
+///
 /// Equivalent to Unity's `SurfaceEffector2D`.
-class SurfaceEffector extends Component {
-  /// The speed variation (from zero to the variation) added to base speed to be applied.
-  double get speedVariation => throw UnimplementedError('Implemented via Physics Worker');
-  set speedVariation(double value) => throw UnimplementedError('Implemented via Physics Worker');
+class SurfaceEffector extends Effector {
+  @override
+  EffectorType get effectorType => EffectorType.surface;
 
-  /// The scale of the impulse force applied while attempting to reach the surface speed.
-  double get forceScale => throw UnimplementedError('Implemented via Physics Worker');
-  set forceScale(double value) => throw UnimplementedError('Implemented via Physics Worker');
+  @override
+  @protected
+  void syncProperties() {
+    super.syncProperties();
+    handle.then((h) {
+      worker.setEffectorProperty(h, EffectorProp.speed, _speed);
+      worker.setEffectorProperty(h, EffectorProp.speedVariation, _speedVariation);
+      worker.setEffectorProperty(h, EffectorProp.forceScale, _forceScale);
+      worker.setEffectorProperty(h, EffectorProp.useContactForce, _useContactForce);
+      worker.setEffectorProperty(h, EffectorProp.useFriction, _useFriction);
+      worker.setEffectorProperty(h, EffectorProp.useBounce, _useBounce);
+    });
+  }
 
-  /// Should bounce be used for any contact with the surface?
-  bool get useBounce => throw UnimplementedError('Implemented via Physics Worker');
-  set useBounce(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  double _speed = 1.0;
+  /// Speed to maintain along the surface.
+  double get speed => _speed;
+  set speed(double value) {
+    _speed = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.speed, value));
+  }
 
-  /// The speed to be maintained along the surface.
-  double get speed => throw UnimplementedError('Implemented via Physics Worker');
-  set speed(double value) => throw UnimplementedError('Implemented via Physics Worker');
+  double _speedVariation = 0.0;
+  /// Variation in surface speed.
+  double get speedVariation => _speedVariation;
+  set speedVariation(double value) {
+    _speedVariation = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.speedVariation, value));
+  }
 
-  /// Should the impulse force but applied to the contact point?
-  bool get useContactForce => throw UnimplementedError('Implemented via Physics Worker');
-  set useContactForce(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  double _forceScale = 1.0;
+  /// Scale applied to the force.
+  double get forceScale => _forceScale;
+  set forceScale(double value) {
+    _forceScale = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.forceScale, value));
+  }
 
-  /// Should friction be used for any contact with the surface?
-  bool get useFriction => throw UnimplementedError('Implemented via Physics Worker');
-  set useFriction(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  bool _useContactForce = true;
+  /// Should the force be applied at the contact point?
+  bool get useContactForce => _useContactForce;
+  set useContactForce(bool value) {
+    _useContactForce = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useContactForce, value));
+  }
 
+  bool _useFriction = true;
+  /// Should friction be used?
+  bool get useFriction => _useFriction;
+  set useFriction(bool value) {
+    _useFriction = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useFriction, value));
+  }
+
+  bool _useBounce = true;
+  /// Should bounciness be used?
+  bool get useBounce => _useBounce;
+  set useBounce(bool value) {
+    _useBounce = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useBounce, value));
+  }
 }

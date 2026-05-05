@@ -73,7 +73,7 @@ class BodyMethodId {
 }
 
 class ColliderMethodId {
-  static const int closestPoint = 0, distance = 1, isTouching = 2, isTouchingLayers = 3;
+  static const int closestPoint = 0, distance = 1, isTouching = 2, isTouchingLayers = 3, generateGeometry = 4;
 }
 
 /// Binary protocol for isolate communication: `object → binary`.
@@ -154,6 +154,7 @@ class IsolateProtocol {
   static Uint8ListBuffer writeDestroyCollider(int h) { final b = _buf(Opcode.destroyCollider); _writeInt(b, h); return b; }
   static Uint8ListBuffer writeColliderMethodV(int method, int h, Vector2 v) { final b = _buf(Opcode.colliderMethod); _writeInt(b, method); _writeInt(b, h); _writeVec(b, v); return b; }
   static Uint8ListBuffer writeColliderMethodII(int method, int a, int bh) { final b = _buf(Opcode.colliderMethod); _writeInt(b, method); _writeInt(b, a); _writeInt(b, bh); return b; }
+  static Uint8ListBuffer writeColliderMethodI(int method, int h) { final b = _buf(Opcode.colliderMethod); _writeInt(b, method); _writeInt(b, h); return b; }
 
   // Joint / Effector
   static Uint8ListBuffer writeCreateJoint(int t, int bh) { final b = _buf(Opcode.createJoint); _writeInt(b, t); _writeInt(b, bh); return b; }

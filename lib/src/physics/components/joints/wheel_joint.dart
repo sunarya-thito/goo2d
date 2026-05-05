@@ -1,42 +1,103 @@
+import 'package:meta/meta.dart';
 import 'package:vector_math/vector_math_64.dart';
+import 'package:goo2d/src/physics/components/joint.dart';
+import 'package:goo2d/src/physics/worker/direct/direct_joint_ops.dart';
+import 'package:goo2d/src/physics/worker/data/joint_type.dart';
 import 'package:goo2d/goo2d.dart';
 
-/// The wheel joint allows the simulation of wheels by providing a constraining suspension motion with an optional motor.
-/// 
+/// Joint that simulates a wheel by allowing rotation and applying a spring-force along a single line.
+///
 /// Equivalent to Unity's `WheelJoint2D`.
-class WheelJoint extends Component {
-  /// The current joint angle (in degrees) defined as the relative angle between the two Rigidbody2D that the joint connects to.
-  double get jointAngle => throw UnimplementedError('Implemented via Physics Worker');
-  set jointAngle(double value) => throw UnimplementedError('Implemented via Physics Worker');
+class WheelJoint extends Joint {
+  @override
+  int get jointType => JointType.wheel;
 
-  /// The current joint linear speed in meters/sec.
-  double get jointLinearSpeed => throw UnimplementedError('Implemented via Physics Worker');
-  set jointLinearSpeed(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The current joint rotational speed in degrees/sec.
-  double get jointSpeed => throw UnimplementedError('Implemented via Physics Worker');
-  set jointSpeed(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// The current joint translation.
-  double get jointTranslation => throw UnimplementedError('Implemented via Physics Worker');
-  set jointTranslation(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// Parameters for a motor force that is applied automatically to the Rigidbody2D along the line.
-  int get motor => throw UnimplementedError('Implemented via Physics Worker');
-  set motor(int value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// Should a motor force be applied automatically to the Rigidbody2D?
-  bool get useMotor => throw UnimplementedError('Implemented via Physics Worker');
-  set useMotor(bool value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// Set the joint suspension configuration.
-  int get suspension => throw UnimplementedError('Implemented via Physics Worker');
-  set suspension(int value) => throw UnimplementedError('Implemented via Physics Worker');
-
-  /// Gets the motor torque of the joint given the specified timestep.
-  /// - [timeStep]: The time to calculate the motor torque for.
-  double getMotorTorque(double timeStep) {
-    throw UnimplementedError('Implemented via Physics Worker');
+  @override
+  @protected
+  void syncProperties() {
+    super.syncProperties();
+    handle.then((h) {
+      worker.setJointProperty(h, JointProp.anchor, _anchor);
+      worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
+      worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
+      worker.setJointProperty(h, JointProp.useMotor, _useMotor);
+      worker.setJointProperty(h, JointProp.motorSpeed, _motorSpeed);
+      worker.setJointProperty(h, JointProp.maxMotorTorque, _maxMotorTorque);
+      worker.setJointProperty(h, JointProp.springDampingRatio, _dampingRatio);
+      worker.setJointProperty(h, JointProp.springFrequency, _frequency);
+      worker.setJointProperty(h, JointProp.wheelSuspensionAngle, _suspensionAngle);
+    });
   }
 
+  final Vector2 _anchor = Vector2.zero();
+  Vector2 get anchor => _anchor;
+  set anchor(Vector2 value) {
+    _anchor.setFrom(value);
+    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+  }
+
+  final Vector2 _connectedAnchor = Vector2.zero();
+  Vector2 get connectedAnchor => _connectedAnchor;
+  set connectedAnchor(Vector2 value) {
+    _connectedAnchor.setFrom(value);
+    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+  }
+
+  bool _autoConfigureConnectedAnchor = true;
+  bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
+  set autoConfigureConnectedAnchor(bool value) {
+    _autoConfigureConnectedAnchor = value;
+    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+  }
+
+  bool _useMotor = false;
+  bool get useMotor => _useMotor;
+  set useMotor(bool value) {
+    _useMotor = value;
+    handle.then((h) => worker.setJointProperty(h, JointProp.useMotor, value));
+  }
+
+  double _motorSpeed = 0.0;
+  double _maxMotorTorque = 10000.0;
+
+  /// The motor parameters wrapping motorSpeed/maxMotorTorque.
+  JointMotor get motor => JointMotor(motorSpeed: _motorSpeed, maxMotorTorque: _maxMotorTorque);
+  set motor(JointMotor value) {
+    _motorSpeed = value.motorSpeed;
+    _maxMotorTorque = value.maxMotorTorque;
+    handle.then((h) {
+      worker.setJointProperty(h, JointProp.motorSpeed, value.motorSpeed);
+      worker.setJointProperty(h, JointProp.maxMotorTorque, value.maxMotorTorque);
+    });
+  }
+
+  double _dampingRatio = 0.7;
+  double _frequency = 2.0;
+  double _suspensionAngle = 90.0;
+
+  /// The suspension parameters wrapping dampingRatio/frequency/suspensionAngle.
+  JointSuspension get suspension => JointSuspension(frequency: _frequency, angle: _suspensionAngle, dampingRatio: _dampingRatio);
+  set suspension(JointSuspension value) {
+    _dampingRatio = value.dampingRatio;
+    _frequency = value.frequency;
+    _suspensionAngle = value.angle;
+    handle.then((h) {
+      worker.setJointProperty(h, JointProp.springDampingRatio, value.dampingRatio);
+      worker.setJointProperty(h, JointProp.springFrequency, value.frequency);
+      worker.setJointProperty(h, JointProp.wheelSuspensionAngle, value.angle);
+    });
+  }
+
+  Future<double> get jointSpeed async =>
+      (await worker.getJointProperty(await handle, JointProp.motorSpeed)) as double;
+
+  Future<double> get jointTranslation async =>
+      (await worker.getJointProperty(await handle, JointProp.lowerTranslation)) as double;
+
+  Future<double> get jointAngle async => 0.0;
+
+  Future<double> get jointLinearSpeed async => 0.0;
+
+  Future<double> getMotorTorque(double timeStep) async =>
+      (await worker.getJointProperty(await handle, JointProp.reactionTorque)) as double;
 }

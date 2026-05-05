@@ -42,10 +42,11 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   }
 
   void _handleResponse(dynamic message) {
-    final data = ByteData.sublistView(message as Uint8List);
+    final bytes = message as Uint8List;
+    final data = ByteData.sublistView(bytes);
     final requestId = data.getUint16(0);
     final completer = _pending.remove(requestId);
-    completer?.complete(ByteData.sublistView(message as Uint8List, 2));
+    completer?.complete(ByteData.sublistView(bytes, 2));
   }
 
   Future<ByteData> _send(Uint8ListBuffer buf) {
@@ -282,9 +283,14 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   @override
   Future<double> colliderDistance(int a, int b) async => IsolateProtocol.readDouble(await _send(IsolateProtocol.writeColliderMethodII(ColliderMethodId.distance, a, b)));
   @override
-  Future<bool> colliderIsTouching(int a, int b) async => IsolateProtocol.readBool(await _send(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouching, a, b)));
+  Future<bool> colliderIsTouching(int a, int b) => _sendBool(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouching, a, b));
   @override
-  Future<bool> colliderIsTouchingLayers(int h, int l) async => IsolateProtocol.readBool(await _send(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouchingLayers, h, l)));
+  Future<bool> colliderIsTouchingLayers(int h, int l) => _sendBool(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouchingLayers, h, l));
+  @override
+  Future<void> colliderGenerateGeometry(int h) => _sendVoid(IsolateProtocol.writeColliderMethodI(ColliderMethodId.generateGeometry, h));
+
+  Future<void> _sendVoid(Uint8ListBuffer buf) async => await _send(buf);
+  Future<bool> _sendBool(Uint8ListBuffer buf) async => IsolateProtocol.readBool(await _send(buf));
 
   // ===================== Joint =====================
   @override

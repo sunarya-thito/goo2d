@@ -60,10 +60,14 @@ enum EffectorSelection {
 
 /// Option for how to apply a force using Rigidbody2D.AddForce.
 enum ForceMode {
-  /// Add an instant force impulse to the rigidbody2D, using its mass.
+  /// Add an instant force impulse to the rigidbody, using its mass.
   impulse,
-  /// Add a force to the Rigidbody2D, using its mass.
-  force
+  /// Add a continuous force to the rigidbody, using its mass.
+  force,
+  /// Add a continuous acceleration to the rigidbody, ignoring its mass.
+  acceleration,
+  /// Add an instant velocity change to the rigidbody, ignoring its mass.
+  velocityChange,
 }
 
 /// Specifies when to generate the Composite Collider geometry.

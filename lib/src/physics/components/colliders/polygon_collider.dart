@@ -1,61 +1,94 @@
+import 'dart:math' as math;
 import 'package:vector_math/vector_math_64.dart';
+import 'package:meta/meta.dart';
+import 'package:goo2d/src/physics/components/collider.dart';
+import 'package:goo2d/src/physics/worker/direct/direct_collider_ops.dart';
+import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
 import 'package:goo2d/goo2d.dart';
 
 /// Collider for 2D physics representing an arbitrary polygon defined by its vertices.
 /// 
 /// Equivalent to Unity's `PolygonCollider2D`.
-class PolygonCollider extends Component {
-  /// When the value is true, the Collider uses an additional Delaunay triangulation step to produce the Collider mesh. When the value is false, this additional step does not occur.
-  bool get useDelaunayMesh => throw UnimplementedError('Implemented via Physics Worker');
-  set useDelaunayMesh(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+class PolygonCollider extends Collider {
+  @override
+  ColliderShapeType get shapeType => ColliderShapeType.polygon;
 
+  @override
+  @protected
+  void syncProperties() {
+    super.syncProperties();
+    handle.then((h) {
+      worker.setColliderProperty(h, ColliderProp.polygonUseDelaunayMesh, _useDelaunayMesh);
+      worker.setColliderProperty(h, ColliderProp.polygonAutoTiling, _autoTiling);
+      worker.setColliderProperty(h, ColliderProp.polygonPathCount, _pathCount);
+      worker.setColliderProperty(h, ColliderProp.polygonPoints, _points);
+    });
+  }
+
+  bool _useDelaunayMesh = false;
+  /// When the value is true, the Collider uses an additional Delaunay triangulation step to produce the Collider mesh.
+  bool get useDelaunayMesh => _useDelaunayMesh;
+  set useDelaunayMesh(bool value) {
+    _useDelaunayMesh = value;
+    handle.then((h) => worker.setColliderProperty(h, ColliderProp.polygonUseDelaunayMesh, value));
+  }
+
+  bool _autoTiling = false;
   /// Determines whether the PolygonCollider2D's shape is automatically updated based on a SpriteRenderer's tiling properties.
-  bool get autoTiling => throw UnimplementedError('Implemented via Physics Worker');
-  set autoTiling(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  bool get autoTiling => _autoTiling;
+  set autoTiling(bool value) {
+    _autoTiling = value;
+    handle.then((h) => worker.setColliderProperty(h, ColliderProp.polygonAutoTiling, value));
+  }
 
+  int _pathCount = 1;
   /// The number of paths in the polygon.
-  int get pathCount => throw UnimplementedError('Implemented via Physics Worker');
-  set pathCount(int value) => throw UnimplementedError('Implemented via Physics Worker');
+  int get pathCount => _pathCount;
+  set pathCount(int value) {
+    _pathCount = value;
+    handle.then((h) => worker.setColliderProperty(h, ColliderProp.polygonPathCount, value));
+  }
 
+  List<Vector2> _points = [];
   /// Corner points that define the collider's shape in local space.
-  List<Vector2> get points => throw UnimplementedError('Implemented via Physics Worker');
-  set points(List<Vector2> value) => throw UnimplementedError('Implemented via Physics Worker');
+  List<Vector2> get points => _points;
+  set points(List<Vector2> value) {
+    _points = List.from(value);
+    handle.then((h) => worker.setColliderProperty(h, ColliderProp.polygonPoints, _points));
+  }
 
   /// Define a path by its constituent points.
-  /// - [index]: Index of the path to set.
-  /// - [points]: An ordered span of the vertices (points) that define the path.
   void setPath(int index, List<Vector2> points) {
-    throw UnimplementedError('Implemented via Physics Worker');
+    if (index == 0) {
+      this.points = points;
+    }
+  }
+
+  /// Creates a polygon shape from the Sprite outline.
+  void createFromSprite(GameSprite sprite) {
+    // TODO: Use SpritePolygonGenerator to generate points from sprite alpha
+  }
+
+  /// Get a path from the polygon by its index.
+  List<Vector2> getPath(int index) {
+    if (index == 0) return points;
+    return [];
   }
 
   /// Return the total number of points in the polygon in all paths.
-  int getTotalPointCount() {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
-
-  /// Create polygon shapes using the selected sprite.
-  /// - [sprite]: The sprite to extract the polygon shape data from.
-  /// - [detail]: The detail used when tessellating the sprite outline, in the range [0, 1]. This is only used if the sprite doesn't already have its own PhysicsShape outline(s) or usePhysicsShapes is false. This value has the same meaning as the similarly named property in the Sprite Editor.
-  /// - [alphaTolerance]: The alpha tolerance used to separate the sprite from its background, in the range [0, 255]. This is only used if the sprite doesn't already have its own PhysicsShape outline(s) or usePhysicsShapes is false. This value has the same meaning as the similarly named property in the Sprite Editor.
-  /// - [holeDetection]: Selects whether internal holes should be detected when creating the sprite outlines. This is only used if the sprite doesn't already have its own PhysicsShape outline(s) or usePhysicsShapes is false. This value has the same meaning as the similarly named property in the Sprite Editor.
-  /// - [usePhysicsShapes]: Selects whether the outline should use the PhysicsShape outline(s) defined in the sprite. If true, they are used (if available) however if false then they are never used even if available.
-  bool createFromSprite(GameSprite sprite, double detail, int alphaTolerance, bool holeDetection, bool usePhysicsShapes) {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
+  int getTotalPointCount() => _points.length;
 
   /// Creates as regular primitive polygon with the specified number of sides.
-  /// - [sides]: The number of sides in the polygon. This must be greater than two.
-  /// - [scale]: The X/Y scale of the polygon. These must be greater than zero.
-  /// - [offset]: The X/Y offset of the polygon.
   void createPrimitive(int sides, Vector2 scale, Vector2 offset) {
-    throw UnimplementedError('Implemented via Physics Worker');
+    final newPoints = <Vector2>[];
+    final angleStep = (2 * math.pi) / sides;
+    for (var i = 0; i < sides; i++) {
+      final angle = i * angleStep;
+      newPoints.add(Vector2(
+        offset.x + scale.x * 0.5 * (1 + math.cos(angle)),
+        offset.y + scale.y * 0.5 * (1 + math.sin(angle)),
+      ));
+    }
+    points = newPoints;
   }
-
-  /// Gets a path from the Collider by its index.
-  /// - [index]: The index of the path to retrieve.
-  /// - [allocator]: The memory allocator to use for the results. This can only be Allocator.Temp, Allocator.TempJob or Allocator.Persistent.
-  List<Vector2> getPath(int index, int allocator) {
-    throw UnimplementedError('Implemented via Physics Worker');
-  }
-
 }

@@ -20,5 +20,12 @@ class ContactPointData {
     required this.tangentImpulse,
     required this.colliderHandle,
     required this.otherColliderHandle,
+    this.enabled = true,
+    this.friction = 0.0,
+    this.bounciness = 0.0,
   });
+
+  final bool enabled;
+  final double friction;
+  final double bounciness;
 }

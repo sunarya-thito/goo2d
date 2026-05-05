@@ -319,6 +319,12 @@ abstract class GameObject implements BuildContext {
   /// * [event]: The event to send.
   void sendEvent(Event event);
 
+  /// Broadcasts an async [event] to this object and all its descendants, awaiting each dispatch.
+  Future<void> broadcastEventAsync(AsyncEvent event);
+
+  /// Sends an async [event] to this object's children, awaiting each dispatch.
+  Future<void> sendEventAsync(AsyncEvent event);
+
   /// Retrieves the first component of type [T] attached to this object.
   ///
   /// Throws an error if no component of the requested type exists. Use

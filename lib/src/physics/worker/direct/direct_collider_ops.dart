@@ -170,4 +170,5 @@ class DirectColliderOps {
   static Future<double> distance(PhysicsEngine e, int a, int b) => Future.value(e.distanceBetween(a, b));
   static Future<bool> isTouching(PhysicsEngine e, int a, int b) => Future.value(e.isTouching(a, b));
   static Future<bool> isTouchingLayers(PhysicsEngine e, int h, int l) => Future.value(e.isTouchingLayers(h, l));
+  static Future<void> generateGeometry(PhysicsEngine e, int h) { e.getCollider(h).generateGeometry(); return Future.value(); }
 }

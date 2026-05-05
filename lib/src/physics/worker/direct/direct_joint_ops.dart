@@ -36,6 +36,8 @@ class JointProp {
   static const int target = 30;
   static const int targetMaxForce = 31;
   static const int wheelSuspensionAngle = 32;
+  static const int reactionForce = 33;
+  static const int reactionTorque = 34;
 }
 
 /// Direct joint operations. `object → invocation`.
@@ -81,6 +83,8 @@ class DirectJointOps {
       JointProp.target => j.target,
       JointProp.targetMaxForce => j.targetMaxForce,
       JointProp.wheelSuspensionAngle => j.wheelSuspensionAngle,
+      JointProp.reactionForce => j.reactionForce,
+      JointProp.reactionTorque => j.reactionTorque,
       _ => throw ArgumentError('Unknown joint property: $p'),
     });
   }

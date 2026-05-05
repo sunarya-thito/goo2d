@@ -216,6 +216,8 @@ class DirectPhysicsWorker implements PhysicsWorker {
   Future<bool> colliderIsTouching(int a, int b) => DirectColliderOps.isTouching(engine, a, b);
   @override
   Future<bool> colliderIsTouchingLayers(int h, int l) => DirectColliderOps.isTouchingLayers(engine, h, l);
+  @override
+  Future<void> colliderGenerateGeometry(int h) => DirectColliderOps.generateGeometry(engine, h);
 
   // ===================== Joint =====================
   @override

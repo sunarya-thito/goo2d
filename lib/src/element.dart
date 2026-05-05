@@ -312,7 +312,7 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
 
   void _sendEventDown(Event event, Element element) {
     if (element is GameObject) {
-      event.dispatchTo(element as GameObject);
+      (element as GameObject).broadcastEvent(event);
     } else {
       element.visitChildren((e) => _sendEventDown(event, e));
     }
@@ -322,6 +322,31 @@ class GameObjectElement extends RenderObjectElement implements GameObject {
   void broadcastEvent(Event event) {
     event.dispatchTo(this);
     sendEvent(event);
+  }
+
+  @override
+  Future<void> broadcastEventAsync(AsyncEvent event) async {
+    await event.dispatchTo(this);
+    await sendEventAsync(event);
+  }
+
+  @override
+  Future<void> sendEventAsync(AsyncEvent event) async {
+    for (final element in _children) {
+      await _sendEventAsyncDown(event, element);
+    }
+  }
+
+  Future<void> _sendEventAsyncDown(AsyncEvent event, Element element) async {
+    if (element is GameObject) {
+      await (element as GameObject).broadcastEventAsync(event);
+    } else {
+      final children = <Element>[];
+      element.visitChildren(children.add);
+      for (final child in children) {
+        await _sendEventAsyncDown(event, child);
+      }
+    }
   }
 
   @override

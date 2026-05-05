@@ -1,36 +1,83 @@
-import 'package:vector_math/vector_math_64.dart';
+import 'package:meta/meta.dart';
+import 'package:goo2d/src/physics/worker/direct/direct_effector_ops.dart';
+import 'package:goo2d/src/physics/worker/data/effector_type.dart';
 import 'package:goo2d/goo2d.dart';
 
-/// Applies "platform" behaviour such as one-way collisions etc.
-/// 
+/// Applies platform-style behavior (one-way collisions).
+///
 /// Equivalent to Unity's `PlatformEffector2D`.
-class PlatformEffector extends Component {
-  /// The rotational offset angle from the local 'up'.
-  double get rotationalOffset => throw UnimplementedError('Implemented via Physics Worker');
-  set rotationalOffset(double value) => throw UnimplementedError('Implemented via Physics Worker');
+class PlatformEffector extends Effector {
+  @override
+  EffectorType get effectorType => EffectorType.platform;
 
-  /// The angle of an arc that defines the surface of the platform centered of the local 'up' of the effector.
-  double get surfaceArc => throw UnimplementedError('Implemented via Physics Worker');
-  set surfaceArc(double value) => throw UnimplementedError('Implemented via Physics Worker');
+  @override
+  @protected
+  void syncProperties() {
+    super.syncProperties();
+    handle.then((h) {
+      worker.setEffectorProperty(h, EffectorProp.useOneWay, _useOneWay);
+      worker.setEffectorProperty(h, EffectorProp.useOneWayGrouping, _useOneWayGrouping);
+      worker.setEffectorProperty(h, EffectorProp.surfaceArc, _surfaceArc);
+      worker.setEffectorProperty(h, EffectorProp.useSideFriction, _useSideFriction);
+      worker.setEffectorProperty(h, EffectorProp.useSideBounce, _useSideBounce);
+      worker.setEffectorProperty(h, EffectorProp.sideArc, _sideArc);
+      worker.setEffectorProperty(h, EffectorProp.rotationalOffset, _rotationalOffset);
+    });
+  }
 
-  /// Ensures that all contacts controlled by the one-way behaviour act the same.
-  bool get useOneWayGrouping => throw UnimplementedError('Implemented via Physics Worker');
-  set useOneWayGrouping(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  bool _useOneWay = true;
+  /// Should the effector use one-way collisions?
+  bool get useOneWay => _useOneWay;
+  set useOneWay(bool value) {
+    _useOneWay = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useOneWay, value));
+  }
 
-  /// The angle of an arc that defines the sides of the platform centered on the local 'left' and 'right' of the effector. Any collision normals within this arc are considered for the 'side' behaviours.
-  double get sideArc => throw UnimplementedError('Implemented via Physics Worker');
-  set sideArc(double value) => throw UnimplementedError('Implemented via Physics Worker');
+  bool _useOneWayGrouping = false;
+  /// Should the one-way behavior be grouped for all attached colliders?
+  bool get useOneWayGrouping => _useOneWayGrouping;
+  set useOneWayGrouping(bool value) {
+    _useOneWayGrouping = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useOneWayGrouping, value));
+  }
 
-  /// Should friction be used on the platform sides?
-  bool get useSideFriction => throw UnimplementedError('Implemented via Physics Worker');
-  set useSideFriction(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  double _surfaceArc = 180.0;
+  /// The angle of the surface arc where collisions are allowed.
+  double get surfaceArc => _surfaceArc;
+  set surfaceArc(double value) {
+    _surfaceArc = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.surfaceArc, value));
+  }
 
-  /// Should the one-way collision behaviour be used?
-  bool get useOneWay => throw UnimplementedError('Implemented via Physics Worker');
-  set useOneWay(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  bool _useSideFriction = true;
+  /// Should friction be applied to the sides?
+  bool get useSideFriction => _useSideFriction;
+  set useSideFriction(bool value) {
+    _useSideFriction = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useSideFriction, value));
+  }
 
-  /// Should bounce be used on the platform sides?
-  bool get useSideBounce => throw UnimplementedError('Implemented via Physics Worker');
-  set useSideBounce(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  bool _useSideBounce = true;
+  /// Should bounciness be applied to the sides?
+  bool get useSideBounce => _useSideBounce;
+  set useSideBounce(bool value) {
+    _useSideBounce = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useSideBounce, value));
+  }
 
+  double _sideArc = 0.0;
+  /// The angle of the side arc.
+  double get sideArc => _sideArc;
+  set sideArc(double value) {
+    _sideArc = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.sideArc, value));
+  }
+
+  double _rotationalOffset = 0.0;
+  /// The rotational offset of the effector.
+  double get rotationalOffset => _rotationalOffset;
+  set rotationalOffset(double value) {
+    _rotationalOffset = value;
+    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.rotationalOffset, value));
+  }
 }

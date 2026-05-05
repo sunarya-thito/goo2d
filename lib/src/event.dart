@@ -51,3 +51,19 @@ abstract class Event<T extends EventListener> {
     }
   }
 }
+
+abstract class AsyncEvent<T extends EventListener> extends Event<T> {
+  const AsyncEvent();
+  @override
+  Future<void> dispatch(T listener);
+
+  @override
+  Future<void> dispatchTo(GameObject object) async {
+    for (final listener in object.components.whereType<T>()) {
+      if (listener is Behavior && !(listener as Behavior).enabled) {
+        continue;
+      }
+      await dispatch(listener);
+    }
+  }
+}

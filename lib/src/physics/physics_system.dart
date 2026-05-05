@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:goo2d/src/game.dart';
+import 'package:goo2d/goo2d.dart';
 import 'package:goo2d/src/physics/worker/physics_worker.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_physics_worker.dart';
 import 'package:goo2d/src/physics/worker/isolate/isolate_physics_worker.dart';
@@ -40,15 +40,33 @@ class PhysicsSystem implements GameSystem {
       _worker = DirectPhysicsWorker();
     }
     _worker!.initialize();
+    Physics.initialize(_worker!);
   }
 
-  /// Steps the physics simulation by [dt] seconds.
-  void step(double dt) => _worker?.step(dt);
+  /// Steps the physics simulation by [fixedDeltaTime] seconds.
+  Future<void> step() async {
+    _worker?.step(_game!.getSystem<TickerState>()!.fixedDeltaTime);
+  }
 
   @override
   void dispose() {
     _worker?.dispose();
     _worker = null;
     _game = null;
+    _colliderRegistry.clear();
   }
+
+  static final Map<int, Collider> _colliderRegistry = {};
+
+  /// Registers a collider with its handle for reverse lookup.
+  static void registerCollider(int handle, Collider collider) => _colliderRegistry[handle] = collider;
+
+  /// Unregisters a collider.
+  static void unregisterCollider(int handle) => _colliderRegistry.remove(handle);
+
+  /// Gets a collider by its handle.
+  static Collider? getCollider(int handle) => _colliderRegistry[handle];
+
+  /// All currently registered colliders.
+  Iterable<Collider> get activeColliders => _colliderRegistry.values;
 }

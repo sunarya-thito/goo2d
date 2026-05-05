@@ -64,6 +64,10 @@ class PhysicsCollider {
   bool compositeUseDelaunayMesh = false;
   int compositeGenerationType = 1;
   int compositeGeometryType = 0;
+  
+  void generateGeometry() {
+    // TODO: Implement geometry generation for composite colliders
+  }
 
   PhysicsCollider(this.handle, this.shapeType, this.bodyHandle);
 }

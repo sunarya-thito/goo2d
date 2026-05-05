@@ -125,7 +125,7 @@ class DirectEffectorOps {
       case EffectorProp.useSideBounce: ef.useSideBounce = v as bool;
       case EffectorProp.surfaceArc: ef.surfaceArc = v as double;
       case EffectorProp.sideArc: ef.sideArc = v as double;
-      case EffectorProp.rotationalOffset: ef.rotationalOffset = v as int;
+      case EffectorProp.rotationalOffset: ef.rotationalOffset = v as double;
       case EffectorProp.pointForceMagnitude: ef.pointForceMagnitude = v as double;
       case EffectorProp.pointForceVariation: ef.pointForceVariation = v as double;
       case EffectorProp.distanceScale: ef.distanceScale = v as double;

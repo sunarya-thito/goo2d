@@ -164,6 +164,24 @@ Uint8ListBuffer? _dispatch(PhysicsEngine engine, ByteData data) {
       final s = rv(); final e = rv(); final lm = ri(); final mind = rd(); final maxd = rd();
       return _writeRaycastResult(engine.linecast(s, e, lm, mind, maxd));
 
+    case Opcode.colliderMethod:
+      final method = ri();
+      final h = ri();
+      switch (method) {
+        case ColliderMethodId.closestPoint:
+          return respVec(engine.closestPoint(rv(), h));
+        case ColliderMethodId.distance:
+          return respDouble(engine.distanceBetween(h, ri()));
+        case ColliderMethodId.isTouching:
+          return respBool(engine.isTouching(h, ri()));
+        case ColliderMethodId.isTouchingLayers:
+          return respBool(engine.isTouchingLayers(h, ri()));
+        case ColliderMethodId.generateGeometry:
+          engine.getCollider(h).generateGeometry();
+          return respBool(true); // Return something to complete the future
+      }
+      return null;
+
     case Opcode.overlapCircle:
       final p = rv(); final r = rd(); final lm = ri(); final mind = rd(); final maxd = rd();
       return _writeIntList(engine.overlapCircle(p, r, lm, mind, maxd));

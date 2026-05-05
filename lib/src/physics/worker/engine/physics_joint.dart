@@ -59,5 +59,9 @@ class PhysicsJoint {
   // Wheel
   double wheelSuspensionAngle = 90.0;
 
+  // Reaction (Simulated)
+  Vector2 reactionForce = Vector2.zero();
+  double reactionTorque = 0.0;
+
   PhysicsJoint(this.handle, this.jointType, this.bodyHandleA);
 }

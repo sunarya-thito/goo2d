@@ -1,24 +1,85 @@
 import 'package:vector_math/vector_math_64.dart';
+import 'package:meta/meta.dart';
+import 'package:goo2d/src/physics/components/joint.dart';
+import 'package:goo2d/src/physics/worker/direct/direct_joint_ops.dart';
+import 'package:goo2d/src/physics/worker/data/joint_type.dart';
 import 'package:goo2d/goo2d.dart';
 
-/// Joint that attempts to keep two Rigidbody2D objects a set distance apart by applying a force between them.
+/// Joint that connects two Rigidbody2D together using a spring.
 /// 
 /// Equivalent to Unity's `SpringJoint2D`.
-class SpringJoint extends Component {
+class SpringJoint extends Joint {
+  @override
+  int get jointType => JointType.spring;
+
+  @override
+  @protected
+  void syncProperties() {
+    super.syncProperties();
+    handle.then((h) {
+      worker.setJointProperty(h, JointProp.anchor, _anchor);
+      worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
+      worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
+      worker.setJointProperty(h, JointProp.distance, _distance);
+      worker.setJointProperty(h, JointProp.autoConfigureDistance, _autoConfigureDistance);
+      worker.setJointProperty(h, JointProp.springDampingRatio, _dampingRatio);
+      worker.setJointProperty(h, JointProp.springFrequency, _frequency);
+    });
+  }
+
+  final Vector2 _anchor = Vector2.zero();
+  /// The local anchor point on the Rigidbody2D where the joint is attached.
+  Vector2 get anchor => _anchor;
+  set anchor(Vector2 value) {
+    _anchor.setFrom(value);
+    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+  }
+
+  final Vector2 _connectedAnchor = Vector2.zero();
+  /// The local anchor point on the connected Rigidbody2D where the joint is attached.
+  Vector2 get connectedAnchor => _connectedAnchor;
+  set connectedAnchor(Vector2 value) {
+    _connectedAnchor.setFrom(value);
+    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+  }
+
+  bool _autoConfigureConnectedAnchor = true;
+  /// Should the connected anchor be calculated automatically?
+  bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
+  set autoConfigureConnectedAnchor(bool value) {
+    _autoConfigureConnectedAnchor = value;
+    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+  }
+
+  double _distance = 1.0;
+  /// The distance separating the two ends of the joint.
+  double get distance => _distance;
+  set distance(double value) {
+    _distance = value;
+    handle.then((h) => worker.setJointProperty(h, JointProp.distance, value));
+  }
+
+  bool _autoConfigureDistance = true;
   /// Should the distance be calculated automatically?
-  bool get autoConfigureDistance => throw UnimplementedError('Implemented via Physics Worker');
-  set autoConfigureDistance(bool value) => throw UnimplementedError('Implemented via Physics Worker');
+  bool get autoConfigureDistance => _autoConfigureDistance;
+  set autoConfigureDistance(bool value) {
+    _autoConfigureDistance = value;
+    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureDistance, value));
+  }
 
-  /// The distance the spring will try to keep between the two objects.
-  double get distance => throw UnimplementedError('Implemented via Physics Worker');
-  set distance(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
+  double _dampingRatio = 0.0;
   /// The amount by which the spring force is reduced in proportion to the movement speed.
-  double get dampingRatio => throw UnimplementedError('Implemented via Physics Worker');
-  set dampingRatio(double value) => throw UnimplementedError('Implemented via Physics Worker');
+  double get dampingRatio => _dampingRatio;
+  set dampingRatio(double value) {
+    _dampingRatio = value;
+    handle.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
+  }
 
-  /// The frequency at which the spring oscillates around the distance distance between the objects.
-  double get frequency => throw UnimplementedError('Implemented via Physics Worker');
-  set frequency(double value) => throw UnimplementedError('Implemented via Physics Worker');
-
+  double _frequency = 1.0;
+  /// The frequency at which the spring oscillates around the distance between the objects.
+  double get frequency => _frequency;
+  set frequency(double value) {
+    _frequency = value;
+    handle.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
+  }
 }
