@@ -1,4 +1,5 @@
-import 'dart:ui' show Offset;
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
@@ -17,7 +18,7 @@ class CapsuleCollider extends Collider {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setColliderProperty(h, ColliderProp.capsuleSize, _size);
       worker.setColliderProperty(h, ColliderProp.capsuleDirection, _direction.index);
     });
@@ -28,7 +29,7 @@ class CapsuleCollider extends Collider {
   Vector2 get size => _size;
   set size(Vector2 value) {
     _size.setFrom(value);
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.capsuleSize, value));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.capsuleSize, value));
   }
 
   CapsuleDirection _direction = CapsuleDirection.vertical;
@@ -36,11 +37,22 @@ class CapsuleCollider extends Collider {
   CapsuleDirection get direction => _direction;
   set direction(CapsuleDirection value) {
     _direction = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.capsuleDirection, value.index));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.capsuleDirection, value.index));
   }
 
   @override
-  bool containsPoint(Offset position) {
+  int getShapes(PhysicsShapeGroup shapeGroup, [int shapeIndex = 0, int shapeCount = 0]) {
+    final isVert = _direction == CapsuleDirection.vertical;
+    final radius = isVert ? _size.x / 2 : _size.y / 2;
+    final halfBody = ((isVert ? _size.y - _size.x : _size.x - _size.y) / 2).clamp(0.0, double.infinity);
+    final v0 = isVert ? Vector2(offset.x, offset.y + halfBody) : Vector2(offset.x + halfBody, offset.y);
+    final v1 = isVert ? Vector2(offset.x, offset.y - halfBody) : Vector2(offset.x - halfBody, offset.y);
+    shapeGroup.addCapsule(v0, v1, radius);
+    return 1;
+  }
+
+  @override
+  bool containsPoint(ui.Offset position) {
     final px = position.dx - offset.x;
     final py = position.dy - offset.y;
     if (_direction == CapsuleDirection.vertical) {
@@ -54,5 +66,22 @@ class CapsuleCollider extends Collider {
       final cx = px.clamp(-halfBody, halfBody);
       return (px - cx) * (px - cx) + py * py <= radius * radius;
     }
+  }
+
+  @override
+  @protected
+  ui.Rect computeShapeBounds(Vector2 center, double angle) {
+    final hx = _size.x * 0.5;
+    final hy = _size.y * 0.5;
+    final isVertical = _direction == CapsuleDirection.vertical;
+    final radius = isVertical ? hx : hy;
+    final halfLen = (isVertical ? hy - radius : hx - radius).clamp(0.0, double.infinity);
+    final dx = isVertical ? -math.sin(angle) * halfLen : math.cos(angle) * halfLen;
+    final dy = isVertical ? math.cos(angle) * halfLen : math.sin(angle) * halfLen;
+    final minX = math.min(center.x + dx, center.x - dx) - radius;
+    final minY = math.min(center.y + dy, center.y - dy) - radius;
+    final maxX = math.max(center.x + dx, center.x - dx) + radius;
+    final maxY = math.max(center.y + dy, center.y - dy) + radius;
+    return ui.Rect.fromLTRB(minX, minY, maxX, maxY);
   }
 }

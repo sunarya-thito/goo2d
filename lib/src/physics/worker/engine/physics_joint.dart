@@ -1,11 +1,17 @@
+import 'package:forge2d/forge2d.dart' as f;
 import 'package:vector_math/vector_math_64.dart';
 
 /// Internal joint representation matching Unity's Joint2D state.
+/// The [_joint] field holds the Forge2D joint, created lazily before the first
+/// physics step once both bodies are available.
 class PhysicsJoint {
   final int handle;
   final int jointType;
   int bodyHandleA;
   int bodyHandleB = -1;
+
+  // Forge2D joint — null until _ensureJointCreated() runs in PhysicsEngine.step()
+  f.Joint? _joint;
 
   // Common
   double breakForce = double.infinity;
@@ -59,9 +65,22 @@ class PhysicsJoint {
   // Wheel
   double wheelSuspensionAngle = 90.0;
 
-  // Reaction (Simulated)
-  Vector2 reactionForce = Vector2.zero();
-  double reactionTorque = 0.0;
+  // Reaction (read from Forge2D joint; invDt=50 for 50 Hz fixed step)
+  Vector2 get reactionForce {
+    final j = _joint;
+    if (j == null) return Vector2.zero();
+    final rf = j.reactionForce(50.0);
+    return Vector2(rf.x, rf.y);
+  }
+
+  double get reactionTorque {
+    final j = _joint;
+    if (j == null) return 0.0;
+    return j.reactionTorque(50.0);
+  }
 
   PhysicsJoint(this.handle, this.jointType, this.bodyHandleA);
+
+  void initForgeJoint(f.Joint? joint) => _joint = joint;
+  f.Joint? get forgeJoint => _joint;
 }

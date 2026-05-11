@@ -14,7 +14,7 @@ class BuoyancyEffector extends Effector {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setEffectorProperty(h, EffectorProp.buoyancyDensity, _density);
       worker.setEffectorProperty(h, EffectorProp.surfaceLevel, _surfaceLevel);
       worker.setEffectorProperty(h, EffectorProp.linearDrag, _linearDamping);
@@ -30,7 +30,7 @@ class BuoyancyEffector extends Effector {
   double get density => _density;
   set density(double value) {
     _density = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.buoyancyDensity, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.buoyancyDensity, value));
   }
 
   double _surfaceLevel = 0.0;
@@ -38,7 +38,7 @@ class BuoyancyEffector extends Effector {
   double get surfaceLevel => _surfaceLevel;
   set surfaceLevel(double value) {
     _surfaceLevel = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.surfaceLevel, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.surfaceLevel, value));
   }
 
   double _linearDamping = 1.0;
@@ -46,7 +46,7 @@ class BuoyancyEffector extends Effector {
   double get linearDamping => _linearDamping;
   set linearDamping(double value) {
     _linearDamping = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.linearDrag, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.linearDrag, value));
   }
 
   double _angularDamping = 1.0;
@@ -54,7 +54,7 @@ class BuoyancyEffector extends Effector {
   double get angularDamping => _angularDamping;
   set angularDamping(double value) {
     _angularDamping = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.angularDragBuoyancy, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.angularDragBuoyancy, value));
   }
 
   double _flowAngle = 0.0;
@@ -62,7 +62,7 @@ class BuoyancyEffector extends Effector {
   double get flowAngle => _flowAngle;
   set flowAngle(double value) {
     _flowAngle = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.flowAngle, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.flowAngle, value));
   }
 
   double _flowMagnitude = 0.0;
@@ -70,7 +70,7 @@ class BuoyancyEffector extends Effector {
   double get flowMagnitude => _flowMagnitude;
   set flowMagnitude(double value) {
     _flowMagnitude = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.flowMagnitude, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.flowMagnitude, value));
   }
 
   double _flowVariation = 0.0;
@@ -78,6 +78,6 @@ class BuoyancyEffector extends Effector {
   double get flowVariation => _flowVariation;
   set flowVariation(double value) {
     _flowVariation = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.flowVariation, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.flowVariation, value));
   }
 }

@@ -14,7 +14,7 @@ class PointEffector extends Effector {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setEffectorProperty(h, EffectorProp.pointForceMagnitude, _forceMagnitude);
       worker.setEffectorProperty(h, EffectorProp.pointForceVariation, _forceVariation);
       worker.setEffectorProperty(h, EffectorProp.distanceScale, _distanceScale);
@@ -31,7 +31,7 @@ class PointEffector extends Effector {
   double get forceMagnitude => _forceMagnitude;
   set forceMagnitude(double value) {
     _forceMagnitude = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceMagnitude, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceMagnitude, value));
   }
 
   double _forceVariation = 0.0;
@@ -39,7 +39,7 @@ class PointEffector extends Effector {
   double get forceVariation => _forceVariation;
   set forceVariation(double value) {
     _forceVariation = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceVariation, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceVariation, value));
   }
 
   double _distanceScale = 1.0;
@@ -47,7 +47,7 @@ class PointEffector extends Effector {
   double get distanceScale => _distanceScale;
   set distanceScale(double value) {
     _distanceScale = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.distanceScale, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.distanceScale, value));
   }
 
   EffectorSelection _forceSource = EffectorSelection.collider;
@@ -55,7 +55,7 @@ class PointEffector extends Effector {
   EffectorSelection get forceSource => _forceSource;
   set forceSource(EffectorSelection value) {
     _forceSource = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceSource, value.index));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceSource, value.index));
   }
 
   EffectorSelection _forceTarget = EffectorSelection.collider;
@@ -63,7 +63,7 @@ class PointEffector extends Effector {
   EffectorSelection get forceTarget => _forceTarget;
   set forceTarget(EffectorSelection value) {
     _forceTarget = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceTarget, value.index));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceTarget, value.index));
   }
 
   EffectorForceMode _forceMode = EffectorForceMode.constant;
@@ -71,7 +71,7 @@ class PointEffector extends Effector {
   EffectorForceMode get forceMode => _forceMode;
   set forceMode(EffectorForceMode value) {
     _forceMode = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceMode, value.index));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.pointForceMode, value.index));
   }
 
   double _angularDamping = 0.0;
@@ -79,7 +79,7 @@ class PointEffector extends Effector {
   double get angularDamping => _angularDamping;
   set angularDamping(double value) {
     _angularDamping = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.pointAngularDrag, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.pointAngularDrag, value));
   }
 
   double _linearDamping = 0.0;
@@ -87,6 +87,6 @@ class PointEffector extends Effector {
   double get linearDamping => _linearDamping;
   set linearDamping(double value) {
     _linearDamping = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.pointDrag, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.pointDrag, value));
   }
 }

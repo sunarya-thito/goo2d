@@ -117,7 +117,10 @@ class RenderWorld extends RenderProxyBox {
         cameraSystem.currentRenderCamera = cameraSystem.main;
       }
       try {
-        context.pushTransform(needsCompositing, offset, transform, (
+        final composedTransform =
+            Matrix4.translationValues(offset.dx, offset.dy, 0)
+              ..multiply(transform);
+        context.pushTransform(needsCompositing, Offset.zero, composedTransform, (
           context,
           offset,
         ) {

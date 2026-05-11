@@ -19,6 +19,9 @@ abstract class Effector extends Component {
     return _handleFuture!;
   }
 
+  @protected
+  Future<int>? get handleIfAttached => _handleFuture;
+
   /// The effector type of this component.
   EffectorType get effectorType;
 
@@ -34,7 +37,8 @@ abstract class Effector extends Component {
 
   @override
   void internalDetach() {
-    _handleFuture?.then((h) => worker.destroyEffector(h));
+    final w = worker;
+    _handleFuture?.then((h) => w.destroyEffector(h));
     _handleFuture = null;
     super.internalDetach();
   }

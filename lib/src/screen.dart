@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:goo2d/src/event.dart';
 import 'package:goo2d/src/game.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 /// A mixin that allows a component to respond to its game object entering or exiting the screen boundaries.
 ///
@@ -256,12 +257,12 @@ class ScreenPhysicsSystem implements GameSystem {
     final cameras = game.cameras;
     if (cameras.isReady) {
       final camera = cameras.main;
-      final tl = camera.screenToWorldPoint(Offset.zero, screenSize);
+      final tl = camera.screenToWorldPoint(Vector2.zero(), screenSize);
       final br = camera.screenToWorldPoint(
-        Offset(screenSize.width, screenSize.height),
+        Vector2(screenSize.width, screenSize.height),
         screenSize,
       );
-      screenRect = Rect.fromPoints(tl, br);
+      screenRect = Rect.fromPoints(Offset(tl.x, tl.y), Offset(br.x, br.y));
     } else {
       screenRect = Rect.fromLTWH(0, 0, screenSize.width, screenSize.height);
     }

@@ -14,7 +14,7 @@ class AreaEffector extends Effector {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setEffectorProperty(h, EffectorProp.forceMagnitude, _forceMagnitude);
       worker.setEffectorProperty(h, EffectorProp.forceVariation, _forceVariation);
       worker.setEffectorProperty(h, EffectorProp.forceTarget, _forceTarget.index);
@@ -30,7 +30,7 @@ class AreaEffector extends Effector {
   double get forceMagnitude => _forceMagnitude;
   set forceMagnitude(double value) {
     _forceMagnitude = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.forceMagnitude, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.forceMagnitude, value));
   }
 
   double _forceVariation = 0.0;
@@ -38,7 +38,7 @@ class AreaEffector extends Effector {
   double get forceVariation => _forceVariation;
   set forceVariation(double value) {
     _forceVariation = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.forceVariation, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.forceVariation, value));
   }
 
   EffectorSelection _forceTarget = EffectorSelection.collider;
@@ -46,7 +46,7 @@ class AreaEffector extends Effector {
   EffectorSelection get forceTarget => _forceTarget;
   set forceTarget(EffectorSelection value) {
     _forceTarget = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.forceTarget, value.index));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.forceTarget, value.index));
   }
 
   bool _useGlobalAngle = true;
@@ -54,7 +54,7 @@ class AreaEffector extends Effector {
   bool get useGlobalAngle => _useGlobalAngle;
   set useGlobalAngle(bool value) {
     _useGlobalAngle = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useGlobalAngle, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useGlobalAngle, value));
   }
 
   double _angularDamping = 0.0;
@@ -62,7 +62,7 @@ class AreaEffector extends Effector {
   double get angularDamping => _angularDamping;
   set angularDamping(double value) {
     _angularDamping = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.angularDrag, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.angularDrag, value));
   }
 
   double _linearDamping = 0.0;
@@ -70,7 +70,7 @@ class AreaEffector extends Effector {
   double get linearDamping => _linearDamping;
   set linearDamping(double value) {
     _linearDamping = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.drag, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.drag, value));
   }
 
   double _forceAngle = 0.0;
@@ -78,6 +78,6 @@ class AreaEffector extends Effector {
   double get forceAngle => _forceAngle;
   set forceAngle(double value) {
     _forceAngle = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.forceAngle, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.forceAngle, value));
   }
 }

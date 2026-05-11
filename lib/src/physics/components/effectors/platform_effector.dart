@@ -14,7 +14,7 @@ class PlatformEffector extends Effector {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setEffectorProperty(h, EffectorProp.useOneWay, _useOneWay);
       worker.setEffectorProperty(h, EffectorProp.useOneWayGrouping, _useOneWayGrouping);
       worker.setEffectorProperty(h, EffectorProp.surfaceArc, _surfaceArc);
@@ -30,7 +30,7 @@ class PlatformEffector extends Effector {
   bool get useOneWay => _useOneWay;
   set useOneWay(bool value) {
     _useOneWay = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useOneWay, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useOneWay, value));
   }
 
   bool _useOneWayGrouping = false;
@@ -38,7 +38,7 @@ class PlatformEffector extends Effector {
   bool get useOneWayGrouping => _useOneWayGrouping;
   set useOneWayGrouping(bool value) {
     _useOneWayGrouping = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useOneWayGrouping, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useOneWayGrouping, value));
   }
 
   double _surfaceArc = 180.0;
@@ -46,7 +46,7 @@ class PlatformEffector extends Effector {
   double get surfaceArc => _surfaceArc;
   set surfaceArc(double value) {
     _surfaceArc = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.surfaceArc, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.surfaceArc, value));
   }
 
   bool _useSideFriction = true;
@@ -54,7 +54,7 @@ class PlatformEffector extends Effector {
   bool get useSideFriction => _useSideFriction;
   set useSideFriction(bool value) {
     _useSideFriction = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useSideFriction, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useSideFriction, value));
   }
 
   bool _useSideBounce = true;
@@ -62,7 +62,7 @@ class PlatformEffector extends Effector {
   bool get useSideBounce => _useSideBounce;
   set useSideBounce(bool value) {
     _useSideBounce = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useSideBounce, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useSideBounce, value));
   }
 
   double _sideArc = 0.0;
@@ -70,7 +70,7 @@ class PlatformEffector extends Effector {
   double get sideArc => _sideArc;
   set sideArc(double value) {
     _sideArc = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.sideArc, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.sideArc, value));
   }
 
   double _rotationalOffset = 0.0;
@@ -78,6 +78,6 @@ class PlatformEffector extends Effector {
   double get rotationalOffset => _rotationalOffset;
   set rotationalOffset(double value) {
     _rotationalOffset = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.rotationalOffset, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.rotationalOffset, value));
   }
 }

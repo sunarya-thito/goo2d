@@ -19,6 +19,9 @@ abstract class Joint extends Component {
     return _handleFuture!;
   }
 
+  @protected
+  Future<int>? get handleIfAttached => _handleFuture;
+
   /// The joint type ID of this component.
   int get jointType;
 
@@ -39,7 +42,8 @@ abstract class Joint extends Component {
 
   @override
   void internalDetach() {
-    _handleFuture?.then((h) => worker.destroyJoint(h));
+    final w = worker;
+    _handleFuture?.then((h) => w.destroyJoint(h));
     _handleFuture = null;
     super.internalDetach();
   }
@@ -98,9 +102,9 @@ abstract class Joint extends Component {
   set connectedBody(Rigidbody? value) {
     _connectedBody = value;
     if (value != null) {
-      handle.then((h) => value.handle.then((ch) => worker.setJointProperty(h, JointProp.bodyHandleB, ch)));
+      _handleFuture?.then((h) => value.handle.then((ch) => worker.setJointProperty(h, JointProp.bodyHandleB, ch)));
     } else {
-      handle.then((h) => worker.setJointProperty(h, JointProp.bodyHandleB, -1));
+      _handleFuture?.then((h) => worker.setJointProperty(h, JointProp.bodyHandleB, -1));
     }
   }
 
@@ -118,8 +122,14 @@ abstract class Joint extends Component {
   // --- Methods ---
 
   /// Gets the reaction torque of the joint given the specified timeStep.
-  Future<double> getReactionTorque(double timeStep) async => (await worker.getJointProperty(await handle, JointProp.reactionTorque)) as double; // TODO: handle timeStep in worker
+  Future<double> getReactionTorque(double timeStep) async {
+    final raw = (await worker.getJointProperty(await handle, JointProp.reactionTorque)) as double;
+    return timeStep > 0 ? raw / timeStep : 0.0;
+  }
 
   /// Gets the reaction force of the joint given the specified timeStep.
-  Future<Vector2> getReactionForce(double timeStep) async => (await worker.getJointProperty(await handle, JointProp.reactionForce)) as Vector2; // TODO: handle timeStep in worker
+  Future<Vector2> getReactionForce(double timeStep) async {
+    final raw = (await worker.getJointProperty(await handle, JointProp.reactionForce)) as Vector2;
+    return timeStep > 0 ? raw / timeStep : Vector2.zero();
+  }
 }

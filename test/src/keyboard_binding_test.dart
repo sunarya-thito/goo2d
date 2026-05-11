@@ -80,17 +80,17 @@ void main() {
       await simulateKeyDownEvent(LogicalKeyboardKey.keyW);
       game.input.update();
 
-      final val = moveAction.readValue<Offset>();
-      expect(val.dy, equals(1.0));
-      expect(val.dx, equals(0.0));
+      final val = moveAction.readValue<Vector2>();
+      expect(val.y, equals(1.0));
+      expect(val.x, equals(0.0));
 
       // Press D (simultaneous)
       await simulateKeyDownEvent(LogicalKeyboardKey.keyD);
       game.input.update();
 
-      final val2 = moveAction.readValue<Offset>();
-      expect(val2.dy, equals(1.0));
-      expect(val2.dx, equals(1.0));
+      final val2 = moveAction.readValue<Vector2>();
+      expect(val2.y, equals(1.0));
+      expect(val2.x, equals(1.0));
     });
 
     testWidgets('should maintain backward compatibility with InputControl', (

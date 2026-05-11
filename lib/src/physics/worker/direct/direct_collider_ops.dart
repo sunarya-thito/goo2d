@@ -26,6 +26,7 @@ class ColliderProp {
   static const int shapeCount = 19;
   static const int compositeCapable = 20;
   static const int layer = 21;
+  static const int enabled = 22;
   // Box
   static const int boxSize = 100;
   static const int boxEdgeRadius = 101;
@@ -67,6 +68,7 @@ class DirectColliderOps {
     final c = e.getCollider(h);
     return Future.value(switch (p) {
       ColliderProp.offset => c.offset,
+      ColliderProp.enabled => c.enabled,
       ColliderProp.isTrigger => c.isTrigger,
       ColliderProp.density => c.density,
       ColliderProp.friction => c.friction,
@@ -118,6 +120,7 @@ class DirectColliderOps {
     final c = e.getCollider(h);
     switch (p) {
       case ColliderProp.offset: c.offset.setFrom(v as Vector2);
+      case ColliderProp.enabled: c.enabled = v as bool;
       case ColliderProp.isTrigger: c.isTrigger = v as bool;
       case ColliderProp.density: c.density = v as double;
       case ColliderProp.friction: c.friction = v as double;
@@ -163,6 +166,7 @@ class DirectColliderOps {
       case ColliderProp.compositeGeometryType: c.compositeGeometryType = v as int;
       default: throw ArgumentError('Unknown collider property: $p');
     }
+    c.generateGeometry();
     return Future.value();
   }
 

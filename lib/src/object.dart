@@ -333,7 +333,7 @@ abstract class GameObject implements BuildContext {
   /// ```dart
   /// void updatePosition(GameObject gameObject) {
   ///   final transform = gameObject.getComponent<ObjectTransform>();
-  ///   transform.translate(const Offset(5, 0));
+  ///   transform.translate(Vector2(5, 0));
   /// }
   /// ```
   ///

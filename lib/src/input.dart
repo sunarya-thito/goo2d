@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:goo2d/src/game.dart';
 import 'package:goo2d/src/component.dart';
 import 'package:goo2d/src/lifecycle.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 part 'keyboard.dart';
 
@@ -203,7 +204,7 @@ class InputSystem implements GameSystem {
   static final Map<Type, Object Function()> _defaultValues = {
     bool: () => false,
     double: () => 0.0,
-    Offset: () => Offset.zero,
+    Vector2: () => Vector2.zero(),
   };
 
   /// Creates a new input system.
@@ -287,7 +288,7 @@ abstract class InputControl<T> {
 
   /// The current raw value of the control.
   ///
-  /// This provides the exact hardware state (e.g., a boolean for buttons, an Offset for sticks).
+  /// This provides the exact hardware state (e.g., a boolean for buttons, a Vector2 for sticks).
   T get value;
 
   /// The normalized magnitude of the current value (0.0 to 1.0).
@@ -901,17 +902,17 @@ class CompositeBinding extends InputBinding {
     final d = down.magnitude(game);
     final l = left.magnitude(game);
     final r = right.magnitude(game);
-    return Offset(r - l, d - u).distance.clamp(0.0, 1.0);
+    return Vector2(r - l, d - u).length.clamp(0.0, 1.0);
   }
 
   @override
   T readValue<T>(GameEngine game) {
-    if (T == Offset) {
+    if (T == Vector2) {
       final u = up.magnitude(game);
       final d = down.magnitude(game);
       final l = left.magnitude(game);
       final r = right.magnitude(game);
-      return Offset(r - l, d - u) as T;
+      return Vector2(r - l, d - u) as T;
     }
     return InputSystem.getDefaultValue<T>();
   }
@@ -966,11 +967,11 @@ class CompositeBindingState extends BindingState {
     if (down.isPressed) y -= 1;
     if (left.isPressed) x -= 1;
     if (right.isPressed) x += 1;
-    return Offset(x, y);
+    return Vector2(x, y);
   }
 
   @override
-  double get magnitude => (read() as Offset).distance;
+  double get magnitude => (read() as Vector2).length;
   @override
   bool get isPressed => magnitude > 0;
   @override

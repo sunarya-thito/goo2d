@@ -16,7 +16,7 @@ class SpringJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.anchor, _anchor);
       worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
       worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
@@ -32,7 +32,7 @@ class SpringJoint extends Joint {
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
   }
 
   final Vector2 _connectedAnchor = Vector2.zero();
@@ -40,7 +40,7 @@ class SpringJoint extends Joint {
   Vector2 get connectedAnchor => _connectedAnchor;
   set connectedAnchor(Vector2 value) {
     _connectedAnchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
   }
 
   bool _autoConfigureConnectedAnchor = true;
@@ -48,7 +48,7 @@ class SpringJoint extends Joint {
   bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
   set autoConfigureConnectedAnchor(bool value) {
     _autoConfigureConnectedAnchor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
   }
 
   double _distance = 1.0;
@@ -56,7 +56,7 @@ class SpringJoint extends Joint {
   double get distance => _distance;
   set distance(double value) {
     _distance = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.distance, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.distance, value));
   }
 
   bool _autoConfigureDistance = true;
@@ -64,7 +64,7 @@ class SpringJoint extends Joint {
   bool get autoConfigureDistance => _autoConfigureDistance;
   set autoConfigureDistance(bool value) {
     _autoConfigureDistance = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureDistance, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureDistance, value));
   }
 
   double _dampingRatio = 0.0;
@@ -72,7 +72,7 @@ class SpringJoint extends Joint {
   double get dampingRatio => _dampingRatio;
   set dampingRatio(double value) {
     _dampingRatio = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
   }
 
   double _frequency = 1.0;
@@ -80,6 +80,6 @@ class SpringJoint extends Joint {
   double get frequency => _frequency;
   set frequency(double value) {
     _frequency = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
   }
 }

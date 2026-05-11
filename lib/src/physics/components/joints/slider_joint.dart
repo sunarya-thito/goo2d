@@ -16,7 +16,7 @@ class SliderJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.anchor, _anchor);
       worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
       worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
@@ -32,7 +32,7 @@ class SliderJoint extends Joint {
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
   }
 
   final Vector2 _connectedAnchor = Vector2.zero();
@@ -40,7 +40,7 @@ class SliderJoint extends Joint {
   Vector2 get connectedAnchor => _connectedAnchor;
   set connectedAnchor(Vector2 value) {
     _connectedAnchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
   }
 
   bool _autoConfigureConnectedAnchor = true;
@@ -48,7 +48,7 @@ class SliderJoint extends Joint {
   bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
   set autoConfigureConnectedAnchor(bool value) {
     _autoConfigureConnectedAnchor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
   }
 
   bool _useMotor = false;
@@ -56,7 +56,7 @@ class SliderJoint extends Joint {
   bool get useMotor => _useMotor;
   set useMotor(bool value) {
     _useMotor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.useMotor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.useMotor, value));
   }
 
   double _angle = 0.0;
@@ -64,7 +64,7 @@ class SliderJoint extends Joint {
   double get angle => _angle;
   set angle(double value) {
     _angle = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.sliderAngle, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.sliderAngle, value));
   }
 
   bool _useLimits = false;
@@ -72,7 +72,7 @@ class SliderJoint extends Joint {
   bool get useLimits => _useLimits;
   set useLimits(bool value) {
     _useLimits = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.useTranslationLimits, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.useTranslationLimits, value));
   }
 
   bool _autoConfigureAngle = true;
@@ -80,27 +80,53 @@ class SliderJoint extends Joint {
   bool get autoConfigureAngle => _autoConfigureAngle;
   set autoConfigureAngle(bool value) {
     _autoConfigureAngle = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureAngle, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureAngle, value));
   }
 
-  /// Parameters for a motor force that is applied automatically to the Rigibody2D along the line.
-  Object? get motor => null; // Missing spec for JointMotor2D
+  double _motorSpeed = 0.0;
+  double _maxMotorTorque = 10000.0;
+  double _lowerTranslation = 0.0;
+  double _upperTranslation = 0.0;
 
-  /// Restrictions on how far the joint can slide in each direction along the line.
-  Object? get limits => null; // Missing spec for JointTranslationLimits2D
+  /// Parameters for the motor applied along the slider axis.
+  JointMotor get motor => JointMotor(motorSpeed: _motorSpeed, maxMotorTorque: _maxMotorTorque);
+  set motor(JointMotor value) {
+    _motorSpeed = value.motorSpeed;
+    _maxMotorTorque = value.maxMotorTorque;
+    handleIfAttached?.then((h) {
+      worker.setJointProperty(h, JointProp.motorSpeed, value.motorSpeed);
+      worker.setJointProperty(h, JointProp.maxMotorTorque, value.maxMotorTorque);
+    });
+  }
 
-  /// Gets the state of the joint limit.
-  Object? get limitState => null; // Missing spec for JointLimitState2D
+  /// Translation limits along the slider axis.
+  JointTranslationLimits get limits => JointTranslationLimits(min: _lowerTranslation, max: _upperTranslation);
+  set limits(JointTranslationLimits value) {
+    _lowerTranslation = value.min;
+    _upperTranslation = value.max;
+    handleIfAttached?.then((h) {
+      worker.setJointProperty(h, JointProp.lowerTranslation, value.min);
+      worker.setJointProperty(h, JointProp.upperTranslation, value.max);
+    });
+  }
 
-  /// The current joint translation.
-  Future<double> get jointTranslation async => 0.0; // Placeholder
+  /// The current state of the translation limits.
+  JointLimitState get limitState => JointLimitState.inactive;
 
-  /// The current joint speed.
-  Future<double> get jointSpeed async => 0.0; // Placeholder
+  /// The current translation of the joint along its constrained axis.
+  Future<double> get jointTranslation async =>
+      (await worker.getJointProperty(await handle, JointProp.lowerTranslation)) as double;
 
-  /// The angle (in degrees) referenced between the two bodies used as the constraint for the joint.
-  Future<double> get referenceAngle async => 0.0; // Placeholder
+  /// The current speed of the joint along its constrained axis.
+  Future<double> get jointSpeed async =>
+      (await worker.getJointProperty(await handle, JointProp.motorSpeed)) as double;
 
-  /// Gets the motor force of the joint given the specified timestep.
-  Future<double> GetMotorForce(double timeStep) async => 0.0; // Placeholder
+  /// The angle (in degrees) referenced between the two bodies used as the constraint.
+  double get referenceAngle => _angle;
+
+  /// Gets the motor force applied by the joint scaled by the inverse timestep.
+  Future<double> getMotorForce(double timeStep) async {
+    final raw = (await worker.getJointProperty(await handle, JointProp.reactionForce)) as Vector2;
+    return timeStep > 0 ? raw.length / timeStep : 0.0;
+  }
 }

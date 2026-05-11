@@ -1,4 +1,4 @@
-import 'dart:ui' show Offset;
+import 'dart:ui' as ui;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
@@ -16,7 +16,7 @@ class CompositeCollider extends Collider {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setColliderProperty(h, ColliderProp.compositeEdgeRadius, _edgeRadius);
       worker.setColliderProperty(h, ColliderProp.compositeVertexDistance, _vertexDistance);
       worker.setColliderProperty(h, ColliderProp.compositeOffsetDistance, _offsetDistance);
@@ -31,7 +31,7 @@ class CompositeCollider extends Collider {
   double get edgeRadius => _edgeRadius;
   set edgeRadius(double value) {
     _edgeRadius = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.compositeEdgeRadius, value));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.compositeEdgeRadius, value));
   }
 
   double _vertexDistance = 0.0005;
@@ -39,7 +39,7 @@ class CompositeCollider extends Collider {
   double get vertexDistance => _vertexDistance;
   set vertexDistance(double value) {
     _vertexDistance = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.compositeVertexDistance, value));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.compositeVertexDistance, value));
   }
 
   double _offsetDistance = 0.00005;
@@ -47,7 +47,7 @@ class CompositeCollider extends Collider {
   double get offsetDistance => _offsetDistance;
   set offsetDistance(double value) {
     _offsetDistance = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.compositeOffsetDistance, value));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.compositeOffsetDistance, value));
   }
 
   bool _useDelaunayMesh = false;
@@ -55,7 +55,7 @@ class CompositeCollider extends Collider {
   bool get useDelaunayMesh => _useDelaunayMesh;
   set useDelaunayMesh(bool value) {
     _useDelaunayMesh = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.compositeUseDelaunayMesh, value));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.compositeUseDelaunayMesh, value));
   }
 
   GeometryType _geometryType = GeometryType.outlines;
@@ -63,7 +63,7 @@ class CompositeCollider extends Collider {
   GeometryType get geometryType => _geometryType;
   set geometryType(GeometryType value) {
     _geometryType = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.compositeGeometryType, value.index));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.compositeGeometryType, value.index));
   }
 
   GenerationType _generationType = GenerationType.synchronous;
@@ -71,7 +71,7 @@ class CompositeCollider extends Collider {
   GenerationType get generationType => _generationType;
   set generationType(GenerationType value) {
     _generationType = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.compositeGenerationType, value.index));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.compositeGenerationType, value.index));
   }
 
   /// The number of paths in the Collider.
@@ -94,10 +94,10 @@ class CompositeCollider extends Collider {
 
   /// Regenerates the Composite Collider geometry.
   void generateGeometry() {
-    handle.then((h) => worker.colliderGenerateGeometry(h));
+    handleIfAttached?.then((h) => worker.colliderGenerateGeometry(h));
   }
 
   // CompositeCollider geometry is only known to the physics worker — not testable synchronously.
   @override
-  bool containsPoint(Offset position) => false;
+  bool containsPoint(ui.Offset position) => false;
 }

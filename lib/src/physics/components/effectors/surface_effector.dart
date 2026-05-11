@@ -14,7 +14,7 @@ class SurfaceEffector extends Effector {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setEffectorProperty(h, EffectorProp.speed, _speed);
       worker.setEffectorProperty(h, EffectorProp.speedVariation, _speedVariation);
       worker.setEffectorProperty(h, EffectorProp.forceScale, _forceScale);
@@ -29,7 +29,7 @@ class SurfaceEffector extends Effector {
   double get speed => _speed;
   set speed(double value) {
     _speed = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.speed, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.speed, value));
   }
 
   double _speedVariation = 0.0;
@@ -37,7 +37,7 @@ class SurfaceEffector extends Effector {
   double get speedVariation => _speedVariation;
   set speedVariation(double value) {
     _speedVariation = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.speedVariation, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.speedVariation, value));
   }
 
   double _forceScale = 1.0;
@@ -45,7 +45,7 @@ class SurfaceEffector extends Effector {
   double get forceScale => _forceScale;
   set forceScale(double value) {
     _forceScale = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.forceScale, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.forceScale, value));
   }
 
   bool _useContactForce = true;
@@ -53,7 +53,7 @@ class SurfaceEffector extends Effector {
   bool get useContactForce => _useContactForce;
   set useContactForce(bool value) {
     _useContactForce = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useContactForce, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useContactForce, value));
   }
 
   bool _useFriction = true;
@@ -61,7 +61,7 @@ class SurfaceEffector extends Effector {
   bool get useFriction => _useFriction;
   set useFriction(bool value) {
     _useFriction = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useFriction, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useFriction, value));
   }
 
   bool _useBounce = true;
@@ -69,6 +69,6 @@ class SurfaceEffector extends Effector {
   bool get useBounce => _useBounce;
   set useBounce(bool value) {
     _useBounce = value;
-    handle.then((h) => worker.setEffectorProperty(h, EffectorProp.useBounce, value));
+    handleIfAttached?.then((h) => worker.setEffectorProperty(h, EffectorProp.useBounce, value));
   }
 }

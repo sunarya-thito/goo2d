@@ -16,13 +16,13 @@ class DistanceJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.anchor, _anchor);
       worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
       worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
       worker.setJointProperty(h, JointProp.distance, _distance);
       worker.setJointProperty(h, JointProp.autoConfigureDistance, _autoConfigureDistance);
-      worker.setJointProperty(h, JointProp.maxDistanceOnly, _maxDistanceOnly);
+      worker.setJointProperty(h, JointProp.maxDistanceOnly, _maxDistanceOnly ? 1.0 : 0.0);
     });
   }
 
@@ -31,7 +31,7 @@ class DistanceJoint extends Joint {
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
   }
 
   final Vector2 _connectedAnchor = Vector2.zero();
@@ -39,7 +39,7 @@ class DistanceJoint extends Joint {
   Vector2 get connectedAnchor => _connectedAnchor;
   set connectedAnchor(Vector2 value) {
     _connectedAnchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
   }
 
   bool _autoConfigureConnectedAnchor = true;
@@ -47,7 +47,7 @@ class DistanceJoint extends Joint {
   bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
   set autoConfigureConnectedAnchor(bool value) {
     _autoConfigureConnectedAnchor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
   }
 
   bool _autoConfigureDistance = true;
@@ -55,7 +55,7 @@ class DistanceJoint extends Joint {
   bool get autoConfigureDistance => _autoConfigureDistance;
   set autoConfigureDistance(bool value) {
     _autoConfigureDistance = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureDistance, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureDistance, value));
   }
 
   bool _maxDistanceOnly = false;
@@ -63,7 +63,7 @@ class DistanceJoint extends Joint {
   bool get maxDistanceOnly => _maxDistanceOnly;
   set maxDistanceOnly(bool value) {
     _maxDistanceOnly = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.maxDistanceOnly, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.maxDistanceOnly, value ? 1.0 : 0.0));
   }
 
   double _distance = 1.0;
@@ -71,6 +71,6 @@ class DistanceJoint extends Joint {
   double get distance => _distance;
   set distance(double value) {
     _distance = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.distance, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.distance, value));
   }
 }

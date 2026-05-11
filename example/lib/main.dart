@@ -212,12 +212,12 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     if (player == null) return;
     final pTrans = player.getComponent<ObjectTransform>();
 
-    final forward = Offset(-math.sin(-pTrans.angle), -math.cos(-pTrans.angle));
+    final forward = Vector2(-math.sin(-pTrans.angle), -math.cos(-pTrans.angle));
     final angle =
-        math.atan2(forward.dy, forward.dx) +
+        math.atan2(forward.y, forward.x) +
         (math.Random().nextDouble() - 0.5) * (math.pi / 1.5);
     final pos =
-        pTrans.position + Offset(math.cos(angle), math.sin(angle)) * 15.0;
+        pTrans.position + Vector2(math.cos(angle), math.sin(angle)) * 15.0;
 
     setState(() {
       enemies.add(
@@ -252,7 +252,7 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
     });
   }
 
-  void _spawnExplosion(Offset position) {
+  void _spawnExplosion(Vector2 position) {
     setState(() {
       enemies.add(
         GameObjectWidget(
@@ -262,7 +262,7 @@ class BattleWorldState extends GameState<BattleWorld> with Tickable {
               ObjectTransform.new.withInitialValues(
                 (c) => c
                   ..position = position
-                  ..scale = const Offset(1.0, -1.0),
+                  ..scale = Vector2(1.0, -1.0),
               ),
             ),
             ComponentWidget(
@@ -334,7 +334,7 @@ class PlayerState extends GameState<Player> with Tickable {
     );
 
     addComponent(
-      ObjectTransform()..position = Offset.zero,
+      ObjectTransform()..position = Vector2.zero(),
       Rigidbody()..bodyType = RigidbodyType.kinematic,
       SpriteRenderer()
         ..sprite = GameSprite(
@@ -379,7 +379,7 @@ class PlayerState extends GameState<Player> with Tickable {
     trans.angle += _rotationVel * dt;
 
     // Movement
-    final facing = Offset(-math.sin(-trans.angle), -math.cos(-trans.angle));
+    final facing = Vector2(-math.sin(-trans.angle), -math.cos(-trans.angle));
     final speedRes = MathUtils.smoothDamp(
       _speed,
       moveAction.inProgress ? 4.0 : 2.0,
@@ -437,7 +437,7 @@ class PlayerState extends GameState<Player> with Tickable {
 
 class BulletController extends Behavior
     with Tickable, LifecycleListener, CollisionListener {
-  late Offset direction;
+  late Vector2 direction;
   late ObjectTransform _transform;
   late BattleWorldState world;
   double _lifetime = 0;
@@ -485,16 +485,16 @@ class EnemyController extends Behavior
     if (player == null) return;
     final toPlayer =
         player.getComponent<ObjectTransform>().position - _transform.position;
-    final dist = toPlayer.distance;
+    final dist = toPlayer.length;
     if (dist > 0.1) {
       final dir = toPlayer / dist;
       _transform.position += dir * speed * dt;
       _transform.position +=
-          Offset(-dir.dy, dir.dx) *
+          Vector2(-dir.y, dir.x) *
           math.sin(game.ticker.time * _swerveSpeed + _swerveOffset) *
           1.2 *
           dt;
-      _transform.angle = -math.atan2(toPlayer.dx, toPlayer.dy) + math.pi;
+      _transform.angle = -math.atan2(toPlayer.x, toPlayer.y) + math.pi;
     }
   }
 
@@ -530,9 +530,9 @@ class FollowTarget extends Behavior with LifecycleListener, LateTickable {
 
 class CameraShake extends Behavior with LifecycleListener, LateTickable {
   double _trauma = 0, _magnitude = 0, _timer = 0, _decayRate = 2.0;
-  Offset _currentOffset = Offset.zero,
-      _targetOffset = Offset.zero,
-      _velocity = Offset.zero;
+  Vector2 _currentOffset = Vector2.zero(),
+      _targetOffset = Vector2.zero(),
+      _velocity = Vector2.zero();
   final math.Random _random = math.Random();
 
   void shake([double duration = 0.4, double magnitude = 0.25]) {
@@ -548,12 +548,12 @@ class CameraShake extends Behavior with LifecycleListener, LateTickable {
     if ((_timer -= dt) <= 0) {
       _timer = 0.02;
       final s = _trauma * _trauma;
-      _targetOffset = Offset(
+      _targetOffset = Vector2(
         (_random.nextDouble() * 2 - 1) * _magnitude * s,
         (_random.nextDouble() * 2 - 1) * _magnitude * s,
       );
     }
-    final res = MathUtils.smoothDampOffset(
+    final res = MathUtils.smoothDampVector2(
       _currentOffset,
       _targetOffset,
       _velocity,
@@ -649,7 +649,7 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
       final camera = game.cameras.main;
       final camPos =
           camera.gameObject.tryGetComponent<ObjectTransform>()?.position ??
-          ui.Offset.zero;
+          Vector2.zero();
       final halfHeight = camera.orthographicSize;
       final screenSize = game.screen.screenSize;
       final aspect = screenSize.height > 0
@@ -658,17 +658,17 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
       final halfWidth = halfHeight * aspect;
 
       bounds = ui.Rect.fromLTWH(
-        camPos.dx - halfWidth,
-        camPos.dy - halfHeight,
+        camPos.x - halfWidth,
+        camPos.y - halfHeight,
         halfWidth * 2,
         halfHeight * 2,
       );
     }
 
     final int startX = (bounds.left / size).floor() - 2;
-    final int endX = (bounds.right / size).ceil() + 2;
+    final int enx = (bounds.right / size).ceil() + 2;
     final int startY = (bounds.top / size).floor() - 2;
-    final int endY = (bounds.bottom / size).ceil() + 2;
+    final int eny = (bounds.bottom / size).ceil() + 2;
 
     canvas.save();
     // Flip the canvas for the entire background.
@@ -681,8 +681,8 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
       canvas.drawRect(
         ui.Rect.fromLTRB(
           startX * size,
-          -(endY * size + size),
-          (endX + 1) * size,
+          -(eny * size + size),
+          (enx + 1) * size,
           -(startY * size),
         ),
         ui.Paint()..color = const Color(0xFF354c26),
@@ -692,8 +692,8 @@ class TiledBackground extends Component with LifecycleListener, Renderable {
     }
 
     // 2. Main Pass Rendering
-    for (int y = startY; y <= endY; y++) {
-      for (int x = startX; x <= endX; x++) {
+    for (int y = startY; y <= eny; y++) {
+      for (int x = startX; x <= enx; x++) {
         // Draw grass
         canvas.drawImageRect(
           _grass.texture.image,

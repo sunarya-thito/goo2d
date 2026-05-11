@@ -25,7 +25,10 @@ class DirectPhysicsWorker implements PhysicsWorker {
   void dispose() {}
 
   @override
-  void step(double deltaTime) => engine.step(deltaTime);
+  Future<void> step(double deltaTime) {
+    engine.step(deltaTime);
+    return Future.value();
+  }
 
   // ===================== Global Settings =====================
   @override

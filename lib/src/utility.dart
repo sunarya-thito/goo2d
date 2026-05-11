@@ -183,7 +183,7 @@ class MathUtils {
     return SmoothDampResult(newValue, newVelocity);
   }
 
-  /// Smoothly dampens an [Offset] towards a target position over time.
+  /// Smoothly dampens an [Vector2] towards a target position over time.
   ///
   /// This is the 2D version of [smoothDamp], applying the algorithm to
   /// both X and Y coordinates simultaneously. It maintains a constant
@@ -195,10 +195,10 @@ class MathUtils {
   /// * [smoothTime]: Approximately the time it will take to reach the target.
   /// * [dt]: The time elapsed since the last frame.
   /// * [maxSpeed]: An optional limit on the maximum damping speed.
-  static SmoothDampResult<Offset> smoothDampOffset(
-    Offset current,
-    Offset target,
-    Offset currentVelocity,
+  static SmoothDampResult<Vector2> smoothDampVector2(
+    Vector2 current,
+    Vector2 target,
+    Vector2 currentVelocity,
     double smoothTime,
     double dt, [
     double maxSpeed = double.infinity,
@@ -208,10 +208,10 @@ class MathUtils {
     final x = omega * dt;
     final exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
 
-    Offset change = current - target;
+    Vector2 change = current - target;
     final maxChange = maxSpeed * smoothTime;
-    if (change.distance > maxChange) {
-      change = change / change.distance * maxChange;
+    if (change.length > maxChange) {
+      change = change / change.length * maxChange;
     }
 
     final temp = (currentVelocity + change * omega) * dt;
@@ -224,6 +224,10 @@ class MathUtils {
 
 extension OffsetExtension on Offset {
   Vector2 get asVector2 => Vector2(dx, dy);
+}
+
+extension Vector2Extension on Vector2 {
+  Offset get asOffset => Offset(x, y);
 }
 
 extension SizeExtension on Size {

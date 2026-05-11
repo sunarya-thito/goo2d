@@ -101,7 +101,7 @@ void main() {
               ComponentWidget(() => audioSource),
               ComponentWidget(
                 ObjectTransform.new,
-                update: (c) => c.position = const Offset(100, 0),
+                update: (c) => c.position = Vector2(100, 0),
               ),
             ],
           ),

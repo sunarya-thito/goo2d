@@ -103,14 +103,17 @@ void main() {
       );
 
       final state = binding.createState(game);
-      expect(state.read(), equals(Offset.zero));
+      expect((state.read() as Vector2).x, equals(0.0));
+      expect((state.read() as Vector2).y, equals(0.0));
 
       up.press();
       right.press();
-      expect(state.read(), equals(const Offset(1, 1)));
+      expect((state.read() as Vector2).x, equals(1.0));
+      expect((state.read() as Vector2).y, equals(1.0));
 
       up.release();
-      expect(state.read(), equals(const Offset(1, 0)));
+      expect((state.read() as Vector2).x, equals(1.0));
+      expect((state.read() as Vector2).y, equals(0.0));
     });
 
     testWidgets('InputAction events should be triggered', (tester) async {

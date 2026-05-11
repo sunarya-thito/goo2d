@@ -16,7 +16,7 @@ class FixedJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.anchor, _anchor);
       worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
       worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
@@ -31,7 +31,7 @@ class FixedJoint extends Joint {
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
   }
 
   final Vector2 _connectedAnchor = Vector2.zero();
@@ -39,7 +39,7 @@ class FixedJoint extends Joint {
   Vector2 get connectedAnchor => _connectedAnchor;
   set connectedAnchor(Vector2 value) {
     _connectedAnchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
   }
 
   bool _autoConfigureConnectedAnchor = true;
@@ -47,7 +47,7 @@ class FixedJoint extends Joint {
   bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
   set autoConfigureConnectedAnchor(bool value) {
     _autoConfigureConnectedAnchor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
   }
 
   double _frequency = 0.0;
@@ -55,7 +55,7 @@ class FixedJoint extends Joint {
   double get frequency => _frequency;
   set frequency(double value) {
     _frequency = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
   }
 
   double _dampingRatio = 0.0;
@@ -63,7 +63,7 @@ class FixedJoint extends Joint {
   double get dampingRatio => _dampingRatio;
   set dampingRatio(double value) {
     _dampingRatio = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
   }
 
   double _referenceAngle = 0.0;
@@ -71,6 +71,6 @@ class FixedJoint extends Joint {
   double get referenceAngle => _referenceAngle;
   set referenceAngle(double value) {
     _referenceAngle = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.angularOffset, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.angularOffset, value));
   }
 }

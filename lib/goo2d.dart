@@ -54,3 +54,7 @@ export 'src/world.dart' hide RenderWorld;
 
 // bundled
 export 'package:vector_math/vector_math_64.dart' hide Colors;
+
+import 'package:vector_math/vector_math_64.dart' as vector_math_64;
+
+typedef ColorUtils = vector_math_64.Colors;

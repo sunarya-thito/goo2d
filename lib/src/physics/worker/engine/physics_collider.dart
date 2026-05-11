@@ -1,13 +1,22 @@
+import 'package:forge2d/forge2d.dart' as f;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
 
 /// Internal collider representation matching Unity's Collider2D state.
+/// The [fixtures] list holds the Forge2D fixtures that implement this collider.
 class PhysicsCollider {
   final int handle;
   final ColliderShapeType shapeType;
   int bodyHandle;
 
+  // Forge2D fixtures (1 for most shapes, 3 for capsule: rect + 2 circles)
+  final List<f.Fixture> fixtures = [];
+
+  void Function()? _onGeometryChanged;
+  set onGeometryChanged(void Function()? fn) => _onGeometryChanged = fn;
+
   // Common
+  bool enabled = true;
   Vector2 offset = Vector2.zero();
   bool isTrigger = false;
   double density = 1.0;
@@ -64,10 +73,12 @@ class PhysicsCollider {
   bool compositeUseDelaunayMesh = false;
   int compositeGenerationType = 1;
   int compositeGeometryType = 0;
-  
-  void generateGeometry() {
-    // TODO: Implement geometry generation for composite colliders
-  }
 
   PhysicsCollider(this.handle, this.shapeType, this.bodyHandle);
+
+  /// Triggers a rebuild of the Forge2D fixtures from current shape data.
+  /// Called by the component layer after a batch of property changes.
+  void generateGeometry() {
+    _onGeometryChanged?.call();
+  }
 }

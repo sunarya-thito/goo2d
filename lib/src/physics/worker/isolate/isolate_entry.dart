@@ -9,6 +9,8 @@ import 'package:goo2d/src/physics/worker/engine/physics_collider.dart';
 import 'package:goo2d/src/physics/worker/engine/physics_joint.dart';
 import 'package:goo2d/src/physics/worker/engine/physics_effector.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
+import 'package:goo2d/src/physics/worker/data/raycast_hit_data.dart';
+import 'package:goo2d/src/physics/worker/data/contact_point_data.dart';
 import 'package:goo2d/src/physics/worker/isolate/isolate_protocol.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_body_ops.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_collider_ops.dart';
@@ -85,7 +87,7 @@ Uint8ListBuffer? _dispatch(PhysicsEngine engine, ByteData data) {
   switch (opcode) {
     case Opcode.step:
       engine.step(rd());
-      return null;
+      return Uint8ListBuffer();
     case Opcode.syncTransforms:
       engine.syncTransforms();
       return null;
@@ -155,6 +157,33 @@ Uint8ListBuffer? _dispatch(PhysicsEngine engine, ByteData data) {
       final p = ri();
       final v = _readObject(data, off);
       _setProp(engine, entity, h, p, v.value);
+      return null;
+
+    case Opcode.bodyMethod:
+      final method = ri();
+      final h = ri();
+      final body = engine.getBody(h);
+      switch (method) {
+        case BodyMethodId.addForce:       body.addForce(rv(), ri()); return null;
+        case BodyMethodId.addForceAtPos:  body.addForceAtPosition(rv(), rv(), ri()); return null;
+        case BodyMethodId.addTorque:      body.addTorque(rd(), ri()); return null;
+        case BodyMethodId.addRelForce:    body.addRelativeForce(rv(), ri()); return null;
+        case BodyMethodId.movePos:        body.movePosition(rv()); return null;
+        case BodyMethodId.moveRot:        body.moveRotation(rd()); return null;
+        case BodyMethodId.movePosRot:     body.movePositionAndRotation(rv(), rd()); return null;
+        case BodyMethodId.setRot:         body.setRotation(rd()); return null;
+        case BodyMethodId.wakeUp:         body.wake(); return null;
+        case BodyMethodId.sleep:          body.putToSleep(); return null;
+        case BodyMethodId.isAwake:        return respBool(body.isAwake);
+        case BodyMethodId.isSleeping:     return respBool(body.isSleeping);
+        case BodyMethodId.getPoint:       return respVec(body.getPoint(rv()));
+        case BodyMethodId.getRelPoint:    return respVec(body.getRelativePoint(rv()));
+        case BodyMethodId.getVector:      return respVec(body.getVector(rv()));
+        case BodyMethodId.getRelVector:   return respVec(body.getRelativeVector(rv()));
+        case BodyMethodId.getPointVel:    return respVec(body.getPointVelocity(rv()));
+        case BodyMethodId.getRelPointVel: return respVec(body.getRelativePointVelocity(rv()));
+        case BodyMethodId.closestPoint:   return respVec(engine.closestPoint(rv(), h));
+      }
       return null;
 
     case Opcode.raycast:
@@ -373,7 +402,19 @@ Object? _getEffectorPropSync(PhysicsEffector ef, int p) {
 Uint8ListBuffer _writeRaycastResult(List result) {
   final b = Uint8ListBuffer();
   b.write(4, () => b.byteData.setInt32(b.offset, result.length));
-  // Results are empty for now (TODO in engine follow-up)
+  for (final hit in result) {
+    if (hit is! RaycastHitData) continue;
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.point.x));
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.point.y));
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.normal.x));
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.normal.y));
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.centroid.x));
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.centroid.y));
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.distance));
+    b.write(8, () => b.byteData.setFloat64(b.offset, hit.fraction));
+    b.write(4, () => b.byteData.setInt32(b.offset, hit.colliderHandle));
+    b.write(4, () => b.byteData.setInt32(b.offset, hit.bodyHandle));
+  }
   return b;
 }
 
@@ -387,7 +428,24 @@ Uint8ListBuffer _writeIntList(List<int> list) {
 }
 
 Uint8ListBuffer _writeContactPoints(List result) {
-  final b = Uint8ListBuffer();
-  b.write(4, () => b.byteData.setInt32(b.offset, result.length));
+  final contacts = result.cast<ContactPointData>();
+  final b = Uint8ListBuffer(4 + contacts.length * 80);
+  b.write(4, () => b.byteData.setInt32(b.offset, contacts.length));
+  for (final c in contacts) {
+    b.write(80, () {
+      final o = b.offset;
+      b.byteData.setFloat64(o,      c.point.x);
+      b.byteData.setFloat64(o + 8,  c.point.y);
+      b.byteData.setFloat64(o + 16, c.normal.x);
+      b.byteData.setFloat64(o + 24, c.normal.y);
+      b.byteData.setFloat64(o + 32, c.relativeVelocity.x);
+      b.byteData.setFloat64(o + 40, c.relativeVelocity.y);
+      b.byteData.setFloat64(o + 48, c.separation);
+      b.byteData.setFloat64(o + 56, c.normalImpulse);
+      b.byteData.setFloat64(o + 64, c.tangentImpulse);
+      b.byteData.setInt32(o + 72,   c.colliderHandle);
+      b.byteData.setInt32(o + 76,   c.otherColliderHandle);
+    });
+  }
   return b;
 }

@@ -1,5 +1,6 @@
-import 'dart:ui' show Offset;
+import 'dart:ui' as ui;
 import 'package:meta/meta.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_collider_ops.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
@@ -16,7 +17,7 @@ class CircleCollider extends Collider {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setColliderProperty(h, ColliderProp.circleRadius, _radius);
     });
   }
@@ -26,13 +27,25 @@ class CircleCollider extends Collider {
   double get radius => _radius;
   set radius(double value) {
     _radius = value;
-    handle.then((h) => worker.setColliderProperty(h, ColliderProp.circleRadius, value));
+    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.circleRadius, value));
   }
 
   @override
-  bool containsPoint(Offset position) {
+  int getShapes(PhysicsShapeGroup shapeGroup, [int shapeIndex = 0, int shapeCount = 0]) {
+    shapeGroup.addCircle(offset, _radius);
+    return 1;
+  }
+
+  @override
+  bool containsPoint(ui.Offset position) {
     final dx = position.dx - offset.x;
     final dy = position.dy - offset.y;
     return dx * dx + dy * dy <= _radius * _radius;
+  }
+
+  @override
+  @protected
+  ui.Rect computeShapeBounds(Vector2 center, double angle) {
+    return ui.Rect.fromCircle(center: ui.Offset(center.x, center.y), radius: _radius);
   }
 }

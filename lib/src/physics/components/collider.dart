@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
@@ -10,7 +11,7 @@ import 'package:goo2d/goo2d.dart';
 /// The parent class for collider types used with 2D gameplay. Provides methods to defines the shape and physical behavior for 2D object interactions, used to detect collisions, and trigger events in 2D game environments.
 /// 
 /// Equivalent to Unity's `Collider2D`.
-abstract class Collider extends Component {
+abstract class Collider extends Behavior {
   Future<int>? _handleFuture;
 
   /// The internal physics handle for this collider.
@@ -20,6 +21,9 @@ abstract class Collider extends Component {
     }
     return _handleFuture!;
   }
+
+  @protected
+  Future<int>? get handleIfAttached => _handleFuture;
 
   /// The shape type of this collider.
   ColliderShapeType get shapeType;
@@ -42,18 +46,26 @@ abstract class Collider extends Component {
 
   @override
   void internalDetach() {
+    final w = worker;
     _handleFuture?.then((h) {
       PhysicsSystem.unregisterCollider(h);
-      worker.destroyCollider(h);
+      w.destroyCollider(h);
     });
     _handleFuture = null;
     super.internalDetach();
+  }
+
+  @override
+  set enabled(bool value) {
+    super.enabled = value;
+    _handleFuture?.then((h) => worker.setColliderProperty(h, ColliderProp.enabled, value));
   }
 
   /// Synchronizes properties with the physics worker.
   @protected
   void syncProperties() {
     _handleFuture?.then((h) {
+      worker.setColliderProperty(h, ColliderProp.enabled, enabled);
       worker.setColliderProperty(h, ColliderProp.offset, _offset);
       worker.setColliderProperty(h, ColliderProp.isTrigger, _isTrigger);
       worker.setColliderProperty(h, ColliderProp.density, _density);
@@ -226,8 +238,15 @@ abstract class Collider extends Component {
   /// The world space bounding area of the collider.
   ui.Rect get bounds {
     final t = gameObject.getComponent<ObjectTransform>();
-    return ui.Rect.fromLTWH(t.position.dx, t.position.dy, 1, 1); // TODO: Compute from AABB
+    final pos = t.position;
+    final wm = t.worldMatrix;
+    final angle = math.atan2(wm.entry(1, 0), wm.entry(0, 0));
+    return computeShapeBounds(Vector2(pos.x + _offset.x, pos.y + _offset.y), angle);
   }
+
+  @protected
+  ui.Rect computeShapeBounds(Vector2 center, double angle) =>
+      ui.Rect.fromCenter(center: ui.Offset(center.x, center.y), width: 0, height: 0);
 
   /// Alias for [bounds] used by screen visibility tracking.
   ui.Rect get worldBounds => bounds;
@@ -277,17 +296,27 @@ abstract class Collider extends Component {
   /// called. Each Collider subclass overrides this with its own geometry test.
   bool containsPoint(ui.Offset position) => false;
 
+  PhysicsMaterial? _sharedMaterial;
+
   /// The PhysicsMaterial2D that is shared by this Collider2D.
-  PhysicsMaterial? get sharedMaterial => null;
-  set sharedMaterial(PhysicsMaterial? value) {}
+  PhysicsMaterial? get sharedMaterial => _sharedMaterial;
+  set sharedMaterial(PhysicsMaterial? value) {
+    _sharedMaterial = value;
+    if (value == null) return;
+    friction = value.friction;
+    bounciness = value.bounciness;
+    frictionCombine = value.frictionCombine;
+    bounceCombine = value.bounceCombine;
+  }
 
   /// Casts the Collider shape into the Scene starting at the Collider position.
   Future<List<RaycastHit>> cast(Vector2 direction, [double distance = double.infinity, bool ignoreSiblingColliders = true]) async {
     final transform = gameObject.getComponent<ObjectTransform>();
-    return Physics.boxCastAll(Vector2(transform.position.dx, transform.position.dy), Vector2(1, 1), transform.angle, direction, distance, ~0, -double.infinity, double.infinity);
+    return Physics.boxCastAll(transform.position, Vector2(1, 1), transform.angle, direction, distance, ~0, -double.infinity, double.infinity);
   }
 
-  /// Creates a mesh for the Collider2D.
+  /// Creates a mesh representation of the Collider2D shape.
+  /// Returns null — the engine has no Mesh asset class yet; this is a stub until one is added.
   Object? createMesh(bool useDelaunayMesh, double extrusionAmount) => null;
 
   /// Retrieves all colliders in contact with this Collider2D.
@@ -296,11 +325,22 @@ abstract class Collider extends Component {
     return handles.map((h) => PhysicsSystem.getCollider(h)).whereType<Collider>().toList();
   }
 
-  /// Returns the current physics shapes used by the Collider2D.
-  List<PhysicsShape> getShapes() => [];
+  /// Fills [shapeGroup] with the physics shapes used by this Collider2D.
+  /// Returns the number of shapes added.
+  int getShapes(PhysicsShapeGroup shapeGroup, [int shapeIndex = 0, int shapeCount = 0]) => 0;
 
-  /// Returns a hash of the current physics shapes used by the Collider2D.
-  int getShapeHash() => 0;
+  /// Returns a hash of the current physics shapes, useful for change detection.
+  int getShapeHash() {
+    final group = PhysicsShapeGroup();
+    final count = getShapes(group);
+    if (count == 0) return 0;
+    var hash = count;
+    for (var i = 0; i < count; i++) {
+      final s = group.getShape(i);
+      hash = hash ^ (s.shapeType.index * 397) ^ (s.radius * 1000).toInt() ^ (s.vertexCount * 31);
+    }
+    return hash;
+  }
 
   /// Retrieves all contact points for all the contacts currently involving this Collider2D.
   Future<List<ContactPoint>> getContacts() async {
@@ -314,7 +354,7 @@ abstract class Collider extends Component {
   /// Casts a ray into the Scene that starts at the Collider2D position and ignores the Collider2D itself.
   Future<List<RaycastHit>> raycast(Vector2 direction, [double distance = double.infinity, int layerMask = ~0, double minDepth = -double.infinity, double maxDepth = double.infinity]) async {
     final pos = gameObject.getComponent<ObjectTransform>().position;
-    return Physics.raycastAll(Vector2(pos.dx, pos.dy), direction, distance, layerMask, minDepth, maxDepth);
+    return Physics.raycastAll(Vector2(pos.x, pos.y), direction, distance, layerMask, minDepth, maxDepth);
   }
 
   /// Get a list of all Colliders that overlap this Collider2D.

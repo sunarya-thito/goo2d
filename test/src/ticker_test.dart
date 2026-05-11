@@ -17,7 +17,7 @@ class MockFixedTickable extends Component with FixedTickable {
   double lastDt = 0;
 
   @override
-  void onFixedUpdate(double dt) {
+  Future<void> onFixedUpdate(double dt) async {
     fixedUpdateCount++;
     lastDt = dt;
   }

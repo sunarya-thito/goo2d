@@ -11,7 +11,7 @@ import 'package:goo2d/src/physics/worker/data/contact_point_data.dart';
 abstract class PhysicsWorker {
   Future<void> initialize();
   void dispose();
-  void step(double deltaTime);
+  Future<void> step(double deltaTime);
 
   // ===================== Global Settings =====================
   Future<void> setGravity(Vector2 value);

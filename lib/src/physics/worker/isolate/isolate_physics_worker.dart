@@ -19,17 +19,24 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   Isolate? _isolate;
   SendPort? _commandPort;
   ReceivePort? _responsePort;
+  Future<void>? _ready;
 
   int _nextRequestId = 0;
   final Map<int, Completer<ByteData>> _pending = {};
 
   int _allocRequestId() {
-    _nextRequestId = (_nextRequestId + 1) & 0xFFFF;
+    // IDs cycle 1-65535; 0 is reserved for fire-and-forget (no response).
+    _nextRequestId = _nextRequestId % 0xFFFF + 1;
     return _nextRequestId;
   }
 
   @override
-  Future<void> initialize() async {
+  Future<void> initialize() {
+    _ready = _doInitialize();
+    return _ready!;
+  }
+
+  Future<void> _doInitialize() async {
     _responsePort = ReceivePort();
     _isolate = await Isolate.spawn(isolateEntry, _responsePort!.sendPort);
     final firstMessage = await _responsePort!.first;
@@ -50,11 +57,26 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   }
 
   Future<ByteData> _send(Uint8ListBuffer buf) {
+    // Allocate ID and register completer synchronously to preserve ordering.
     final id = _allocRequestId();
     final completer = Completer<ByteData>();
     _pending[id] = completer;
+    if (_commandPort != null) {
+      _doSend(id, buf);
+    } else if (_ready != null) {
+      _ready!.then((_) => _doSend(id, buf));
+    } else {
+      // Worker disposed before isolate connected — complete with error.
+      _pending.remove(id);
+      completer.completeError(
+        StateError('Physics worker disposed'),
+        StackTrace.current,
+      );
+    }
+    return completer.future;
+  }
 
-    // Prepend request ID
+  void _doSend(int id, Uint8ListBuffer buf) {
     final out = Uint8ListBuffer();
     out.write(2, () => out.byteData.setUint16(out.offset, id));
     final payload = buf.compact;
@@ -65,10 +87,18 @@ class IsolatePhysicsWorker implements PhysicsWorker {
       }
     });
     _commandPort!.send(out.compact);
-    return completer.future;
   }
 
   void _sendFireAndForget(Uint8ListBuffer buf) {
+    if (_commandPort != null) {
+      _doFireAndForget(buf);
+    } else if (_ready != null) {
+      _ready!.then((_) => _doFireAndForget(buf));
+    }
+    // else: worker was disposed before the isolate connected — silently drop
+  }
+
+  void _doFireAndForget(Uint8ListBuffer buf) {
     // Request ID 0 = fire-and-forget (no response expected)
     final out = Uint8ListBuffer();
     out.write(2, () => out.byteData.setUint16(out.offset, 0));
@@ -89,12 +119,12 @@ class IsolatePhysicsWorker implements PhysicsWorker {
     _isolate = null;
     _commandPort = null;
     _responsePort = null;
+    _ready = null;
   }
 
   @override
-  void step(double deltaTime) {
-    final buf = IsolateProtocol.writeStep(deltaTime);
-    _sendFireAndForget(buf);
+  Future<void> step(double deltaTime) async {
+    await _send(IsolateProtocol.writeStep(deltaTime));
   }
 
   // ===================== Global Settings =====================

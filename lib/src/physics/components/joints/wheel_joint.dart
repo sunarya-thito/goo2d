@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'package:meta/meta.dart';
 import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/src/physics/components/joint.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_joint_ops.dart';
+import 'package:goo2d/src/physics/worker/direct/direct_body_ops.dart';
 import 'package:goo2d/src/physics/worker/data/joint_type.dart';
 import 'package:goo2d/goo2d.dart';
 
@@ -16,7 +18,7 @@ class WheelJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.anchor, _anchor);
       worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
       worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
@@ -33,28 +35,28 @@ class WheelJoint extends Joint {
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
   }
 
   final Vector2 _connectedAnchor = Vector2.zero();
   Vector2 get connectedAnchor => _connectedAnchor;
   set connectedAnchor(Vector2 value) {
     _connectedAnchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
   }
 
   bool _autoConfigureConnectedAnchor = true;
   bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
   set autoConfigureConnectedAnchor(bool value) {
     _autoConfigureConnectedAnchor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
   }
 
   bool _useMotor = false;
   bool get useMotor => _useMotor;
   set useMotor(bool value) {
     _useMotor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.useMotor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.useMotor, value));
   }
 
   double _motorSpeed = 0.0;
@@ -65,7 +67,7 @@ class WheelJoint extends Joint {
   set motor(JointMotor value) {
     _motorSpeed = value.motorSpeed;
     _maxMotorTorque = value.maxMotorTorque;
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.motorSpeed, value.motorSpeed);
       worker.setJointProperty(h, JointProp.maxMotorTorque, value.maxMotorTorque);
     });
@@ -81,7 +83,7 @@ class WheelJoint extends Joint {
     _dampingRatio = value.dampingRatio;
     _frequency = value.frequency;
     _suspensionAngle = value.angle;
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.springDampingRatio, value.dampingRatio);
       worker.setJointProperty(h, JointProp.springFrequency, value.frequency);
       worker.setJointProperty(h, JointProp.wheelSuspensionAngle, value.angle);
@@ -94,9 +96,26 @@ class WheelJoint extends Joint {
   Future<double> get jointTranslation async =>
       (await worker.getJointProperty(await handle, JointProp.lowerTranslation)) as double;
 
-  Future<double> get jointAngle async => 0.0;
+  /// The current rotation of the wheel body relative to the connected body, in degrees.
+  Future<double> get jointAngle async {
+    if (connectedBody == null) return 0.0;
+    final rb = gameObject.getComponent<Rigidbody>();
+    final rotA = (await worker.getBodyProperty(await rb.handle, BodyProp.rotation)) as double;
+    final rotB = (await worker.getBodyProperty(await connectedBody!.handle, BodyProp.rotation)) as double;
+    return rotB - rotA;
+  }
 
-  Future<double> get jointLinearSpeed async => 0.0;
+  /// The current linear speed of the joint along the suspension axis.
+  Future<double> get jointLinearSpeed async {
+    if (connectedBody == null) return 0.0;
+    final rb = gameObject.getComponent<Rigidbody>();
+    final velA = (await worker.getBodyProperty(await rb.handle, BodyProp.linearVelocity)) as Vector2;
+    final velB = (await worker.getBodyProperty(await connectedBody!.handle, BodyProp.linearVelocity)) as Vector2;
+    final relVel = velB - velA;
+    final rad = _suspensionAngle * math.pi / 180.0;
+    final axis = Vector2(math.cos(rad), math.sin(rad));
+    return relVel.dot(axis);
+  }
 
   Future<double> getMotorTorque(double timeStep) async =>
       (await worker.getJointProperty(await handle, JointProp.reactionTorque)) as double;

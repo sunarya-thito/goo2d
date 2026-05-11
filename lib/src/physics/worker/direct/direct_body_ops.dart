@@ -74,9 +74,9 @@ class DirectBodyOps {
   static Future<void> setProperty(PhysicsEngine e, int h, int p, Object? v) {
     final b = e.getBody(h);
     switch (p) {
-      case BodyProp.position: b.position.setFrom(v as Vector2);
+      case BodyProp.position: b.position = v as Vector2;
       case BodyProp.rotation: b.rotation = v as double;
-      case BodyProp.linearVelocity: b.linearVelocity.setFrom(v as Vector2);
+      case BodyProp.linearVelocity: b.linearVelocity = v as Vector2;
       case BodyProp.angularVelocity: b.angularVelocity = v as double;
       case BodyProp.linearDamping: b.linearDamping = v as double;
       case BodyProp.angularDamping: b.angularDamping = v as double;
@@ -92,8 +92,8 @@ class DirectBodyOps {
       case BodyProp.interpolation: b.interpolation = v as int;
       case BodyProp.collisionDetectionMode: b.collisionDetectionMode = v as int;
       case BodyProp.sleepMode: b.sleepMode = v as int;
-      case BodyProp.centerOfMass: b.centerOfMass.setFrom(v as Vector2);
-      case BodyProp.totalForce: b.totalForce.setFrom(v as Vector2);
+      case BodyProp.centerOfMass: b.centerOfMass = v as Vector2;
+      case BodyProp.totalForce: b.totalForce = v as Vector2;
       case BodyProp.totalTorque: b.totalTorque = v as double;
       case BodyProp.sharedMaterialHandle: b.sharedMaterialHandle = v as int;
       case BodyProp.excludeLayers: b.excludeLayers = v as int;

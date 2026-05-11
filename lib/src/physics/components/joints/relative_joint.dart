@@ -16,7 +16,7 @@ class RelativeJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.linearOffset, _linearOffset);
       worker.setJointProperty(h, JointProp.angularOffset, _angularOffset);
       worker.setJointProperty(h, JointProp.correctionScale, _correctionScale);
@@ -31,7 +31,7 @@ class RelativeJoint extends Joint {
   Vector2 get linearOffset => _linearOffset;
   set linearOffset(Vector2 value) {
     _linearOffset.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.linearOffset, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.linearOffset, value));
   }
 
   double _angularOffset = 0.0;
@@ -39,7 +39,7 @@ class RelativeJoint extends Joint {
   double get angularOffset => _angularOffset;
   set angularOffset(double value) {
     _angularOffset = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.angularOffset, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.angularOffset, value));
   }
 
   double _correctionScale = 0.3;
@@ -47,7 +47,7 @@ class RelativeJoint extends Joint {
   double get correctionScale => _correctionScale;
   set correctionScale(double value) {
     _correctionScale = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.correctionScale, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.correctionScale, value));
   }
 
   bool _autoConfigureOffset = true;
@@ -55,7 +55,7 @@ class RelativeJoint extends Joint {
   bool get autoConfigureOffset => _autoConfigureOffset;
   set autoConfigureOffset(bool value) {
     _autoConfigureOffset = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureOffset, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureOffset, value));
   }
 
   double _maxForce = 1000.0;
@@ -63,7 +63,7 @@ class RelativeJoint extends Joint {
   double get maxForce => _maxForce;
   set maxForce(double value) {
     _maxForce = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.maxForce, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.maxForce, value));
   }
 
   double _maxTorque = 1000.0;
@@ -71,7 +71,7 @@ class RelativeJoint extends Joint {
   double get maxTorque => _maxTorque;
   set maxTorque(double value) {
     _maxTorque = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.maxTorque, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.maxTorque, value));
   }
 
   /// The world-space position that is currently trying to be maintained.

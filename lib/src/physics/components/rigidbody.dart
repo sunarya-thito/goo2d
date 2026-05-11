@@ -27,12 +27,17 @@ class Rigidbody extends Component {
   void internalAttach(GameObject gameObject) {
     super.internalAttach(gameObject);
     _handleFuture = worker.createBody();
+    _handleFuture!.then((h) => PhysicsSystem.registerRigidbody(h, this));
     syncProperties();
   }
 
   @override
   void internalDetach() {
-    _handleFuture?.then((h) => worker.destroyBody(h));
+    final w = worker;
+    _handleFuture?.then((h) {
+      PhysicsSystem.unregisterRigidbody(h);
+      w.destroyBody(h);
+    });
     _handleFuture = null;
     super.internalDetach();
   }
@@ -41,6 +46,12 @@ class Rigidbody extends Component {
   @protected
   void syncProperties() {
     _handleFuture?.then((h) {
+      // Seed the physics body at the game-object's current world position.
+      final transform = gameObject.tryGetComponent<ObjectTransform>();
+      if (transform != null) {
+        worker.setBodyProperty(h, BodyProp.position, transform.position.clone());
+        worker.setBodyProperty(h, BodyProp.rotation, transform.angle);
+      }
       worker.setBodyProperty(h, BodyProp.bodyType, _bodyType.index);
       worker.setBodyProperty(h, BodyProp.interpolation, _interpolation.index);
       worker.setBodyProperty(h, BodyProp.linearDamping, _linearDamping);
@@ -204,25 +215,25 @@ class Rigidbody extends Component {
   /// The linear velocity of the Rigidbody2D represents the rate of change over time of the Rigidbody2D position in world-units.
   Future<Vector2> get linearVelocity async => (await worker.getBodyProperty(await handle, BodyProp.linearVelocity)) as Vector2;
   set linearVelocity(Vector2 value) {
-    handle.then((h) => worker.setBodyProperty(h, BodyProp.linearVelocity, value));
+    _handleFuture?.then((h) => worker.setBodyProperty(h, BodyProp.linearVelocity, value));
   }
 
   /// Angular velocity in degrees per second.
   Future<double> get angularVelocity async => (await worker.getBodyProperty(await handle, BodyProp.angularVelocity)) as double;
   set angularVelocity(double value) {
-    handle.then((h) => worker.setBodyProperty(h, BodyProp.angularVelocity, value));
+    _handleFuture?.then((h) => worker.setBodyProperty(h, BodyProp.angularVelocity, value));
   }
 
   /// The position of the rigidbody.
   Future<Vector2> get position async => (await worker.getBodyProperty(await handle, BodyProp.position)) as Vector2;
   set position(Vector2 value) {
-    handle.then((h) => worker.setBodyProperty(h, BodyProp.position, value));
+    _handleFuture?.then((h) => worker.setBodyProperty(h, BodyProp.position, value));
   }
 
   /// The rotation of the rigidbody.
   Future<double> get rotation async => (await worker.getBodyProperty(await handle, BodyProp.rotation)) as double;
   set rotation(double value) {
-    handle.then((h) => worker.setBodyProperty(h, BodyProp.rotation, value));
+    _handleFuture?.then((h) => worker.setBodyProperty(h, BodyProp.rotation, value));
   }
 
   /// The total amount of force that has been explicitly applied to this Rigidbody2D since the last physics simulation step.
@@ -251,8 +262,17 @@ class Rigidbody extends Component {
   /// The transformation matrix used to transform the Rigidbody2D to world space.
   Matrix4 get localToWorldMatrix => worldMatrix;
 
+  PhysicsMaterial? _sharedMaterial;
+
   /// The PhysicsMaterial2D that is applied to all Colliders attached to this Rigidbody2D.
-  Object? get sharedMaterial => null; // TODO: Implement PhysicsMaterial
+  PhysicsMaterial? get sharedMaterial => _sharedMaterial;
+  set sharedMaterial(PhysicsMaterial? value) {
+    _sharedMaterial = value;
+    if (value == null || !isAttached) return;
+    for (final c in gameObject.getComponents<Collider>()) {
+      c.sharedMaterial = value;
+    }
+  }
 
   // --- Methods ---
 
@@ -268,11 +288,24 @@ class Rigidbody extends Component {
   /// Returns all the Collider2D attached to this Rigidbody2D.
   List<Collider> getAttachedColliders() => gameObject.getComponents<Collider>().toList();
 
-  /// Gets all the physics shapes used by all the Colliders attached to this Rigidbody2D.
-  Future<List<Object>> getShapes() async => []; // TODO: Implement PhysicsShape
+  /// Fills [shapeGroup] with the physics shapes from all Colliders attached to this Rigidbody2D.
+  /// Returns the total number of shapes added.
+  int getShapes(PhysicsShapeGroup shapeGroup, [int shapeIndex = 0, int shapeCount = 0]) {
+    var total = 0;
+    for (final c in gameObject.getComponents<Collider>()) {
+      total += c.getShapes(shapeGroup);
+    }
+    return total;
+  }
 
   /// Checks whether any of the Colliders attached to this Rigidbody2D overlap the area in the Scene.
-  Future<List<Collider>> overlap(int layerMask, double minDepth, double maxDepth) async => []; // TODO: Implement overlap
+  Future<List<Collider>> overlap(int layerMask, double minDepth, double maxDepth) async {
+    final handles = <int>{};
+    for (final c in gameObject.getComponents<Collider>()) {
+      handles.addAll(await worker.overlapCollider(await c.handle));
+    }
+    return handles.map((h) => PhysicsSystem.getCollider(h)).whereType<Collider>().toList();
+  }
 
   /// Checks whether any of the Colliders attached to this Rigidbody2D overlap the point in the Scene.
   Future<bool> overlapPoint(Vector2 point) async => worker.colliderIsTouchingLayers(await handle, ~0); // Simplified

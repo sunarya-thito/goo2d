@@ -16,7 +16,7 @@ class TargetJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.anchor, _anchor);
       worker.setJointProperty(h, JointProp.target, _target);
       worker.setJointProperty(h, JointProp.targetMaxForce, _maxForce);
@@ -31,7 +31,7 @@ class TargetJoint extends Joint {
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
   }
 
   final Vector2 _target = Vector2.zero();
@@ -39,7 +39,7 @@ class TargetJoint extends Joint {
   Vector2 get target => _target;
   set target(Vector2 value) {
     _target.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.target, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.target, value));
   }
 
   double _maxForce = 1000.0;
@@ -47,7 +47,7 @@ class TargetJoint extends Joint {
   double get maxForce => _maxForce;
   set maxForce(double value) {
     _maxForce = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.targetMaxForce, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.targetMaxForce, value));
   }
 
   bool _autoConfigureTarget = true;
@@ -55,7 +55,7 @@ class TargetJoint extends Joint {
   bool get autoConfigureTarget => _autoConfigureTarget;
   set autoConfigureTarget(bool value) {
     _autoConfigureTarget = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
   }
 
   double _frequency = 5.0;
@@ -63,7 +63,7 @@ class TargetJoint extends Joint {
   double get frequency => _frequency;
   set frequency(double value) {
     _frequency = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
   }
 
   double _dampingRatio = 0.7;
@@ -71,6 +71,6 @@ class TargetJoint extends Joint {
   double get dampingRatio => _dampingRatio;
   set dampingRatio(double value) {
     _dampingRatio = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
   }
 }

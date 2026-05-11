@@ -14,7 +14,7 @@ class FrictionJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.maxForce, _maxForce);
       worker.setJointProperty(h, JointProp.maxTorque, _maxTorque);
     });
@@ -25,7 +25,7 @@ class FrictionJoint extends Joint {
   double get maxForce => _maxForce;
   set maxForce(double value) {
     _maxForce = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.maxForce, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.maxForce, value));
   }
 
   double _maxTorque = 0;
@@ -33,6 +33,6 @@ class FrictionJoint extends Joint {
   double get maxTorque => _maxTorque;
   set maxTorque(double value) {
     _maxTorque = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.maxTorque, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.maxTorque, value));
   }
 }

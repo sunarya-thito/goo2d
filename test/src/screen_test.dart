@@ -28,8 +28,7 @@ void main() {
       (tester) async {
         final receiver = MockScreenReceiver();
         final collider = BoxCollider()..size = Vector2(2, 2);
-        final transform = ObjectTransform()
-          ..localPosition = const Offset(100, 0);
+        final transform = ObjectTransform()..localPosition = Vector2(100, 0);
 
         await tester.pumpWidget(
           Game(
@@ -69,13 +68,13 @@ void main() {
         expect(receiver.enterCount, equals(0));
 
         // Move into center
-        transform.localPosition = Offset.zero;
+        transform.localPosition = Vector2.zero();
         game.screen.screenSize = const Size(800, 600);
         game.screenPhysics?.update();
         expect(receiver.enterCount, equals(1));
 
         // Move out
-        transform.localPosition = const Offset(20, 0);
+        transform.localPosition = Vector2(20, 0);
         game.screen.screenSize = const Size(800, 600);
         game.screenPhysics?.update();
         expect(receiver.exitCount, equals(1));
@@ -128,13 +127,13 @@ void main() {
       expect(receiver.outerEnterCount, equals(0));
 
       // Move so it's partially outside
-      transform.localPosition = const Offset(12, 0);
+      transform.localPosition = Vector2(12, 0);
       game.screen.screenSize = const Size(800, 600);
       game.screenPhysics?.update();
       expect(receiver.outerEnterCount, equals(1));
 
       // Move back fully inside
-      transform.localPosition = Offset.zero;
+      transform.localPosition = Vector2.zero();
       game.screen.screenSize = const Size(800, 600);
       game.screenPhysics?.update();
       expect(receiver.outerExitCount, equals(1));
@@ -145,10 +144,9 @@ void main() {
     ) async {
       final receiver = MockScreenReceiver();
       final collider = BoxCollider()
-        ..size = const Size(10, 10)
-        ..offset = const Offset(5, 5);
-      final transform = ObjectTransform()
-        ..localPosition = const Offset(-20, -20);
+        ..size = Vector2(10, 10)
+        ..offset = Vector2(5, 5);
+      final transform = ObjectTransform()..localPosition = Vector2(-20, -20);
 
       await tester.pumpWidget(
         Game(
@@ -172,7 +170,7 @@ void main() {
       game.screenPhysics?.update();
       expect(receiver.enterCount, equals(0));
 
-      transform.localPosition = const Offset(10, 10);
+      transform.localPosition = Vector2(10, 10);
       game.screen.screenSize = const Size(800, 600);
       game.screenPhysics?.update();
       expect(receiver.enterCount, equals(1));

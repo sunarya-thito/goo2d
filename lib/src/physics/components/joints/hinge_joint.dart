@@ -16,7 +16,7 @@ class HingeJoint extends Joint {
   @protected
   void syncProperties() {
     super.syncProperties();
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.anchor, _anchor);
       worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
       worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
@@ -34,21 +34,21 @@ class HingeJoint extends Joint {
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
   }
 
   final Vector2 _connectedAnchor = Vector2.zero();
   Vector2 get connectedAnchor => _connectedAnchor;
   set connectedAnchor(Vector2 value) {
     _connectedAnchor.setFrom(value);
-    handle.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
   }
 
   bool _autoConfigureConnectedAnchor = true;
   bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
   set autoConfigureConnectedAnchor(bool value) {
     _autoConfigureConnectedAnchor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
   }
 
   /// Whether a connected anchor is used.
@@ -58,7 +58,7 @@ class HingeJoint extends Joint {
   bool get useLimits => _useLimits;
   set useLimits(bool value) {
     _useLimits = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.useLimits, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.useLimits, value));
   }
 
   double _lowerAngle = 0.0;
@@ -69,7 +69,7 @@ class HingeJoint extends Joint {
   set limits(JointAngleLimits value) {
     _lowerAngle = value.min;
     _upperAngle = value.max;
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.lowerAngle, value.min);
       worker.setJointProperty(h, JointProp.upperAngle, value.max);
     });
@@ -79,7 +79,7 @@ class HingeJoint extends Joint {
   bool get useMotor => _useMotor;
   set useMotor(bool value) {
     _useMotor = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.useMotor, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.useMotor, value));
   }
 
   double _motorSpeed = 0.0;
@@ -90,7 +90,7 @@ class HingeJoint extends Joint {
   set motor(JointMotor value) {
     _motorSpeed = value.motorSpeed;
     _maxMotorTorque = value.maxMotorTorque;
-    handle.then((h) {
+    handleIfAttached?.then((h) {
       worker.setJointProperty(h, JointProp.motorSpeed, value.motorSpeed);
       worker.setJointProperty(h, JointProp.maxMotorTorque, value.maxMotorTorque);
     });
@@ -100,7 +100,7 @@ class HingeJoint extends Joint {
   double get referenceAngle => _referenceAngle;
   set referenceAngle(double value) {
     _referenceAngle = value;
-    handle.then((h) => worker.setJointProperty(h, JointProp.angularOffset, value));
+    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.angularOffset, value));
   }
 
   /// The current limit state (read-only).

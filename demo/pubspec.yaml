@@ -1,0 +1,19 @@
+name: goo2d_demo
+description: Interactive physics demos for the goo2d engine
+publish_to: none
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  goo2d:
+    path: ../
+  vector_math: ^2.1.4
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

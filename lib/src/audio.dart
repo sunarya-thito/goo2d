@@ -1,14 +1,5 @@
-/// Essential components for managing audio playback and spatial sound.
-///
-/// This module provides the foundation for the Goo2D audio system, integrating
-/// with the `flutter_soloud` engine to deliver high-performance audio. It
-/// includes components for both 2D sound effects and complex 3D spatialized
-/// audio environments.
-///
-/// Developers can use [AudioSource] to trigger sounds and [AudioListener]
-/// to define the point of hearing within the game world.
 import 'dart:math' as math;
-import 'dart:ui';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:flutter_soloud/flutter_soloud.dart' as soloud;
 import 'package:goo2d/src/component.dart';
 import 'package:goo2d/src/lifecycle.dart';
@@ -256,10 +247,10 @@ class AudioSource extends Behavior implements LifecycleListener, LateTickable {
 
     // Calculate relative position
     final sourceWorldPos = transform.position;
-    final listenerWorldPos = listenerTransform?.position ?? Offset.zero;
+    final listenerWorldPos = listenerTransform?.position ?? Vector2.zero();
 
-    double dx = sourceWorldPos.dx - listenerWorldPos.dx;
-    double dy = sourceWorldPos.dy - listenerWorldPos.dy;
+    double dx = sourceWorldPos.x - listenerWorldPos.x;
+    double dy = sourceWorldPos.y - listenerWorldPos.y;
 
     // Rotate relative position by inverse of listener rotation
     final angle = -(listenerTransform?.angle ?? 0.0);

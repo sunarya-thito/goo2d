@@ -259,12 +259,12 @@ class Camera extends Behavior with LifecycleListener {
   ///
   /// * [worldPoint]: The global coordinate to transform.
   /// * [screenSize]: The current dimensions of the rendering surface.
-  Offset worldToScreenPoint(Offset worldPoint, Size screenSize) {
+  Vector2 worldToScreenPoint(Vector2 worldPoint, Size screenSize) {
     final fullMatrix = getFullMatrix(screenSize);
-    final worldVec = Vector4(worldPoint.dx, worldPoint.dy, 0.0, 1.0);
+    final worldVec = Vector4(worldPoint.x, worldPoint.y, 0.0, 1.0);
     final screenVec = fullMatrix.transform(worldVec);
 
-    return Offset(screenVec.x / screenVec.w, screenVec.y / screenVec.w);
+    return Vector2(screenVec.x / screenVec.w, screenVec.y / screenVec.w);
   }
 
   /// Transforms a point from screen space (pixels) back to world space.
@@ -275,11 +275,11 @@ class Camera extends Behavior with LifecycleListener {
   ///
   /// * [screenPoint]: The pixel coordinate on the display.
   /// * [screenSize]: The current dimensions of the rendering surface.
-  Offset screenToWorldPoint(Offset screenPoint, Size screenSize) {
+  Vector2 screenToWorldPoint(Vector2 screenPoint, Size screenSize) {
     final invMatrix = getFullMatrixInverse(screenSize);
-    final screenVec = Vector4(screenPoint.dx, screenPoint.dy, 0.0, 1.0);
+    final screenVec = Vector4(screenPoint.x, screenPoint.y, 0.0, 1.0);
     final worldVec = invMatrix.transform(screenVec);
 
-    return Offset(worldVec.x / worldVec.w, worldVec.y / worldVec.w);
+    return Vector2(worldVec.x / worldVec.w, worldVec.y / worldVec.w);
   }
 }

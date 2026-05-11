@@ -104,12 +104,6 @@ class Physics {
   /// Layer mask constant used to specify that raycasts should ignore any Colliders on this layer.
   static const int ignoreRaycastLayer = 1 << 2;
 
-  /// The global physics job options used to configure the physics job system.
-  static Object? get jobOptions => null;
-
-  /// Returns the default PhysicsScene2D.
-  static Object? get defaultPhysicsScene => null;
-
   /// Returns the maximum number of vertices allowed for a PolygonCollider2D.
   static int get maxPolygonShapeVertices => 8;
 

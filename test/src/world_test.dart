@@ -29,7 +29,7 @@ void main() {
                 ComponentWidget(Camera.new),
                 ComponentWidget(
                   ObjectTransform.new,
-                  update: (c) => c.position = const Offset(100, 200),
+                  update: (c) => c.position = Vector2(100, 200),
                 ),
               ],
             ),
@@ -40,10 +40,9 @@ void main() {
         expect(game.cameras.isReady, isTrue);
 
         final camera = game.cameras.main;
-        expect(
-          camera.gameObject.getComponent<ObjectTransform>().position,
-          const Offset(100, 200),
-        );
+        final pos = camera.gameObject.getComponent<ObjectTransform>().position;
+        expect(pos.x, closeTo(100, 0.0001));
+        expect(pos.y, closeTo(200, 0.0001));
       },
     );
 
@@ -76,12 +75,12 @@ void main() {
                 ),
                 ComponentWidget(
                   ObjectTransform.new,
-                  update: (c) => c.position = Offset.zero,
+                  update: (c) => c.position = Vector2.zero(),
                 ),
                 ComponentWidget(() => _MockPointerReceiver(() => hit = true)),
                 ComponentWidget(
                   BoxCollider.new,
-                  update: (c) => c.size = const Size(100, 100),
+                  update: (c) => c.size = Vector2(100, 100),
                 ),
               ],
             ),
