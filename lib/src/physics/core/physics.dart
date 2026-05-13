@@ -328,12 +328,12 @@ class Physics {
 
   /// Returns a point on the perimeter of the Collider that is closest to the specified position.
   static Future<Vector2> closestPoint(Vector2 position, Collider collider) async {
-    return _safeWorker.closestPoint(position, await collider.handle);
+    return _safeWorker.closestPoint(position, collider.handle);
   }
 
   /// Calculates the minimum distance between two Colliders.
   static Future<double> distance(Collider colliderA, Collider colliderB) async {
-    return _safeWorker.colliderDistance(await colliderA.handle, await colliderB.handle);
+    return _safeWorker.colliderDistance(colliderA.handle, colliderB.handle);
   }
 
   /// Checks whether collisions between the specified layers be ignored or not.
@@ -344,7 +344,7 @@ class Physics {
 
   /// Makes the collision detection system ignore all collisions/triggers between collider1 and collider2.
   static void ignoreCollision(Collider collider1, Collider collider2, bool ignore) async {
-    _safeWorker.ignoreCollision(await collider1.handle, await collider2.handle, ignore);
+    _safeWorker.ignoreCollision(collider1.handle, collider2.handle, ignore);
   }
 
   /// Choose whether to detect or ignore collisions between a specified pair of layers.
@@ -360,7 +360,7 @@ class Physics {
 
   /// Checks whether the Collider is touching any Colliders on the specified layerMask or not.
   static Future<bool> isTouchingLayers(Collider collider, int layerMask) async {
-    return _safeWorker.colliderIsTouchingLayers(await collider.handle, layerMask);
+    return _safeWorker.colliderIsTouchingLayers(collider.handle, layerMask);
   }
 
   /// Get a list of all Colliders that fall within a rectangular area.
@@ -380,18 +380,18 @@ class Physics {
 
   /// Checks whether the collision detection system will ignore all collisions/triggers between collider1 and collider2 or not.
   static Future<bool> getIgnoreCollision(Collider collider1, Collider collider2) async {
-    return _safeWorker.getIgnoreCollision(await collider1.handle, await collider2.handle);
+    return _safeWorker.getIgnoreCollision(collider1.handle, collider2.handle);
   }
 
   /// Retrieves all colliders in contact with this Collider.
   static Future<List<Collider>> getContactColliders(Collider collider) async {
-    final handles = await _safeWorker.getContactColliders(await collider.handle);
+    final handles = await _safeWorker.getContactColliders(collider.handle);
     return handles.map((h) => PhysicsSystem.getCollider(h)).whereType<Collider>().toList();
   }
 
   /// Gets a list of all Colliders that overlap the given Collider.
   static Future<List<Collider>> overlapCollider(Collider collider) async {
-    final handles = await _safeWorker.overlapCollider(await collider.handle);
+    final handles = await _safeWorker.overlapCollider(collider.handle);
     return handles.map((h) => PhysicsSystem.getCollider(h)).whereType<Collider>().toList();
   }
 
@@ -403,7 +403,7 @@ class Physics {
 
   /// Retrieves all contact points in contact with the Collider.
   static Future<List<ContactPoint>> getContacts(Collider collider) async {
-    final data = await _safeWorker.getContacts(await collider.handle);
+    final data = await _safeWorker.getContacts(collider.handle);
     return data.map((d) => ContactPoint.fromData(d)).whereType<ContactPoint>().toList();
   }
 
@@ -420,7 +420,7 @@ class Physics {
 
   /// Checks whether the passed Colliders are in contact or not.
   static Future<bool> isTouching(Collider collider1, Collider collider2) async {
-    return _safeWorker.colliderIsTouching(await collider1.handle, await collider2.handle);
+    return _safeWorker.colliderIsTouching(collider1.handle, collider2.handle);
   }
 
   /// Synchronizes transforms from the physics engine back to the GameObjects.

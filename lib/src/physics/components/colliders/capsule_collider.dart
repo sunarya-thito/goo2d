@@ -1,14 +1,13 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
-import 'package:goo2d/src/physics/components/collider.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_collider_ops.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
 import 'package:goo2d/goo2d.dart';
 
 /// A capsule-shaped primitive collider.
-/// 
+///
 /// Equivalent to Unity's `CapsuleCollider2D`.
 class CapsuleCollider extends Collider {
   @override
@@ -16,28 +15,24 @@ class CapsuleCollider extends Collider {
 
   @override
   @protected
-  void syncProperties() {
-    super.syncProperties();
-    handleIfAttached?.then((h) {
-      worker.setColliderProperty(h, ColliderProp.capsuleSize, _size);
-      worker.setColliderProperty(h, ColliderProp.capsuleDirection, _direction.index);
-    });
+  void syncAllProperties() {
+    super.syncAllProperties();
+    worker.setColliderProperty(handle, ColliderProp.capsuleSize, _size.clone());
+    worker.setColliderProperty(handle, ColliderProp.capsuleDirection, _direction.index);
   }
 
   Vector2 _size = Vector2(1, 2);
-  /// The width and height of the capsule area.
   Vector2 get size => _size;
   set size(Vector2 value) {
     _size.setFrom(value);
-    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.capsuleSize, value));
+    if (isAttached) worker.setColliderProperty(handle, ColliderProp.capsuleSize, value.clone());
   }
 
   CapsuleDirection _direction = CapsuleDirection.vertical;
-  /// The direction that the capsule sides can extend.
   CapsuleDirection get direction => _direction;
   set direction(CapsuleDirection value) {
     _direction = value;
-    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.capsuleDirection, value.index));
+    if (isAttached) worker.setColliderProperty(handle, ColliderProp.capsuleDirection, value.index);
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d_demo/shared/drag_behavior.dart';
 
 class SpringDemo extends StatefulGameWidget {
   const SpringDemo({super.key});
@@ -41,9 +42,7 @@ class _SpringDemoState extends GameState<SpringDemo> {
           ),
         ),
         ComponentWidget(
-          BoxCollider.new.withInitialValues(
-            (c) => c.size = Vector2(22, 1),
-          ),
+          BoxCollider.new.withInitialValues((c) => c.size = Vector2(22, 1)),
         ),
         ComponentWidget(
           _BoxRenderer.new.withInitialValues(
@@ -81,7 +80,7 @@ class _SpringDemoState extends GameState<SpringDemo> {
       children: [
         ComponentWidget(
           ObjectTransform.new.withInitialValues(
-            (t) => t.position = Vector2(0, 2),
+            (t) => t.position = Vector2(0, 6),
           ),
         ),
         ComponentWidget(
@@ -92,9 +91,7 @@ class _SpringDemoState extends GameState<SpringDemo> {
           ),
         ),
         ComponentWidget(
-          BoxCollider.new.withInitialValues(
-            (c) => c.size = Vector2(0.9, 0.9),
-          ),
+          BoxCollider.new.withInitialValues((c) => c.size = Vector2(0.9, 0.9)),
         ),
         ComponentWidget(
           SpringJoint.new.withInitialValues(
@@ -107,6 +104,7 @@ class _SpringDemoState extends GameState<SpringDemo> {
               ..frequency = 2.5,
           ),
         ),
+        ComponentWidget(DragBehavior.new),
         ComponentWidget(
           _BoxRenderer.new.withInitialValues(
             (r) => r
@@ -130,6 +128,13 @@ class _BoxRenderer extends Behavior with Renderable {
     canvas.drawRect(
       ui.Rect.fromCenter(center: Offset.zero, width: width, height: height),
       Paint()..color = color,
+    );
+    canvas.drawLine(
+      Offset.zero,
+      Offset(0, height / 2),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 0.06,
     );
   }
 }

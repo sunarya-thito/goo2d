@@ -13,8 +13,10 @@ import 'package:goo2d/src/rpc/buffer.dart';
 
 /// Physics worker that runs the engine on a separate isolate.
 ///
-/// `object → binary → [isolate] → binary → invocation`.
-/// Uses direct binary serialization via [Uint8ListBuffer].
+/// Mutation methods (create/destroy/setProperty) are synchronous — they
+/// accumulate into pending lists/maps. `step()` flushes everything as a single
+/// `stepWithBatch` message, guaranteed to arrive before engine.step() runs in
+/// the isolate, eliminating the initialization race.
 class IsolatePhysicsWorker implements PhysicsWorker {
   Isolate? _isolate;
   SendPort? _commandPort;
@@ -24,8 +26,24 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   int _nextRequestId = 0;
   final Map<int, Completer<ByteData>> _pending = {};
 
+  // Handle allocation — main thread owns IDs.
+  int _nextHandle = 1;
+  int _allocHandle() => _nextHandle++;
+
+  // Ordered ops accumulated this frame
+  Uint8ListBuffer _opsBuffer = Uint8ListBuffer();
+  int _opCount = 0;
+
+  void _op(int opType, void Function() write) {
+    _opsBuffer.write(1, () => _opsBuffer.byteData.setUint8(_opsBuffer.offset, opType));
+    write();
+    _opCount++;
+  }
+
+  void _wi(int v) => _opsBuffer.write(4, () => _opsBuffer.byteData.setInt32(_opsBuffer.offset, v));
+  void _wo(Object? v) => IsolateProtocol.writeObjectTo(_opsBuffer, v);
+
   int _allocRequestId() {
-    // IDs cycle 1-65535; 0 is reserved for fire-and-forget (no response).
     _nextRequestId = _nextRequestId % 0xFFFF + 1;
     return _nextRequestId;
   }
@@ -42,7 +60,6 @@ class IsolatePhysicsWorker implements PhysicsWorker {
     final firstMessage = await _responsePort!.first;
     _commandPort = firstMessage as SendPort;
 
-    // Re-listen after consuming first message
     _responsePort = ReceivePort();
     _commandPort!.send(_responsePort!.sendPort);
     _responsePort!.listen(_handleResponse);
@@ -57,7 +74,6 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   }
 
   Future<ByteData> _send(Uint8ListBuffer buf) {
-    // Allocate ID and register completer synchronously to preserve ordering.
     final id = _allocRequestId();
     final completer = Completer<ByteData>();
     _pending[id] = completer;
@@ -66,12 +82,8 @@ class IsolatePhysicsWorker implements PhysicsWorker {
     } else if (_ready != null) {
       _ready!.then((_) => _doSend(id, buf));
     } else {
-      // Worker disposed before isolate connected — complete with error.
       _pending.remove(id);
-      completer.completeError(
-        StateError('Physics worker disposed'),
-        StackTrace.current,
-      );
+      completer.completeError(StateError('Physics worker disposed'), StackTrace.current);
     }
     return completer.future;
   }
@@ -95,11 +107,9 @@ class IsolatePhysicsWorker implements PhysicsWorker {
     } else if (_ready != null) {
       _ready!.then((_) => _doFireAndForget(buf));
     }
-    // else: worker was disposed before the isolate connected — silently drop
   }
 
   void _doFireAndForget(Uint8ListBuffer buf) {
-    // Request ID 0 = fire-and-forget (no response expected)
     final out = Uint8ListBuffer();
     out.write(2, () => out.byteData.setUint16(out.offset, 0));
     final payload = buf.compact;
@@ -124,8 +134,109 @@ class IsolatePhysicsWorker implements PhysicsWorker {
 
   @override
   Future<void> step(double deltaTime) async {
-    await _send(IsolateProtocol.writeStep(deltaTime));
+    final sentCount = _opCount;
+    final sentData = _opsBuffer.compact;
+
+    await _send(IsolateProtocol.writeStepWithBatchOrdered(deltaTime, sentCount, sentData));
+
+    // Ops that fired during the await must survive into the next frame.
+    final asyncGapCount = _opCount - sentCount;
+    if (asyncGapCount == 0) {
+      _opsBuffer.clear();
+      _opCount = 0;
+    } else {
+      final fullData = _opsBuffer.compact;
+      _opsBuffer.clear();
+      _opCount = 0;
+      final gapBytes = fullData.sublist(sentData.length);
+      _opsBuffer.write(gapBytes.length, () {
+        for (var i = 0; i < gapBytes.length; i++) {
+          _opsBuffer.byteData.setUint8(_opsBuffer.offset + i, gapBytes[i]);
+        }
+      });
+      _opCount = asyncGapCount;
+    }
   }
+
+  // ===================== Body (synchronous — queue into batch) =====================
+  @override
+  int createBody() {
+    final h = _allocHandle();
+    _op(BatchOpType.createBody, () => _wi(h));
+    return h;
+  }
+
+  @override
+  void destroyBody(int h) =>
+      _op(BatchOpType.destroyBody, () => _wi(h));
+
+  @override
+  void setBodyProperty(int h, int p, Object? v) =>
+      _op(BatchOpType.setBodyProp, () { _wi(h); _wi(p); _wo(v); });
+
+  @override
+  Future<Object?> getBodyProperty(int h, int p) async =>
+      IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.body, h, p)));
+
+  // ===================== Collider (synchronous — queue into batch) =====================
+  @override
+  int createCollider(ColliderShapeType t, int bh) {
+    final h = _allocHandle();
+    _op(BatchOpType.createCollider, () { _wi(h); _wi(t.index); _wi(bh); });
+    return h;
+  }
+
+  @override
+  void destroyCollider(int h) =>
+      _op(BatchOpType.destroyCollider, () => _wi(h));
+
+  @override
+  void setColliderProperty(int h, int p, Object? v) =>
+      _op(BatchOpType.setColliderProp, () { _wi(h); _wi(p); _wo(v); });
+
+  @override
+  Future<Object?> getColliderProperty(int h, int p) async =>
+      IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.collider, h, p)));
+
+  // ===================== Joint (synchronous — queue into batch) =====================
+  @override
+  int createJoint(int t, int bh) {
+    final h = _allocHandle();
+    _op(BatchOpType.createJoint, () { _wi(h); _wi(t); _wi(bh); });
+    return h;
+  }
+
+  @override
+  void destroyJoint(int h) =>
+      _op(BatchOpType.destroyJoint, () => _wi(h));
+
+  @override
+  void setJointProperty(int h, int p, Object? v) =>
+      _op(BatchOpType.setJointProp, () { _wi(h); _wi(p); _wo(v); });
+
+  @override
+  Future<Object?> getJointProperty(int h, int p) async =>
+      IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.joint, h, p)));
+
+  // ===================== Effector (synchronous — queue into batch) =====================
+  @override
+  int createEffector(int t) {
+    final h = _allocHandle();
+    _op(BatchOpType.createEffector, () { _wi(h); _wi(t); });
+    return h;
+  }
+
+  @override
+  void destroyEffector(int h) =>
+      _op(BatchOpType.destroyEffector, () => _wi(h));
+
+  @override
+  void setEffectorProperty(int h, int p, Object? v) =>
+      _op(BatchOpType.setEffectorProp, () { _wi(h); _wi(p); _wo(v); });
+
+  @override
+  Future<Object?> getEffectorProperty(int h, int p) async =>
+      IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.effector, h, p)));
 
   // ===================== Global Settings =====================
   @override
@@ -251,15 +362,7 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   @override
   Future<bool> getIgnoreCollision(int a, int b) async => IsolateProtocol.readBool(await _send(IsolateProtocol.writeColliderGetIgnore(a, b)));
 
-  // ===================== Body =====================
-  @override
-  Future<int> createBody() async => IsolateProtocol.readInt(await _send(IsolateProtocol.writeCreateBody()));
-  @override
-  Future<void> destroyBody(int h) async => _sendFireAndForget(IsolateProtocol.writeDestroyBody(h));
-  @override
-  Future<Object?> getBodyProperty(int h, int p) async => IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.body, h, p)));
-  @override
-  Future<void> setBodyProperty(int h, int p, Object? v) async => _sendFireAndForget(IsolateProtocol.writeSetProp(EntityType.body, h, p, v));
+  // ===================== Body methods (fire-and-forget — gameplay only) =====================
   @override
   Future<void> bodyAddForce(int h, Vector2 f, int m) async => _sendFireAndForget(IsolateProtocol.writeBodyMethod(BodyMethodId.addForce, h, f, m));
   @override
@@ -299,48 +402,17 @@ class IsolatePhysicsWorker implements PhysicsWorker {
   @override
   Future<Vector2> bodyClosestPoint(int h, Vector2 p) async => IsolateProtocol.readVector2(await _send(IsolateProtocol.writeBodyMethodV(BodyMethodId.closestPoint, h, p)));
 
-  // ===================== Collider =====================
-  @override
-  Future<int> createCollider(ColliderShapeType t, int bh) async => IsolateProtocol.readInt(await _send(IsolateProtocol.writeCreateCollider(t.index, bh)));
-  @override
-  Future<void> destroyCollider(int h) async => _sendFireAndForget(IsolateProtocol.writeDestroyCollider(h));
-  @override
-  Future<Object?> getColliderProperty(int h, int p) async => IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.collider, h, p)));
-  @override
-  Future<void> setColliderProperty(int h, int p, Object? v) async => _sendFireAndForget(IsolateProtocol.writeSetProp(EntityType.collider, h, p, v));
+  // ===================== Collider methods =====================
   @override
   Future<Vector2> colliderClosestPoint(int h, Vector2 p) async => IsolateProtocol.readVector2(await _send(IsolateProtocol.writeColliderMethodV(ColliderMethodId.closestPoint, h, p)));
   @override
   Future<double> colliderDistance(int a, int b) async => IsolateProtocol.readDouble(await _send(IsolateProtocol.writeColliderMethodII(ColliderMethodId.distance, a, b)));
   @override
-  Future<bool> colliderIsTouching(int a, int b) => _sendBool(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouching, a, b));
+  Future<bool> colliderIsTouching(int a, int b) async => IsolateProtocol.readBool(await _send(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouching, a, b)));
   @override
-  Future<bool> colliderIsTouchingLayers(int h, int l) => _sendBool(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouchingLayers, h, l));
+  Future<bool> colliderIsTouchingLayers(int h, int l) async => IsolateProtocol.readBool(await _send(IsolateProtocol.writeColliderMethodII(ColliderMethodId.isTouchingLayers, h, l)));
   @override
-  Future<void> colliderGenerateGeometry(int h) => _sendVoid(IsolateProtocol.writeColliderMethodI(ColliderMethodId.generateGeometry, h));
-
-  Future<void> _sendVoid(Uint8ListBuffer buf) async => await _send(buf);
-  Future<bool> _sendBool(Uint8ListBuffer buf) async => IsolateProtocol.readBool(await _send(buf));
-
-  // ===================== Joint =====================
-  @override
-  Future<int> createJoint(int t, int bh) async => IsolateProtocol.readInt(await _send(IsolateProtocol.writeCreateJoint(t, bh)));
-  @override
-  Future<void> destroyJoint(int h) async => _sendFireAndForget(IsolateProtocol.writeDestroyJoint(h));
-  @override
-  Future<Object?> getJointProperty(int h, int p) async => IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.joint, h, p)));
-  @override
-  Future<void> setJointProperty(int h, int p, Object? v) async => _sendFireAndForget(IsolateProtocol.writeSetProp(EntityType.joint, h, p, v));
-
-  // ===================== Effector =====================
-  @override
-  Future<int> createEffector(int t) async => IsolateProtocol.readInt(await _send(IsolateProtocol.writeCreateEffector(t)));
-  @override
-  Future<void> destroyEffector(int h) async => _sendFireAndForget(IsolateProtocol.writeDestroyEffector(h));
-  @override
-  Future<Object?> getEffectorProperty(int h, int p) async => IsolateProtocol.readObject(await _send(IsolateProtocol.writeGetProp(EntityType.effector, h, p)));
-  @override
-  Future<void> setEffectorProperty(int h, int p, Object? v) async => _sendFireAndForget(IsolateProtocol.writeSetProp(EntityType.effector, h, p, v));
+  Future<void> colliderGenerateGeometry(int h) async => await _send(IsolateProtocol.writeColliderMethodI(ColliderMethodId.generateGeometry, h));
 
   // ===================== Queries =====================
   @override

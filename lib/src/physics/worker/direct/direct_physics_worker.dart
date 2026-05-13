@@ -156,13 +156,13 @@ class DirectPhysicsWorker implements PhysicsWorker {
 
   // ===================== Body =====================
   @override
-  Future<int> createBody() => DirectBodyOps.create(engine);
+  int createBody() => engine.createBody();
   @override
-  Future<void> destroyBody(int h) => DirectBodyOps.destroy(engine, h);
+  void destroyBody(int h) => engine.destroyBody(h);
   @override
   Future<Object?> getBodyProperty(int h, int p) => DirectBodyOps.getProperty(engine, h, p);
   @override
-  Future<void> setBodyProperty(int h, int p, Object? v) => DirectBodyOps.setProperty(engine, h, p, v);
+  void setBodyProperty(int h, int p, Object? v) { DirectBodyOps.setProperty(engine, h, p, v); }
   @override
   Future<void> bodyAddForce(int h, Vector2 f, int m) => DirectBodyOps.addForce(engine, h, f, m);
   @override
@@ -204,13 +204,13 @@ class DirectPhysicsWorker implements PhysicsWorker {
 
   // ===================== Collider =====================
   @override
-  Future<int> createCollider(ColliderShapeType t, int bh) => DirectColliderOps.create(engine, t, bh);
+  int createCollider(ColliderShapeType t, int bh) => engine.createCollider(t, bh);
   @override
-  Future<void> destroyCollider(int h) => DirectColliderOps.destroy(engine, h);
+  void destroyCollider(int h) => engine.destroyCollider(h);
   @override
   Future<Object?> getColliderProperty(int h, int p) => DirectColliderOps.getProperty(engine, h, p);
   @override
-  Future<void> setColliderProperty(int h, int p, Object? v) => DirectColliderOps.setProperty(engine, h, p, v);
+  void setColliderProperty(int h, int p, Object? v) { DirectColliderOps.setProperty(engine, h, p, v); }
   @override
   Future<Vector2> colliderClosestPoint(int h, Vector2 p) => DirectColliderOps.closestPoint(engine, h, p);
   @override
@@ -224,23 +224,23 @@ class DirectPhysicsWorker implements PhysicsWorker {
 
   // ===================== Joint =====================
   @override
-  Future<int> createJoint(int t, int bh) => DirectJointOps.create(engine, t, bh);
+  int createJoint(int t, int bh) => engine.createJoint(t, bh);
   @override
-  Future<void> destroyJoint(int h) => DirectJointOps.destroy(engine, h);
+  void destroyJoint(int h) => engine.destroyJoint(h);
   @override
   Future<Object?> getJointProperty(int h, int p) => DirectJointOps.getProperty(engine, h, p);
   @override
-  Future<void> setJointProperty(int h, int p, Object? v) => DirectJointOps.setProperty(engine, h, p, v);
+  void setJointProperty(int h, int p, Object? v) { DirectJointOps.setProperty(engine, h, p, v); }
 
   // ===================== Effector =====================
   @override
-  Future<int> createEffector(int t) => DirectEffectorOps.create(engine, t);
+  int createEffector(int t) => engine.createEffector(t);
   @override
-  Future<void> destroyEffector(int h) => DirectEffectorOps.destroy(engine, h);
+  void destroyEffector(int h) => engine.destroyEffector(h);
   @override
   Future<Object?> getEffectorProperty(int h, int p) => DirectEffectorOps.getProperty(engine, h, p);
   @override
-  Future<void> setEffectorProperty(int h, int p, Object? v) => DirectEffectorOps.setProperty(engine, h, p, v);
+  void setEffectorProperty(int h, int p, Object? v) { DirectEffectorOps.setProperty(engine, h, p, v); }
 
   // ===================== Queries =====================
   @override

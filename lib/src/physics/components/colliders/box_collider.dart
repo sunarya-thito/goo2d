@@ -1,8 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
-import 'package:goo2d/src/physics/components/collider.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_collider_ops.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
 import 'package:goo2d/goo2d.dart';
@@ -16,37 +15,32 @@ class BoxCollider extends Collider {
 
   @override
   @protected
-  void syncProperties() {
-    super.syncProperties();
-    handleIfAttached?.then((h) {
-      worker.setColliderProperty(h, ColliderProp.boxEdgeRadius, _edgeRadius);
-      worker.setColliderProperty(h, ColliderProp.boxSize, _size);
-      worker.setColliderProperty(h, ColliderProp.boxAutoTiling, _autoTiling);
-    });
+  void syncAllProperties() {
+    super.syncAllProperties();
+    worker.setColliderProperty(handle, ColliderProp.boxEdgeRadius, _edgeRadius);
+    worker.setColliderProperty(handle, ColliderProp.boxSize, _size.clone());
+    worker.setColliderProperty(handle, ColliderProp.boxAutoTiling, _autoTiling);
   }
 
   double _edgeRadius = 0;
-  /// Controls the radius of all edges created by the collider.
   double get edgeRadius => _edgeRadius;
   set edgeRadius(double value) {
     _edgeRadius = value;
-    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.boxEdgeRadius, value));
+    if (isAttached) worker.setColliderProperty(handle, ColliderProp.boxEdgeRadius, value);
   }
 
   Vector2 _size = Vector2(1, 1);
-  /// The width and height of the rectangle.
   Vector2 get size => _size;
   set size(Vector2 value) {
     _size.setFrom(value);
-    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.boxSize, value));
+    if (isAttached) worker.setColliderProperty(handle, ColliderProp.boxSize, value.clone());
   }
 
   bool _autoTiling = false;
-  /// Determines whether the BoxCollider2D's shape is automatically updated based on a SpriteRenderer's tiling properties.
   bool get autoTiling => _autoTiling;
   set autoTiling(bool value) {
     _autoTiling = value;
-    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.boxAutoTiling, value));
+    if (isAttached) worker.setColliderProperty(handle, ColliderProp.boxAutoTiling, value);
   }
 
   @override

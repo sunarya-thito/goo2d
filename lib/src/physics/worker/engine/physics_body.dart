@@ -10,8 +10,7 @@ Vector2 _v(f.Vector2 v) => Vector2(v.x, v.y);
 
 /// Thin wrapper around a Forge2D [f.Body], preserving the existing public API.
 ///
-/// Rotation is stored/returned in DEGREES (matching the original interface),
-/// while Forge2D uses radians internally — all conversion happens here.
+/// Rotation is in RADIANS, matching [ObjectTransform.angle] and Forge2D.
 class PhysicsBody {
   final int handle;
 
@@ -60,17 +59,17 @@ class PhysicsBody {
     b.setTransform(_fv(v), b.angle);
   }
 
-  // ---- Rotation: degrees externally, radians in Forge2D ----
+  // ---- Rotation (radians) ----
 
   double get rotation {
     final b = _body;
-    return b == null ? 0.0 : b.angle * (180.0 / math.pi);
+    return b == null ? 0.0 : b.angle;
   }
 
-  set rotation(double deg) {
+  set rotation(double rad) {
     final b = _body;
     if (b == null) return;
-    b.setTransform(f.Vector2(b.position.x, b.position.y), deg * (math.pi / 180.0));
+    b.setTransform(f.Vector2(b.position.x, b.position.y), rad);
   }
 
   // ---- Linear velocity ----
@@ -252,19 +251,19 @@ class PhysicsBody {
     b.setTransform(_fv(target), b.angle);
   }
 
-  void moveRotation(double angleDeg) {
+  void moveRotation(double rad) {
     final b = _body;
     if (b == null) return;
-    b.setTransform(f.Vector2(b.position.x, b.position.y), angleDeg * math.pi / 180.0);
+    b.setTransform(f.Vector2(b.position.x, b.position.y), rad);
   }
 
-  void movePositionAndRotation(Vector2 target, double angleDeg) {
+  void movePositionAndRotation(Vector2 target, double rad) {
     final b = _body;
     if (b == null) return;
-    b.setTransform(_fv(target), angleDeg * math.pi / 180.0);
+    b.setTransform(_fv(target), rad);
   }
 
-  void setRotation(double angleDeg) => moveRotation(angleDeg);
+  void setRotation(double rad) => moveRotation(rad);
 
   // ---- World/local space helpers ----
 

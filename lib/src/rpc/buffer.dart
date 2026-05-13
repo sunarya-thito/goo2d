@@ -81,12 +81,10 @@ class Uint8ListBuffer {
   /// * [capacity]: The required additional space.
   /// * [growthFactor]: The multiplier used when growing the buffer.
   void ensureCapacity(int capacity, [double growthFactor = 1.5]) {
-    if (_offset + capacity > _buffer.length) {
-      final newCapacity = (_buffer.length * growthFactor).round();
-      assert(
-        newCapacity > _buffer.length,
-        'Capacity growth is not enough for growth factor $growthFactor',
-      );
+    final needed = _offset + capacity;
+    if (needed > _buffer.length) {
+      final grown = (_buffer.length * growthFactor).round();
+      final newCapacity = grown >= needed ? grown : needed;
       final newBuffer = Uint8List(newCapacity);
       newBuffer.setRange(0, _offset, _buffer);
       _buffer = newBuffer;

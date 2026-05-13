@@ -42,6 +42,7 @@ class Opcode {
   static const int getContactColliders = 33;
   static const int overlapCollider = 34;
   static const int syncTransforms = 35;
+  static const int stepWithBatch = 36;
 }
 
 class GlobalPropId {
@@ -61,6 +62,21 @@ class GlobalPropId {
 }
 
 class LayerOpId { static const int getIgnore = 0, getMask = 1; }
+
+class BatchOpType {
+  static const int createBody      = 0;
+  static const int destroyBody     = 1;
+  static const int setBodyProp     = 2;
+  static const int createCollider  = 3;
+  static const int destroyCollider = 4;
+  static const int setColliderProp = 5;
+  static const int createJoint     = 6;
+  static const int destroyJoint    = 7;
+  static const int setJointProp    = 8;
+  static const int createEffector  = 9;
+  static const int destroyEffector = 10;
+  static const int setEffectorProp = 11;
+}
 
 class EntityType { static const int body = 0, collider = 1, joint = 2, effector = 3; }
 
@@ -176,6 +192,27 @@ class IsolateProtocol {
   static Uint8ListBuffer writeGetContactColliders(int h) { final b = _buf(Opcode.getContactColliders); _writeInt(b, h); return b; }
   static Uint8ListBuffer writeOverlapCollider(int h) { final b = _buf(Opcode.overlapCollider); _writeInt(b, h); return b; }
   static Uint8ListBuffer writeSyncTransforms() => _buf(Opcode.syncTransforms);
+
+  /// Serializes a full ordered-op batch + step into one message.
+  ///
+  /// Format:
+  ///   [1] opcode=stepWithBatch
+  ///   [8] dt
+  ///   [4] opCount
+  ///   for each op: [1] BatchOpType  [variable] args  (see BatchOpType)
+  static Uint8ListBuffer writeStepWithBatchOrdered(
+      double dt, int opCount, Uint8List opsData) {
+    final b = _buf(Opcode.stepWithBatch);
+    _writeDouble(b, dt);
+    _writeInt(b, opCount);
+    b.ensureCapacity(opsData.length);
+    b.write(opsData.length, () {
+      for (var i = 0; i < opsData.length; i++) {
+        b.byteData.setUint8(b.offset + i, opsData[i]);
+      }
+    });
+    return b;
+  }
 
   // ===================== Readers =====================
   static double readDouble(ByteData d) => d.getFloat64(0);

@@ -1,5 +1,3 @@
-import 'package:goo2d/goo2d.dart';
-
 /// A set of parameters for filtering contact results.
 /// 
 /// Equivalent to Unity's `ContactFilter2D`.

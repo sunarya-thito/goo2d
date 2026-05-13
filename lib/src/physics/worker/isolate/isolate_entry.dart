@@ -31,9 +31,10 @@ void isolateEntry(SendPort mainPort) {
       return;
     }
 
-    final data = ByteData.sublistView(message as Uint8List);
+    final bytes = message as Uint8List;
+    final data = ByteData.sublistView(bytes);
     final requestId = data.getUint16(0);
-    final payload = ByteData.sublistView(message as Uint8List, 2);
+    final payload = ByteData.sublistView(bytes, 2);
 
     final result = _dispatch(engine, payload);
 
@@ -61,6 +62,17 @@ Uint8ListBuffer? _dispatch(PhysicsEngine engine, ByteData data) {
   int ri() { final v = data.getInt32(off); off += 4; return v; }
   bool rb() { final v = data.getUint8(off) != 0; off += 1; return v; }
   Vector2 rv() => Vector2(rd(), rd());
+  Object? ro() {
+    final type = data.getUint8(off); off += 1;
+    switch (type) {
+      case 0: return null;
+      case 1: final v = data.getFloat64(off); off += 8; return v;
+      case 2: final v = data.getInt32(off); off += 4; return v;
+      case 3: final v = data.getUint8(off) != 0; off += 1; return v;
+      case 4: final v = Vector2(data.getFloat64(off), data.getFloat64(off + 8)); off += 16; return v;
+      default: throw ArgumentError('Unknown object type: $type');
+    }
+  }
 
   Uint8ListBuffer respDouble(double v) {
     final b = Uint8ListBuffer(8);
@@ -85,6 +97,43 @@ Uint8ListBuffer? _dispatch(PhysicsEngine engine, ByteData data) {
   }
 
   switch (opcode) {
+    case Opcode.stepWithBatch:
+      {
+        final dt = rd();
+        final opCount = ri();
+        for (var i = 0; i < opCount; i++) {
+          final opType = data.getUint8(off); off += 1;
+          switch (opType) {
+            case BatchOpType.createBody:
+              engine.createBodyWithHandle(ri());
+            case BatchOpType.destroyBody:
+              engine.destroyBody(ri());
+            case BatchOpType.setBodyProp:
+              final h = ri(); final p = ri(); DirectBodyOps.setProperty(engine, h, p, ro());
+            case BatchOpType.createCollider:
+              engine.createColliderWithHandle(ri(), ColliderShapeType.values[ri()], ri());
+            case BatchOpType.destroyCollider:
+              engine.destroyCollider(ri());
+            case BatchOpType.setColliderProp:
+              final h = ri(); final p = ri(); DirectColliderOps.setProperty(engine, h, p, ro());
+            case BatchOpType.createJoint:
+              engine.createJointWithHandle(ri(), ri(), ri());
+            case BatchOpType.destroyJoint:
+              engine.destroyJoint(ri());
+            case BatchOpType.setJointProp:
+              final h = ri(); final p = ri(); DirectJointOps.setProperty(engine, h, p, ro());
+            case BatchOpType.createEffector:
+              engine.createEffectorWithHandle(ri(), ri());
+            case BatchOpType.destroyEffector:
+              engine.destroyEffector(ri());
+            case BatchOpType.setEffectorProp:
+              final h = ri(); final p = ri(); DirectEffectorOps.setProperty(engine, h, p, ro());
+          }
+        }
+        engine.step(dt);
+      }
+      return Uint8ListBuffer();
+
     case Opcode.step:
       engine.step(rd());
       return Uint8ListBuffer();

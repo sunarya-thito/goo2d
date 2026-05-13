@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/physics/worker/physics_worker.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_effector_ops.dart';
@@ -9,20 +8,13 @@ import 'package:goo2d/goo2d.dart';
 ///
 /// Equivalent to Unity's `Effector2D`.
 abstract class Effector extends Component {
-  Future<int>? _handleFuture;
+  late int _handle;
 
-  /// The internal physics handle for this effector.
-  Future<int> get handle {
-    if (_handleFuture == null) {
-      throw StateError('Effector must be attached to a GameObject before accessing handle.');
-    }
-    return _handleFuture!;
+  int get handle {
+    assert(isAttached, 'Effector must be attached to a GameObject before accessing handle.');
+    return _handle;
   }
 
-  @protected
-  Future<int>? get handleIfAttached => _handleFuture;
-
-  /// The effector type of this component.
   EffectorType get effectorType;
 
   @protected
@@ -31,40 +23,33 @@ abstract class Effector extends Component {
   @override
   void internalAttach(GameObject gameObject) {
     super.internalAttach(gameObject);
-    _handleFuture = worker.createEffector(effectorType.index);
-    syncProperties();
+    _handle = worker.createEffector(effectorType.index);
+    syncAllProperties();
   }
 
   @override
   void internalDetach() {
-    final w = worker;
-    _handleFuture?.then((h) => w.destroyEffector(h));
-    _handleFuture = null;
+    worker.destroyEffector(_handle);
     super.internalDetach();
   }
 
-  /// Synchronizes properties with the physics worker.
   @protected
-  void syncProperties() {
-    _handleFuture?.then((h) {
-      worker.setEffectorProperty(h, EffectorProp.useColliderMask, _useColliderMask);
-      worker.setEffectorProperty(h, EffectorProp.colliderMask, _colliderMask);
-    });
+  void syncAllProperties() {
+    worker.setEffectorProperty(_handle, EffectorProp.useColliderMask, _useColliderMask);
+    worker.setEffectorProperty(_handle, EffectorProp.colliderMask, _colliderMask);
   }
 
   bool _useColliderMask = false;
-  /// Should the collider-mask be used or the global collision matrix?
   bool get useColliderMask => _useColliderMask;
   set useColliderMask(bool value) {
     _useColliderMask = value;
-    _handleFuture?.then((h) => worker.setEffectorProperty(h, EffectorProp.useColliderMask, value));
+    if (isAttached) worker.setEffectorProperty(_handle, EffectorProp.useColliderMask, value);
   }
 
   int _colliderMask = ~0;
-  /// The mask used to select specific layers allowed to interact with the effector.
   int get colliderMask => _colliderMask;
   set colliderMask(int value) {
     _colliderMask = value;
-    _handleFuture?.then((h) => worker.setEffectorProperty(h, EffectorProp.colliderMask, value));
+    if (isAttached) worker.setEffectorProperty(_handle, EffectorProp.colliderMask, value);
   }
 }

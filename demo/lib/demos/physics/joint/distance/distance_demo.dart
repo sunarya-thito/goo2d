@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d_demo/shared/drag_behavior.dart';
 
 class DistanceDemo extends StatefulGameWidget {
   const DistanceDemo({super.key});
@@ -111,6 +112,7 @@ class _DistanceDemoState extends GameState<DistanceDemo> {
                 (s) => s.prevTag = GameTag('_dist_link_${i - 1}'),
               ),
             ),
+            ComponentWidget(DragBehavior.new),
           ],
           ComponentWidget(
             _BoxRenderer.new.withInitialValues(
@@ -149,6 +151,13 @@ class _BoxRenderer extends Behavior with Renderable {
     canvas.drawRect(
       ui.Rect.fromCenter(center: Offset.zero, width: width, height: height),
       Paint()..color = color,
+    );
+    canvas.drawLine(
+      Offset.zero,
+      Offset(0, height / 2),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 0.06,
     );
   }
 }

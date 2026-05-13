@@ -1,13 +1,12 @@
 import 'dart:ui' as ui;
 import 'package:meta/meta.dart';
 import 'package:vector_math/vector_math_64.dart';
-import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_collider_ops.dart';
 import 'package:goo2d/src/physics/worker/data/collider_shape_type.dart';
 import 'package:goo2d/goo2d.dart';
 
-/// Collider for 2D physics representing an circle.
-/// 
+/// Collider for 2D physics representing a circle.
+///
 /// Equivalent to Unity's `CircleCollider2D`.
 class CircleCollider extends Collider {
   @override
@@ -15,19 +14,16 @@ class CircleCollider extends Collider {
 
   @override
   @protected
-  void syncProperties() {
-    super.syncProperties();
-    handleIfAttached?.then((h) {
-      worker.setColliderProperty(h, ColliderProp.circleRadius, _radius);
-    });
+  void syncAllProperties() {
+    super.syncAllProperties();
+    worker.setColliderProperty(handle, ColliderProp.circleRadius, _radius);
   }
 
   double _radius = 0.5;
-  /// Radius of the circle.
   double get radius => _radius;
   set radius(double value) {
     _radius = value;
-    handleIfAttached?.then((h) => worker.setColliderProperty(h, ColliderProp.circleRadius, value));
+    if (isAttached) worker.setColliderProperty(handle, ColliderProp.circleRadius, value);
   }
 
   @override

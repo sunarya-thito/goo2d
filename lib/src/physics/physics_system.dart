@@ -84,8 +84,6 @@ class PhysicsSystem implements GameSystem {
     _worker?.dispose();
     _worker = null;
     _game = null;
-    _colliderRegistry.clear();
-    _rigidbodyRegistry.clear();
     _prevContacts.clear();
     _prevTriggers.clear();
   }
@@ -97,8 +95,9 @@ class PhysicsSystem implements GameSystem {
   static void registerCollider(int handle, Collider collider) =>
       _colliderRegistry[handle] = collider;
 
-  static void unregisterCollider(int handle) =>
-      _colliderRegistry.remove(handle);
+  static void unregisterCollider(int handle, Collider collider) {
+    if (_colliderRegistry[handle] == collider) _colliderRegistry.remove(handle);
+  }
 
   static Collider? getCollider(int handle) => _colliderRegistry[handle];
 
@@ -111,8 +110,9 @@ class PhysicsSystem implements GameSystem {
   static void registerRigidbody(int handle, Rigidbody rb) =>
       _rigidbodyRegistry[handle] = rb;
 
-  static void unregisterRigidbody(int handle) =>
-      _rigidbodyRegistry.remove(handle);
+  static void unregisterRigidbody(int handle, Rigidbody rb) {
+    if (_rigidbodyRegistry[handle] == rb) _rigidbodyRegistry.remove(handle);
+  }
 
   static Rigidbody? getRigidbody(int handle) => _rigidbodyRegistry[handle];
 

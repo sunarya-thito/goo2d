@@ -43,7 +43,8 @@ abstract class Event<T extends EventListener> {
   ///
   /// * [object]: The game object whose components will receive the event.
   void dispatchTo(GameObject object) {
-    for (final listener in object.components.whereType<T>()) {
+    final listeners = object.components.whereType<T>().toList();
+    for (final listener in listeners) {
       if (listener is Behavior && !(listener as Behavior).enabled) {
         continue;
       }
@@ -59,7 +60,8 @@ abstract class AsyncEvent<T extends EventListener> extends Event<T> {
 
   @override
   Future<void> dispatchTo(GameObject object) async {
-    for (final listener in object.components.whereType<T>()) {
+    final listeners = object.components.whereType<T>().toList();
+    for (final listener in listeners) {
       if (listener is Behavior && !(listener as Behavior).enabled) {
         continue;
       }

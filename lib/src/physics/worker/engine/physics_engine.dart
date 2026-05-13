@@ -248,6 +248,14 @@ class PhysicsEngine {
     return h;
   }
 
+  void createBodyWithHandle(int h) {
+    final def = f.BodyDef(type: f.BodyType.dynamic);
+    final fb = _world.createBody(def);
+    final body = PhysicsBody(h);
+    body.initForgeBody(fb);
+    bodies[h] = body;
+  }
+
   void destroyBody(int handle) {
     final body = bodies.remove(handle);
     if (body == null) return;
@@ -290,6 +298,16 @@ class PhysicsEngine {
     return h;
   }
 
+  void createColliderWithHandle(int h, ColliderShapeType type, int bodyHandle) {
+    final collider = PhysicsCollider(h, type, bodyHandle);
+    colliders[h] = collider;
+    final body = bodies[bodyHandle];
+    if (body != null) {
+      body.colliderHandles.add(h);
+      collider.onGeometryChanged = () => _rebuildColliderFixtures(h);
+    }
+  }
+
   void destroyCollider(int handle) {
     final c = colliders.remove(handle);
     if (c == null) return;
@@ -325,7 +343,20 @@ class PhysicsEngine {
       collider.fixtures.add(fb.createFixture(fd));
     }
 
-    if (body.useAutoMass) fb.resetMassData();
+    if (body.useAutoMass) {
+      fb.resetMassData();
+    } else {
+      final explicitMass = fb.mass;
+      fb.resetMassData();
+      if (explicitMass > 0.0 && fb.mass > 0.0) {
+        final scaledInertia = fb.inertia * (explicitMass / fb.mass);
+        final md = f.MassData()
+          ..mass = explicitMass
+          ..I = scaledInertia;
+        md.center.setFrom(fb.getLocalCenter());
+        fb.setMassData(md);
+      }
+    }
   }
 
   List<f.FixtureDef> _buildFixtureDefs(PhysicsCollider c, int handle) {
@@ -417,6 +448,10 @@ class PhysicsEngine {
     return h;
   }
 
+  void createJointWithHandle(int h, int type, int bodyHandleA) {
+    joints[h] = PhysicsJoint(h, type, bodyHandleA);
+  }
+
   void destroyJoint(int handle) {
     final j = joints.remove(handle);
     if (j == null) return;
@@ -428,7 +463,6 @@ class PhysicsEngine {
 
   void _ensureJointCreated(PhysicsJoint j) {
     if (j.forgeJoint != null) return;
-
     final bA = bodies[j.bodyHandleA]?.forgeBody;
     if (bA == null) return;
 
@@ -517,7 +551,7 @@ class PhysicsEngine {
       case 7: // target / mouse
         final def = f.MouseJointDef()
           ..bodyA = _groundBody
-          ..bodyB = bB
+          ..bodyB = bA  // bA is the joint-owner body (the body being dragged)
           ..maxForce = j.targetMaxForce
           ..frequencyHz = j.springFrequency
           ..dampingRatio = j.springDampingRatio;
@@ -545,6 +579,10 @@ class PhysicsEngine {
     final h = allocHandle();
     effectors[h] = PhysicsEffector(h, type);
     return h;
+  }
+
+  void createEffectorWithHandle(int h, int type) {
+    effectors[h] = PhysicsEffector(h, type);
   }
 
   void destroyEffector(int handle) => effectors.remove(handle);

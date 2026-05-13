@@ -7,7 +7,6 @@ import 'package:goo2d/src/pointer.dart';
 import 'package:goo2d/src/transform.dart';
 import 'package:goo2d/src/physics/components/collider.dart';
 import 'package:goo2d/src/object.dart';
-import 'package:goo2d/src/utility.dart';
 
 /// A mixin that marks a component as capable of drawing to a canvas.
 ///
@@ -311,21 +310,22 @@ class GameRenderObject extends RenderBox
         position: position,
         hitTest: (BoxHitTestResult result, Offset? transformedPosition) {
           if (transformedPosition == null) return false;
-          if (hitTestChildren(result, position: transformedPosition) ||
-              hitTestSelf(transformedPosition)) {
+          final childrenHit = hitTestChildren(result, position: transformedPosition);
+          if (hitTestSelf(transformedPosition)) {
             result.add(BoxHitTestEntry(this, transformedPosition));
             return true;
           }
-          return false;
+          return childrenHit;
         },
       );
     }
 
-    if (hitTestChildren(result, position: position) || hitTestSelf(position)) {
+    final childrenHit = hitTestChildren(result, position: position);
+    if (hitTestSelf(position)) {
       result.add(BoxHitTestEntry(this, position));
       return true;
     }
-    return false;
+    return childrenHit;
   }
 
   @override

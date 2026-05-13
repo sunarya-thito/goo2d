@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:goo2d/goo2d.dart';
+import 'package:goo2d_demo/shared/drag_behavior.dart';
 
 class ShapesDemo extends StatefulGameWidget {
   const ShapesDemo({super.key});
@@ -122,6 +123,7 @@ class _ShapesDemoState extends GameState<ShapesDemo> {
               (c) => c.radius = 0.5,
             ),
           ),
+          ComponentWidget(DragBehavior.new),
           ComponentWidget(
             _CircleRenderer.new.withInitialValues(
               (r) => r
@@ -157,6 +159,7 @@ class _ShapesDemoState extends GameState<ShapesDemo> {
               (c) => c.size = Vector2(0.9, 0.9),
             ),
           ),
+          ComponentWidget(DragBehavior.new),
           ComponentWidget(
             _BoxRenderer.new.withInitialValues(
               (r) => r
@@ -194,6 +197,7 @@ class _ShapesDemoState extends GameState<ShapesDemo> {
                 ..direction = CapsuleDirection.vertical,
             ),
           ),
+          ComponentWidget(DragBehavior.new),
           ComponentWidget(
             _CapsuleRenderer.new.withInitialValues(
               (r) => r
@@ -219,6 +223,13 @@ class _BoxRenderer extends Behavior with Renderable {
       ui.Rect.fromCenter(center: Offset.zero, width: width, height: height),
       Paint()..color = color,
     );
+    canvas.drawLine(
+      Offset.zero,
+      Offset(0, height / 2),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 0.06,
+    );
   }
 }
 
@@ -229,6 +240,13 @@ class _CircleRenderer extends Behavior with Renderable {
   @override
   void render(Canvas canvas) {
     canvas.drawCircle(Offset.zero, radius, Paint()..color = color);
+    canvas.drawLine(
+      Offset.zero,
+      Offset(0, radius),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 0.06,
+    );
   }
 }
 
@@ -245,6 +263,13 @@ class _CapsuleRenderer extends Behavior with Renderable {
         Radius.circular(width / 2),
       ),
       Paint()..color = color,
+    );
+    canvas.drawLine(
+      Offset.zero,
+      Offset(0, height / 2),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 0.06,
     );
   }
 }

@@ -78,11 +78,11 @@ abstract class PhysicsWorker {
   Future<bool> getIgnoreCollision(int colliderA, int colliderB);
 
   // ===================== Body Operations =====================
-  Future<int> createBody();
-  Future<void> destroyBody(int handle);
+  int createBody();
+  void destroyBody(int handle);
   // Property access uses generic get/set by property index
   Future<Object?> getBodyProperty(int handle, int property);
-  Future<void> setBodyProperty(int handle, int property, Object? value);
+  void setBodyProperty(int handle, int property, Object? value);
   // Methods
   Future<void> bodyAddForce(int handle, Vector2 force, int mode);
   Future<void> bodyAddForceAtPosition(int handle, Vector2 force, Vector2 position, int mode);
@@ -105,10 +105,10 @@ abstract class PhysicsWorker {
   Future<Vector2> bodyClosestPoint(int handle, Vector2 position);
 
   // ===================== Collider Operations =====================
-  Future<int> createCollider(ColliderShapeType type, int bodyHandle);
-  Future<void> destroyCollider(int handle);
+  int createCollider(ColliderShapeType type, int bodyHandle);
+  void destroyCollider(int handle);
   Future<Object?> getColliderProperty(int handle, int property);
-  Future<void> setColliderProperty(int handle, int property, Object? value);
+  void setColliderProperty(int handle, int property, Object? value);
   Future<Vector2> colliderClosestPoint(int handle, Vector2 position);
   Future<double> colliderDistance(int handleA, int handleB);
   Future<bool> colliderIsTouching(int handleA, int handleB);
@@ -116,16 +116,16 @@ abstract class PhysicsWorker {
   Future<void> colliderGenerateGeometry(int handle);
 
   // ===================== Joint Operations =====================
-  Future<int> createJoint(int type, int bodyHandleA);
-  Future<void> destroyJoint(int handle);
+  int createJoint(int type, int bodyHandleA);
+  void destroyJoint(int handle);
   Future<Object?> getJointProperty(int handle, int property);
-  Future<void> setJointProperty(int handle, int property, Object? value);
+  void setJointProperty(int handle, int property, Object? value);
 
   // ===================== Effector Operations =====================
-  Future<int> createEffector(int type);
-  Future<void> destroyEffector(int handle);
+  int createEffector(int type);
+  void destroyEffector(int handle);
   Future<Object?> getEffectorProperty(int handle, int property);
-  Future<void> setEffectorProperty(int handle, int property, Object? value);
+  void setEffectorProperty(int handle, int property, Object? value);
 
   // ===================== Queries =====================
   Future<List<RaycastHitData>> raycast(Vector2 origin, Vector2 direction, double distance, int layerMask, double minDepth, double maxDepth);

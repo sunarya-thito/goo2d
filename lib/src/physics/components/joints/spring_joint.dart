@@ -1,12 +1,11 @@
-import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
-import 'package:goo2d/src/physics/components/joint.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:goo2d/src/physics/worker/direct/direct_joint_ops.dart';
 import 'package:goo2d/src/physics/worker/data/joint_type.dart';
 import 'package:goo2d/goo2d.dart';
 
 /// Joint that connects two Rigidbody2D together using a spring.
-/// 
+///
 /// Equivalent to Unity's `SpringJoint2D`.
 class SpringJoint extends Joint {
   @override
@@ -14,72 +13,63 @@ class SpringJoint extends Joint {
 
   @override
   @protected
-  void syncProperties() {
-    super.syncProperties();
-    handleIfAttached?.then((h) {
-      worker.setJointProperty(h, JointProp.anchor, _anchor);
-      worker.setJointProperty(h, JointProp.connectedAnchor, _connectedAnchor);
-      worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
-      worker.setJointProperty(h, JointProp.distance, _distance);
-      worker.setJointProperty(h, JointProp.autoConfigureDistance, _autoConfigureDistance);
-      worker.setJointProperty(h, JointProp.springDampingRatio, _dampingRatio);
-      worker.setJointProperty(h, JointProp.springFrequency, _frequency);
-    });
+  void syncAllProperties() {
+    super.syncAllProperties();
+    worker.setJointProperty(handle, JointProp.anchor, _anchor.clone());
+    worker.setJointProperty(handle, JointProp.connectedAnchor, _connectedAnchor.clone());
+    worker.setJointProperty(handle, JointProp.autoConfigureConnectedAnchor, _autoConfigureConnectedAnchor);
+    worker.setJointProperty(handle, JointProp.distance, _distance);
+    worker.setJointProperty(handle, JointProp.autoConfigureDistance, _autoConfigureDistance);
+    worker.setJointProperty(handle, JointProp.springDampingRatio, _dampingRatio);
+    worker.setJointProperty(handle, JointProp.springFrequency, _frequency);
   }
 
   final Vector2 _anchor = Vector2.zero();
-  /// The local anchor point on the Rigidbody2D where the joint is attached.
   Vector2 get anchor => _anchor;
   set anchor(Vector2 value) {
     _anchor.setFrom(value);
-    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.anchor, value));
+    if (isAttached) worker.setJointProperty(handle, JointProp.anchor, value.clone());
   }
 
   final Vector2 _connectedAnchor = Vector2.zero();
-  /// The local anchor point on the connected Rigidbody2D where the joint is attached.
   Vector2 get connectedAnchor => _connectedAnchor;
   set connectedAnchor(Vector2 value) {
     _connectedAnchor.setFrom(value);
-    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.connectedAnchor, value));
+    if (isAttached) worker.setJointProperty(handle, JointProp.connectedAnchor, value.clone());
   }
 
   bool _autoConfigureConnectedAnchor = true;
-  /// Should the connected anchor be calculated automatically?
   bool get autoConfigureConnectedAnchor => _autoConfigureConnectedAnchor;
   set autoConfigureConnectedAnchor(bool value) {
     _autoConfigureConnectedAnchor = value;
-    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureConnectedAnchor, value));
+    if (isAttached) worker.setJointProperty(handle, JointProp.autoConfigureConnectedAnchor, value);
   }
 
   double _distance = 1.0;
-  /// The distance separating the two ends of the joint.
   double get distance => _distance;
   set distance(double value) {
     _distance = value;
-    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.distance, value));
+    if (isAttached) worker.setJointProperty(handle, JointProp.distance, value);
   }
 
   bool _autoConfigureDistance = true;
-  /// Should the distance be calculated automatically?
   bool get autoConfigureDistance => _autoConfigureDistance;
   set autoConfigureDistance(bool value) {
     _autoConfigureDistance = value;
-    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.autoConfigureDistance, value));
+    if (isAttached) worker.setJointProperty(handle, JointProp.autoConfigureDistance, value);
   }
 
   double _dampingRatio = 0.0;
-  /// The amount by which the spring force is reduced in proportion to the movement speed.
   double get dampingRatio => _dampingRatio;
   set dampingRatio(double value) {
     _dampingRatio = value;
-    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springDampingRatio, value));
+    if (isAttached) worker.setJointProperty(handle, JointProp.springDampingRatio, value);
   }
 
   double _frequency = 1.0;
-  /// The frequency at which the spring oscillates around the distance between the objects.
   double get frequency => _frequency;
   set frequency(double value) {
     _frequency = value;
-    handleIfAttached?.then((h) => worker.setJointProperty(h, JointProp.springFrequency, value));
+    if (isAttached) worker.setJointProperty(handle, JointProp.springFrequency, value);
   }
 }
