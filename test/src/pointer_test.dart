@@ -29,8 +29,8 @@ void main() {
     ) async {
       final receiver = MockPointerReceiver();
       final collider = BoxCollider()
-        ..size = const Size(100, 100)
-        ..offset = const Offset(50, 50);
+        ..size = Vector2(100, 100)
+        ..offset = Vector2(50, 50);
 
       await tester.pumpWidget(
         Game(
@@ -65,8 +65,8 @@ void main() {
     testWidgets('should NOT dispatch events when NOT hit', (tester) async {
       final receiver = MockPointerReceiver();
       final collider = BoxCollider()
-        ..size = const Size(50, 50)
-        ..offset = const Offset(25, 25);
+        ..size = Vector2(50, 50)
+        ..offset = Vector2(25, 25);
 
       await tester.pumpWidget(
         Game(
@@ -100,8 +100,8 @@ void main() {
     testWidgets('should handle move and hover events', (tester) async {
       final receiver = MockPointerReceiver();
       final collider = BoxCollider()
-        ..size = const Size(100, 100)
-        ..offset = const Offset(50, 50);
+        ..size = Vector2(100, 100)
+        ..offset = Vector2(50, 50);
 
       await tester.pumpWidget(
         Game(

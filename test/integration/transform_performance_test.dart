@@ -35,8 +35,8 @@ void main() {
         final leafTransform = leafObject.getComponent<ObjectTransform>();
 
         await binding.traceAction(() async {
-          rootTransform.localPosition = Offset(
-            rootTransform.localPosition.dx + 0.1,
+          rootTransform.localPosition = Vector2(
+            rootTransform.localPosition.x + 0.1,
             0,
           );
           final _ = leafTransform.worldMatrix;

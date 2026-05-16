@@ -24,7 +24,7 @@ void main() {
                     ),
                     ComponentWidget(
                       ObjectTransform.new,
-                      update: (c) => c.position = const Offset(5000, 5000),
+                      update: (c) => c.position = Vector2(5000, 5000),
                     ),
                   ],
                 ),
@@ -86,7 +86,7 @@ void main() {
                     ),
                     ComponentWidget(
                       ObjectTransform.new,
-                      update: (c) => c.position = const Offset(5000, 5000),
+                      update: (c) => c.position = Vector2(5000, 5000),
                     ),
                   ],
                 ),

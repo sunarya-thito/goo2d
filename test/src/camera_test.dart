@@ -66,19 +66,19 @@ void main() {
       // With 800x600 viewport, 10 units high means 1 unit = 60 pixels
       // (0,0) world should be (400, 300) screen
       final screenPoint = cam.worldToScreenPoint(
-        Offset.zero,
+        Vector2.zero(),
         const Size(800, 600),
       );
-      expect(screenPoint.dx, closeTo(400, 0.001));
-      expect(screenPoint.dy, closeTo(300, 0.001));
+      expect(screenPoint.x, closeTo(400, 0.001));
+      expect(screenPoint.y, closeTo(300, 0.001));
 
       // (5, 5) world -> X: 400 + 5*60 = 700. Y: 300 - 5*60 = 0.
       final screenPoint2 = cam.worldToScreenPoint(
-        const Offset(5, 5),
+        Vector2(5, 5),
         const Size(800, 600),
       );
-      expect(screenPoint2.dx, closeTo(700, 0.001));
-      expect(screenPoint2.dy, closeTo(0, 0.001));
+      expect(screenPoint2.x, closeTo(700, 0.001));
+      expect(screenPoint2.y, closeTo(0, 0.001));
     });
 
     testWidgets('should calculate screenToWorldPoint correctly', (
@@ -98,19 +98,18 @@ void main() {
       await tester.pump();
 
       final worldPoint = cam.screenToWorldPoint(
-        const Offset(700, 0),
+        Vector2(700, 0),
         const Size(800, 600),
       );
-      expect(worldPoint.dx, closeTo(5, 0.001));
-      expect(worldPoint.dy, closeTo(5, 0.001));
+      expect(worldPoint.x, closeTo(5, 0.001));
+      expect(worldPoint.y, closeTo(5, 0.001));
     });
 
     testWidgets('should respect camera transform (camera movement)', (
       tester,
     ) async {
       final cam = Camera()..orthographicSize = 5;
-      final camTransform = ObjectTransform()
-        ..localPosition = const Offset(10, 0);
+      final camTransform = ObjectTransform()..localPosition = Vector2(10, 0);
 
       await tester.pumpWidget(
         Game(
@@ -126,11 +125,11 @@ void main() {
 
       // World (10, 0) is now at camera center (400, 300)
       final screenPoint = cam.worldToScreenPoint(
-        const Offset(10, 0),
+        Vector2(10, 0),
         const Size(800, 600),
       );
-      expect(screenPoint.dx, closeTo(400, 0.001));
-      expect(screenPoint.dy, closeTo(300, 0.001));
+      expect(screenPoint.x, closeTo(400, 0.001));
+      expect(screenPoint.y, closeTo(300, 0.001));
     });
   });
 }

@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:meta/meta.dart';
 import 'package:goo2d/src/input.dart';
-import 'package:goo2d/src/physics/components/physics_system.dart';
+import 'package:goo2d/src/physics/physics_system.dart';
 import 'package:goo2d/src/camera.dart';
 import 'package:goo2d/src/screen.dart';
 import 'package:goo2d/src/ticker.dart';
@@ -380,38 +380,38 @@ class TickerState implements GameSystem {
     frameCount++;
   }
 
-  double _accumulator = 0.0;
-
-  /// Executes a single engine tick, processing input, physics, and logic.
+  /// Executes a single engine tick, processing input and frame-rate dependent logic.
   ///
-  /// This method is called by the [GameLoop] on every frame. It handles
-  /// fixed-step accumulation, event broadcasting, and system updates.
+  /// Fixed-step physics and simulation are driven by a separate Timer via [fixedTick].
   ///
-  /// * [dt]: The time elapsed since the last tick.
+  /// * [dt]: The time elapsed since the last frame.
   void tick(double dt) {
     update(dt);
     game.getSystem<InputSystem>()?.update();
-
-    _accumulator += dt;
-    while (_accumulator >= fixedDeltaTime) {
-      for (final obj in _rootObjects) {
-        obj.broadcastEvent(FixedTickEvent(fixedDeltaTime));
-      }
-      _accumulator -= fixedDeltaTime;
-    }
 
     for (final obj in _rootObjects) {
       obj.broadcastEvent(TickEvent(dt));
     }
 
     game.screenPhysics?.update();
-    game.getSystem<PhysicsSystem>()?.step(dt);
 
     for (final obj in _rootObjects) {
       obj.broadcastEvent(LateTickEvent(dt));
     }
 
     signalFrameComplete();
+  }
+
+  /// Executes one fixed-interval simulation step.
+  ///
+  /// Called by the [RenderGameLoop] Timer at a constant rate (default 50Hz).
+  /// Broadcasts [FixedTickEvent] to all game objects, then steps the physics system.
+  Future<void> fixedTick() async {
+    final event = FixedTickEvent(fixedDeltaTime);
+    for (final obj in _rootObjects) {
+      await obj.broadcastEventAsync(event);
+    }
+    await game.getSystem<PhysicsSystem>()?.step();
   }
 
   /// Signals that the current frame has finished processing.

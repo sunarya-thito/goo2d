@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:goo2d/src/utility.dart';
+import 'package:goo2d/goo2d.dart';
 
 enum TestEnum { a, b, c, d }
 
@@ -63,17 +63,17 @@ void main() {
     });
   });
 
-  group('MathUtils.smoothDampOffset', () {
-    test('should move Offset toward target', () {
-      final result = MathUtils.smoothDampOffset(
-        Offset.zero,
-        const Offset(10, 10),
-        Offset.zero,
+  group('MathUtils.smoothDampVector2', () {
+    test('should move Vector2 toward target', () {
+      final result = MathUtils.smoothDampVector2(
+        Vector2.zero(),
+        Vector2(10, 10),
+        Vector2.zero(),
         0.5,
         0.1,
       );
-      expect(result.value.dx, greaterThan(0));
-      expect(result.value.dy, greaterThan(0));
+      expect(result.value.x, greaterThan(0));
+      expect(result.value.y, greaterThan(0));
     });
   });
 }

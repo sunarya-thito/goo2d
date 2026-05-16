@@ -1,198 +1,108 @@
-import 'package:flutter/painting.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:meta/meta.dart';
+import 'package:goo2d/src/physics/worker/physics_worker.dart';
+import 'package:goo2d/src/physics/worker/direct/direct_joint_ops.dart';
 import 'package:goo2d/goo2d.dart';
-import 'package:goo2d/src/physics/core/physics_joint.dart' as core;
 
-abstract class Joint extends Component with LifecycleListener {
-  Rigidbody? connectedBody;
-  Offset anchor = Offset.zero;
-  Offset connectedAnchor = Offset.zero;
-  bool enableCollision = false;
-  @internal
-  int? internalId;
-  Rigidbody get rigidbody => gameObject.getComponent<Rigidbody>();
+/// Parent class for joints to connect Rigidbody2D objects.
+///
+/// Equivalent to Unity's `Joint2D`.
+abstract class Joint extends Component {
+  late int _handle;
+
+  /// The internal physics handle for this joint.
+  int get handle {
+    assert(isAttached, 'Joint must be attached to a GameObject before accessing handle.');
+    return _handle;
+  }
+
+  /// The joint type ID of this component.
+  int get jointType;
+
+  @protected
+  PhysicsWorker get worker => game.getSystem<PhysicsSystem>()!.worker;
 
   @override
-  void onMounted() {
-    game.getSystem<PhysicsSystem>()?.registerJoint(this);
+  void internalAttach(GameObject gameObject) {
+    super.internalAttach(gameObject);
+    final rb = gameObject.getComponent<Rigidbody>();
+    _handle = worker.createJoint(jointType, rb.handle);
+    syncAllProperties();
   }
 
   @override
-  void onUnmounted() {
-    game.getSystem<PhysicsSystem>()?.unregisterJoint(this);
+  void internalDetach() {
+    worker.destroyJoint(_handle);
+    super.internalDetach();
   }
 
-  @internal
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId);
-}
-
-class DistanceJoint extends Joint {
-  double distance = 0.0;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    double finalDist = distance;
-    if (finalDist <= 0) {
-      // Calculate initial distance
-      final pA = rigidbody.transform.localToWorld(anchor);
-      final pB =
-          connectedBody?.transform.localToWorld(connectedAnchor) ??
-          connectedBody?.transform.position ??
-          Offset.zero; // Fallback for world anchor
-      finalDist = (pB - pA).distance;
+  @protected
+  void syncAllProperties() {
+    worker.setJointProperty(_handle, JointProp.enableCollision, _enableCollision);
+    worker.setJointProperty(_handle, JointProp.breakForce, _breakForce);
+    worker.setJointProperty(_handle, JointProp.breakTorque, _breakTorque);
+    worker.setJointProperty(_handle, JointProp.breakAction, _breakAction);
+    final cb = _connectedBody;
+    if (cb != null) {
+      worker.setJointProperty(_handle, JointProp.bodyHandleB, cb.handle);
     }
-
-    return core.DistanceJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      length: finalDist,
-    );
   }
-}
 
-class HingeJoint extends Joint {
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.HingeJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-    );
+  // --- Configuration Properties ---
+
+  bool _enableCollision = false;
+  bool get enableCollision => _enableCollision;
+  set enableCollision(bool value) {
+    _enableCollision = value;
+    if (isAttached) worker.setJointProperty(_handle, JointProp.enableCollision, value);
   }
-}
 
-class SpringJoint extends Joint {
-  double restLength = 0.0;
-  double stiffness = 100.0;
-  double damping = 10.0;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.SpringJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      restLength: restLength,
-      stiffness: stiffness,
-      damping: damping,
-    );
+  double _breakForce = double.infinity;
+  double get breakForce => _breakForce;
+  set breakForce(double value) {
+    _breakForce = value;
+    if (isAttached) worker.setJointProperty(_handle, JointProp.breakForce, value);
   }
-}
 
-class SliderJoint extends Joint {
-  Offset axis = const Offset(1, 0);
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.SliderJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      axis: axis,
-    );
+  double _breakTorque = double.infinity;
+  double get breakTorque => _breakTorque;
+  set breakTorque(double value) {
+    _breakTorque = value;
+    if (isAttached) worker.setJointProperty(_handle, JointProp.breakTorque, value);
   }
-}
 
-class WheelJoint extends Joint {
-  Offset suspensionAxis = const Offset(0, 1);
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.WheelJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      anchorA: anchor,
-      anchorB: connectedAnchor,
-      suspensionAxis: suspensionAxis,
-    );
+  int _breakAction = 0;
+  int get breakAction => _breakAction;
+  set breakAction(int value) {
+    _breakAction = value;
+    if (isAttached) worker.setJointProperty(_handle, JointProp.breakAction, value);
   }
-}
 
-class FixedJoint extends Joint {
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    final rbA = rigidbody;
-    final rbB = connectedBody;
-    double refAngle = 0.0;
-    if (rbB != null) {
-      refAngle = rbB.transform.angle - rbA.transform.angle;
+  Rigidbody? _connectedBody;
+  Rigidbody? get connectedBody => _connectedBody;
+  set connectedBody(Rigidbody? value) {
+    _connectedBody = value;
+    if (isAttached) {
+      worker.setJointProperty(_handle, JointProp.bodyHandleB, value?.handle ?? -1);
     }
-
-    return core.FixedJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      localAnchorA: anchor,
-      localAnchorB: connectedAnchor,
-      referenceAngle: refAngle,
-    );
   }
-}
 
-class FrictionJoint extends Joint {
-  double maxForce = 10.0;
-  double maxTorque = 1.0;
+  // --- Read-Only / Computed Properties ---
 
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.FrictionJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      localAnchorA: anchor,
-      localAnchorB: connectedAnchor,
-      maxForce: maxForce,
-      maxTorque: maxTorque,
-    );
+  Future<double> get reactionTorque async => (await worker.getJointProperty(_handle, JointProp.reactionTorque)) as double;
+  Future<Vector2> get reactionForce async => (await worker.getJointProperty(_handle, JointProp.reactionForce)) as Vector2;
+
+  Rigidbody get attachedRigidbody => gameObject.getComponent<Rigidbody>();
+
+  // --- Methods ---
+
+  Future<double> getReactionTorque(double timeStep) async {
+    final raw = (await worker.getJointProperty(_handle, JointProp.reactionTorque)) as double;
+    return timeStep > 0 ? raw / timeStep : 0.0;
   }
-}
 
-class RelativeJoint extends Joint {
-  Offset linearOffset = Offset.zero;
-  double angularOffset = 0.0;
-  double maxForce = 1000.0;
-  double maxTorque = 1000.0;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.RelativeJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: bodyBId,
-      linearOffset: linearOffset,
-      angularOffset: angularOffset,
-      maxForce: maxForce,
-      maxTorque: maxTorque,
-    );
-  }
-}
-
-class TargetJoint extends Joint {
-  Offset target = Offset.zero;
-  double maxForce = 5000.0;
-  double frequency = 5.0;
-  double dampingRatio = 0.7;
-
-  @override
-  core.Joint createCoreJoint(int id, int bodyAId, int bodyBId) {
-    return core.TargetJoint(
-      id: id,
-      bodyAId: bodyAId,
-      bodyBId: -1, // No connected body for target joint
-      target: target,
-      maxForce: maxForce,
-      frequency: frequency,
-      dampingRatio: dampingRatio,
-    );
+  Future<Vector2> getReactionForce(double timeStep) async {
+    final raw = (await worker.getJointProperty(_handle, JointProp.reactionForce)) as Vector2;
+    return timeStep > 0 ? raw / timeStep : Vector2.zero();
   }
 }

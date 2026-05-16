@@ -28,20 +28,8 @@ export 'src/widget.dart';
 export 'src/render.dart' hide GameRenderObject, GameParentData;
 export 'src/pointer.dart';
 export 'src/transform.dart';
-export 'src/physics/utils/physics_material.dart';
-export 'src/physics/core/physics_shape.dart' show CapsuleDirection;
-export 'src/physics/utils/raycast_hit.dart';
-export 'src/physics/utils/collision.dart';
-export 'src/physics/utils/collision_state.dart';
-export 'src/physics/utils/collision_event.dart';
-export 'src/physics/utils/trigger_event.dart';
-export 'src/physics/utils/physics_listeners.dart';
-export 'src/physics/components/collider.dart';
-export 'src/physics/utils/sprite_polygon_generator.dart';
-export 'src/physics/components/rigidbody.dart';
-export 'src/physics/components/effector.dart';
-export 'src/physics/components/joint.dart';
-export 'src/physics/components/physics_system.dart';
+export 'src/physics/physics.dart';
+export 'src/physics/physics_system.dart';
 export 'src/rpc/buffer.dart';
 export 'src/rpc/parser.dart';
 export 'src/rpc/parsers.dart';
@@ -63,3 +51,10 @@ export 'src/sprite_fit.dart';
 export 'src/utility.dart';
 export 'src/audio.dart';
 export 'src/world.dart' hide RenderWorld;
+
+// bundled
+export 'package:vector_math/vector_math_64.dart' hide Colors;
+
+import 'package:vector_math/vector_math_64.dart' as vector_math_64;
+
+typedef ColorUtils = vector_math_64.Colors;

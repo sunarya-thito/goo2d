@@ -76,14 +76,15 @@ void main() {
       final transform = const GameTag(
         'test',
       ).gameObject!.getComponent<ObjectTransform>();
-      transform.position = const ui.Offset(50, 60); // Runtime change
+      transform.position = Vector2(50, 60); // Runtime change
 
       // Trigger reassemble
       final element = tester.element(find.byKey(const GameTag('test')));
       // ignore: invalid_use_of_protected_member
       element.reassemble();
 
-      expect(transform.position, equals(const ui.Offset(50, 60)));
+      expect(transform.position.x, closeTo(50.0, 0.0001));
+      expect(transform.position.y, closeTo(60.0, 0.0001));
     });
 
     testWidgets('should preserve state when children are shuffled with keys', (
@@ -189,7 +190,7 @@ void main() {
       );
 
       final hero = const GameTag('hero').gameObject!;
-      hero.getComponent<ObjectTransform>().position = const ui.Offset(123, 456);
+      hero.getComponent<ObjectTransform>().position = Vector2(123, 456);
 
       // Move hero into a Container
       await tester.pumpWidget(
@@ -218,10 +219,9 @@ void main() {
 
       final heroAfter = const GameTag('hero').gameObject!;
       expect(heroAfter, same(hero));
-      expect(
-        heroAfter.getComponent<ObjectTransform>().position,
-        equals(const ui.Offset(123, 456)),
-      );
+      final heroPos = heroAfter.getComponent<ObjectTransform>().position;
+      expect(heroPos.x, closeTo(123.0, 0.0001));
+      expect(heroPos.y, closeTo(456.0, 0.0001));
     });
 
     testWidgets(
