@@ -45,19 +45,22 @@ final List<DemoCategory> _demoRegistry = [
           DemoItem(
             id: 'hinge',
             title: 'Hinge',
-            hint: 'A blue box is pinned to a fixed anchor (grey dot) by a hinge joint. Gravity swings it like a pendulum.',
+            hint:
+                'A blue box is pinned to a fixed anchor (grey dot) by a hinge joint. Gravity swings it like a pendulum.',
             builder: () => const HingeDemo(),
           ),
           DemoItem(
             id: 'spring',
             title: 'Spring',
-            hint: 'A box hangs from a ceiling anchor by a spring joint. Watch it bounce and oscillate as damping slowly settles it.',
+            hint:
+                'A box hangs from a ceiling anchor by a spring joint. Watch it bounce and oscillate as damping slowly settles it.',
             builder: () => const SpringDemo(),
           ),
           DemoItem(
             id: 'distance',
             title: 'Distance',
-            hint: 'Five boxes form a hanging chain linked by distance joints. The top link is static; the rest swing freely under gravity.',
+            hint:
+                'Five boxes form a hanging chain linked by distance joints. The top link is static; the rest swing freely under gravity.',
             builder: () => const DistanceDemo(),
           ),
         ],
@@ -68,13 +71,15 @@ final List<DemoCategory> _demoRegistry = [
           DemoItem(
             id: 'shapes',
             title: 'Shapes',
-            hint: 'Circles, boxes, and capsules fall and stack on the ground, showing how different collider shapes interact.',
+            hint:
+                'Circles, boxes, and capsules fall and stack on the ground, showing how different collider shapes interact.',
             builder: () => const ShapesDemo(),
           ),
           DemoItem(
             id: 'trigger',
             title: 'Trigger',
-            hint: 'Boxes fall through the yellow trigger zone. Objects inside turn red; outside they stay grey.',
+            hint:
+                'Boxes fall through the yellow trigger zone. Objects inside turn red; outside they stay grey.',
             builder: () => const TriggerDemo(),
           ),
         ],
@@ -83,7 +88,10 @@ final List<DemoCategory> _demoRegistry = [
   ),
 ];
 
-void main() => runApp(const DemoApp());
+void main() async {
+  await PhysicsSystem.initialize();
+  runApp(const DemoApp());
+}
 
 class DemoApp extends StatelessWidget {
   const DemoApp({super.key});
@@ -143,8 +151,7 @@ class _DemoShellState extends State<DemoShell> {
                     ),
                     onPressed: () =>
                         setState(() => _sidebarVisible = !_sidebarVisible),
-                    tooltip:
-                        _sidebarVisible ? 'Hide sidebar' : 'Show sidebar',
+                    tooltip: _sidebarVisible ? 'Hide sidebar' : 'Show sidebar',
                   ),
                 ),
               ],
@@ -166,10 +173,7 @@ class _DemoShellState extends State<DemoShell> {
     }
     return Stack(
       children: [
-        Game(
-          key: ValueKey(_selected!.id),
-          child: _selected!.builder(),
-        ),
+        Game(key: ValueKey(_selected!.id), child: _selected!.builder()),
         Positioned(
           left: 0,
           right: 0,
@@ -230,8 +234,7 @@ class _Sidebar extends StatelessWidget {
                         ),
                       ),
                       initiallyExpanded: true,
-                      tilePadding:
-                          const EdgeInsets.symmetric(horizontal: 16),
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                       children: [
                         for (final sub in cat.subcategories)
                           ExpansionTile(

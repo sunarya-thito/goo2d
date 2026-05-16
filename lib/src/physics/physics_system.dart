@@ -9,12 +9,12 @@ import 'package:goo2d/src/physics/worker/isolate/isolate_physics_worker.dart';
 /// The [GameSystem] that manages the physics worker lifecycle and dispatches
 /// per-frame collision and trigger events to [CollisionListener] components.
 class PhysicsSystem implements GameSystem {
-  final bool forceDirectWorker;
+  static bool _isInitialized = false;
+  static PhysicsWorker? _worker;
 
-  PhysicsWorker? _worker;
   GameEngine? _game;
 
-  PhysicsSystem({this.forceDirectWorker = false});
+  PhysicsSystem();
 
   PhysicsWorker get worker {
     assert(_worker != null, 'PhysicsSystem has not been initialized.');
@@ -22,6 +22,25 @@ class PhysicsSystem implements GameSystem {
   }
 
   static bool get platformSupportsIsolate => !kIsWeb;
+
+  /// Initializes the physics worker.
+  ///
+  /// Must be called once before the engine starts. Awaiting this ensures the
+  /// worker is ready before any physics operations are dispatched.
+  ///
+  /// * [forceDirectWorker]: When true, always uses [DirectPhysicsWorker] even
+  ///   on platforms that support isolates. Useful for debugging or testing.
+  static Future<void> initialize({bool forceDirectWorker = false}) async {
+    if (_isInitialized) return;
+    if (!forceDirectWorker && platformSupportsIsolate) {
+      _worker = IsolatePhysicsWorker();
+    } else {
+      _worker = DirectPhysicsWorker();
+    }
+    await _worker!.initialize();
+    Physics.initialize(_worker!);
+    _isInitialized = true;
+  }
 
   @override
   GameEngine get game => _game!;
@@ -32,13 +51,6 @@ class PhysicsSystem implements GameSystem {
   @override
   void attach(GameEngine game) {
     _game = game;
-    if (!forceDirectWorker && platformSupportsIsolate) {
-      _worker = IsolatePhysicsWorker();
-    } else {
-      _worker = DirectPhysicsWorker();
-    }
-    _worker!.initialize();
-    Physics.initialize(_worker!);
   }
 
   /// Steps the physics simulation then dispatches collision/trigger events.
@@ -83,6 +95,7 @@ class PhysicsSystem implements GameSystem {
   void dispose() {
     _worker?.dispose();
     _worker = null;
+    _isInitialized = false;
     _game = null;
     _prevContacts.clear();
     _prevTriggers.clear();
